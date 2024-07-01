@@ -5,27 +5,19 @@
         <a-card>
             <div>
                 <a-form layout="inline" >
-                    <a-form-item>
-                        <a-input v-model="listQuery.keyword" placeholder="物品名称" style="width: 200px;" />
-                    </a-form-item>
-                    <a-form-item>
-                        <category-select @change="categoryChange"></category-select>
+                    <a-form-item label="物品">
+                        <material-select @change="materialChange"></material-select>
                     </a-form-item>
                     <a-form-item>
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
                     <a-form-item>
-                        <a-button @click="onCreate" type="primary" icon="edit">添加物品</a-button>
+                        <a-button @click="onCreate" type="primary" icon="edit">添加申购</a-button>
                     </a-form-item>
 
                 </a-form>
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
                          :pagination="pagination">
-
-                    <div slot="number" slot-scope="text, record">
-                        <span v-if="record.mate_warning>record.mate_number" style="color: red;font-weight: bold;">@{{ record.mate_number }}</span>
-                        <span v-else>@{{ record.mate_number }}</span>
-                    </div>
 
                     <div slot="status" slot-scope="text, record">
                         <a-tag v-if="record.status == 0"  color="red">禁用</a-tag>
@@ -48,11 +40,11 @@
                             </a>
                         </a-popconfirm>
                         <div>
-                            <a style="margin-right: 8px" @click="onInComing()">
+                            <a style="margin-right: 8px" @click="onIncoming()">
                                 入库
                             </a>
 
-                            <a style="margin-right: 8px" @click="onOutComing()">
+                            <a style="margin-right: 8px" @click="onOutcoming()">
                                 出库
                             </a>
                         </div>
@@ -64,35 +56,13 @@
             <a-modal :mask-closable="false" v-model="dialogFormVisible"
                      :title="dialogStatus"
                      width="800px" :footer="null">
-                <material-add
-                    style="height: 600px;overflow: auto"
-                    ref="materialAdd"
-                    :id="id"
-                    @update="update"
-                    @add="add"
-                    @close="dialogFormVisible = false;"
+                <purchase-add ref="purchaseAdd"
+                             :id="id"
+                             @update="update"
+                             @add="add"
+                             @close="dialogFormVisible = false;"
                 >
-                </material-add>
-            </a-modal>
-
-            <a-modal :mask-closable="false" v-model="inComingFormVisible"
-                     title="入库"
-                     width="800px" :footer="null">
-                <material-in-coming ref="inComing"
-                                    @submit="inComingSubmit"
-                                    @close="inComingFormVisible = false;"
-                >
-                </material-in-coming>
-            </a-modal>
-
-            <a-modal :mask-closable="false" v-model="outComingFormVisible"
-                     title="出库"
-                     width="800px" :footer="null">
-                <material-out-coming ref="outComing"
-                                     @submit="outComingSubmit"
-                                     @close="outComingFormVisible = false;"
-                >
-                </material-out-coming>
+                </purchase-add>
             </a-modal>
 
         </a-card>
@@ -110,6 +80,7 @@
                 listQuery: {
                     keyword: "",
                     category_id:'',
+                    material_id:'',
                 },
                 listSource: [],
                 listLoading:false,
@@ -124,54 +95,22 @@
                 columns:[
                     {
                         title: 'Id',
-                        dataIndex: 'mate_id',
+                        dataIndex: 'id',
                         width: 80
-                    },
-                    {
-                        title: '名称',
-                        dataIndex: 'mate_name',
-                        width: 100
-                    },
-                    {
-                        title: '厂家',
-                        dataIndex: 'mate_manufacturer_name',
-                        width: 100
-                    },
-                    {
-                        title: '类别',
-                        dataIndex: 'mate_category_name',
-                        width: 100
-                    },
-                    {
-                        title: '规格',
-                        dataIndex: 'mate_specification_name',
-                        width: 100
-                    },
-                    {
-                        title: '单位',
-                        dataIndex: 'mate_unit'
                     },
                     {
                         title: '库存',
                         scopedSlots: { customRender: 'number' },
-                        dataIndex: 'mate_number'
-                    },
-                    {
-                        title: '预警值',
-                        dataIndex: 'mate_warning'
-                    },
-                    {
-                        title: '排序',
-                        dataIndex: 'mate_sort'
+                        dataIndex: 'number'
                     },
                     {
                         title: '状态',
                         scopedSlots: { customRender: 'status' },
-                        dataIndex: 'mate_status'
+                        dataIndex: 'status'
                     },
                     {
                         title: '提交时间',
-                        dataIndex: 'mate_crt_time'
+                        dataIndex: 'created_at'
                     },
                     {
                         title: '操作',
@@ -179,8 +118,6 @@
                     }
                 ],
                 dialogFormVisible:false,
-                inComingFormVisible:false,
-                outComingFormVisible:false,
                 id:null
             },
             created () {
@@ -188,10 +125,8 @@
                 this.handleFilter()
             },
             components: {
-                "material-add":  httpVueLoader('/statics/components/material/materialAdd.vue'),
-                "category-select":  httpVueLoader('/statics/components/material/categorySelect.vue'),
-                "material-in-coming":  httpVueLoader('/statics/components/material/materialInComing.vue'),
-                "material-out-coming":  httpVueLoader('/statics/components/material/materialOutComing.vue')
+                "purchase-add":  httpVueLoader('/statics/components/material/purchaseAdd.vue'),
+                "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
             },
             methods: {
                 paginationChange (current, pageSize) {
@@ -212,7 +147,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/material/getList',
+                        url: '/admin/materialPurchase/getList',
                         // 传递参数
                         data: this.listQuery,
                         responseType: 'json',
@@ -229,22 +164,34 @@
                     });
                 },
                 onCreate(){
-                    this.dialogStatus = '添加';
+                    this.dialogStatus = 'create';
                     this.dialogFormVisible = true;
                 },
                 onUpdate(row){
-                    this.id = row.mate_id
-                    this.dialogStatus = '更新';
+                    this.id = row.id;
+                    this.dialogStatus = 'update';
                     this.dialogFormVisible = true;
+                },
+                update(){
+                    this.id = null;
+                    this.$message.success('编辑成功');
+                    this.dialogFormVisible = false;
+                    this.handleFilter();
+                },
+                add(){
+                    this.id = null;
+                    this.$message.success('添加成功');
+                    this.dialogFormVisible = false;
+                    this.handleFilter();
                 },
                 onDel(row){
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/material/delete',
+                        url: '/admin/materialPurchase/delete',
                         // 传递参数
                         data: {
-                            id:row.mate_id
+                            id:row.id
                         },
                         responseType: 'json',
                         headers:{
@@ -263,37 +210,8 @@
                         this.$message.error('请求失败');
                     });
                 },
-                add(){
-                    this.id = null;
-                    this.$message.success('添加成功');
-                    this.dialogFormVisible = false;
-                    this.handleFilter();
-                },
-                update(){
-                    this.id = null;
-                    this.$message.success('编辑成功');
-                    this.dialogFormVisible = false;
-                    this.handleFilter();
-                },
-                onInComing(){
-                    // this.incomingId = row.id;
-                    this.inComingFormVisible = true;
-                },
-                onOutComing(){
-                    this.outComingFormVisible = true;
-                },
-                inComingSubmit(){
-                    this.$message.success('入库成功');
-                    this.inComingFormVisible = false;
-                    this.handleFilter();
-                },
-                outComingSubmit(){
-                    this.$message.success('出库成功');
-                    this.outComingFormVisible = false;
-                    this.handleFilter();
-                },
-                categoryChange(value){
-                    this.listQuery.category_id = value;
+                materialChange(value){
+
                 }
             },
 

@@ -4,6 +4,6 @@ namespace App\Models;
 
 class MaterialSpecification extends BaseModel
 {
-    protected $table   = 'material';
+    protected $table   = 'material_specification';
     public $timestamps = null;
 }

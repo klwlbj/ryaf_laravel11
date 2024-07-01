@@ -32,11 +32,14 @@ module.exports = {
     name: 'adminMenu',
     components: {},
     props: {
-
+        localUrl: {
+            default:function(){
+                return 'http://ryaf-laravel11.com'
+            },
+        },
     },
     data () {
         return {
-            localhost:'http://ryaf-laravel11.com',
             list:[
                 {
                     id:1,
@@ -85,27 +88,32 @@ module.exports = {
                         {
                             id:4,
                             label:'厂家管理',
-                            url:this.localhost + '/admin/materialManufacturer/view',
+                            url:this.localUrl +'/admin/materialManufacturer/view',
                         },
                         {
                             id:4,
                             label:'分类管理',
-                            url:this.localhost + '/admin/materialCategory/view',
+                            url:this.localUrl +'/admin/materialCategory/view',
                         },
                         {
                             id:5,
                             label:'规格管理',
-                            url:this.localhost + '/admin/materialSpecification/view',
+                            url:this.localUrl +'/admin/materialSpecification/view',
                         },
                         {
                             id:6,
                             label:'物品管理',
-                            url:this.localhost + '/admin/material/view',
+                            url:this.localUrl +'/admin/material/view',
                         },
                         {
                             id:6,
                             label:'库存流水',
-                            url:this.localhost + '/admin/materialFlow/view',
+                            url:this.localUrl +'/admin/materialFlow/view',
+                        },
+                        {
+                            id:6,
+                            label:'物品申购',
+                            url:this.localUrl +'/admin/materialPurchase/view',
                         },
                     ]
                 }
@@ -129,7 +137,7 @@ module.exports = {
         }
     },
     created () {
-        console.log(window.location.pathname);
+        console.log(this.list);
     },
     watch: {
 

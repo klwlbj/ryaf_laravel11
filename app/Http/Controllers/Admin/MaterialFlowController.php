@@ -9,10 +9,6 @@ use Illuminate\Support\Facades\Validator;
 
 class MaterialFlowController
 {
-    public function view()
-    {
-        return view('admin.materialFlow');
-    }
 
     public function getList(Request $request)
     {

@@ -9,11 +9,6 @@ use Illuminate\Support\Facades\Validator;
 
 class MaterialSpecificationController
 {
-    public function view()
-    {
-        return view('admin.materialSpecification');
-    }
-
     public function getList(Request $request)
     {
         $params = $request->all();

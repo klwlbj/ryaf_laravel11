@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\MaterialCategoryController;
 use App\Http\Controllers\Admin\MaterialController;
 use App\Http\Controllers\Admin\MaterialFlowController;
 use App\Http\Controllers\Admin\MaterialManufacturerController;
+use App\Http\Controllers\Admin\MaterialPurchaseController;
 use App\Http\Controllers\Admin\MaterialSpecificationController;
 use App\Http\Controllers\Admin\UploadController;
 use App\Http\Controllers\Admin\WarehouseController;
@@ -77,4 +78,10 @@ Route::prefix('materialFlow')->group(function () {
     Route::post('/getList', [MaterialFlowController::class, 'getList']);
     Route::post('/inComing', [MaterialFlowController::class, 'inComing']);
     Route::post('/outComing', [MaterialFlowController::class, 'outComing']);
+});
+
+Route::prefix('materialPurchase')->group(function () {
+    Route::view('/view', 'admin.materialPurchase');
+
+    Route::post('/getList', [MaterialPurchaseController::class, 'getList']);
 });

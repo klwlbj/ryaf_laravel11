@@ -127,13 +127,19 @@ class MaterialFlowLogic extends BaseLogic
         #插入库存流水
         $flowId = MaterialFlow::query()->insertGetId($outComingData);
         #变更物品库存数量
-        Material::query()->where(['mate_id' => $params['material_id']])->update(['mate_number' => DB::raw("mate_number-".$params['number'])]);
+        Material::query()->where(['mate_id' => $params['material_id']])->update([
+            'mate_number' => DB::raw("mate_number-".$params['number']),
+        ]);
         #把物品变更成出库状态
         DB::connection('admin')->table('material_detail')
             ->where(['made_material_id' => $params['material_id']])
             ->orderBy('made_id','asc')
             ->limit($params['number'])
-            ->update(['made_out_id' => $flowId,'made_status' => 2]);
+            ->update([
+                'made_out_id' => $flowId,
+                'made_status' => 2,
+                'made_receive_user_id' => $params['receive_user_id']
+            ]);
 
 
         DB::commit();

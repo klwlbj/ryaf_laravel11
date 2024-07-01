@@ -22,6 +22,11 @@
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
                          :pagination="pagination">
 
+                    <div slot="is_deliver" slot-scope="text, record">
+                        <a-tag v-if="record.mate_is_deliver == 0"  color="red">否</a-tag>
+                        <a-tag v-else color="green">是</a-tag>
+                    </div>
+
                     <div slot="number" slot-scope="text, record">
                         <span v-if="record.mate_warning>record.mate_number" style="color: red;font-weight: bold;">@{{ record.mate_number }}</span>
                         <span v-else>@{{ record.mate_number }}</span>
@@ -131,6 +136,11 @@
                         title: '名称',
                         dataIndex: 'mate_name',
                         width: 100
+                    },
+                    {
+                        title: '是否出库',
+                        scopedSlots: { customRender: 'is_deliver' },
+                        dataIndex: 'mate_is_deliver'
                     },
                     {
                         title: '厂家',

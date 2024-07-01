@@ -8,17 +8,6 @@
                     <a-form-item>
                         <a-input v-model="listQuery.keyword" placeholder="类型名称" style="width: 200px;" />
                     </a-form-item>
-                    <a-form-item label="是否出库">
-                        <a-select v-model="listQuery.is_deliver" show-search placeholder="请选择" :max-tag-count="1"
-                                  style="width: 200px;" allow-clear>
-                            <a-select-option :value="1">
-                                是
-                            </a-select-option>
-                            <a-select-option :value="0">
-                                否
-                            </a-select-option>
-                        </a-select>
-                    </a-form-item>
                     <a-form-item>
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
@@ -29,11 +18,6 @@
 
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
                          :pagination="pagination">
-
-                    <div slot="is_deliver" slot-scope="text, record">
-                        <a-tag v-if="record.maca_is_deliver == 0"  color="red">否</a-tag>
-                        <a-tag v-else color="green">是</a-tag>
-                    </div>
 
                     <div slot="status" slot-scope="text, record">
                         <a-tag v-if="record.maca_status == 0"  color="red">禁用</a-tag>
@@ -105,11 +89,6 @@
                         title: '类别名称',
                         dataIndex: 'maca_name',
                         width: 100
-                    },
-                    {
-                        title: '是否出库',
-                        scopedSlots: { customRender: 'is_deliver' },
-                        dataIndex: 'maca_is_deliver'
                     },
                     {
                         title: '排序',

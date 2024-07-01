@@ -9,11 +9,6 @@ use Illuminate\Support\Facades\Validator;
 
 class MaterialController
 {
-    public function view()
-    {
-        return view('admin.material');
-    }
-
     public function getList(Request $request)
     {
         $params = $request->all();

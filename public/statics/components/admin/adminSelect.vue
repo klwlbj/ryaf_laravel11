@@ -1,5 +1,5 @@
 <template>
-    <a-select v-model="id" show-search placeholder="请选择" :max-tag-count="1"
+    <a-select v-model="id" show-search placeholder="请选择用户" :max-tag-count="1"
               :mode="mode" style="width: 200px;" allow-clear @change="handleChange" option-filter-prop="label">
         <a-select-option v-for="(item, key) in list" :key="key" :value="item.admin_id" :label="item.admin_name">
             {{ item.admin_name }}
