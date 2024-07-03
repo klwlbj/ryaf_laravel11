@@ -94,7 +94,7 @@ module.exports = {
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/materialFlow/inComing',
+                        url: '/api/materialFlow/inComing',
                         // 传递参数
                         data: that.formData,
                         responseType: 'json',

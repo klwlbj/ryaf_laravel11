@@ -149,7 +149,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/materialSpecification/getList',
+                        url: '/api/materialSpecification/getList',
                         // 传递参数
                         data: this.listQuery,
                         responseType: 'json',
@@ -178,7 +178,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/materialSpecification/delete',
+                        url: '/api/materialSpecification/delete',
                         // 传递参数
                         data: {
                             id:row.masp_id

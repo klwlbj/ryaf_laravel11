@@ -19,9 +19,17 @@
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
                          :pagination="pagination">
 
+                    <div slot="detail" slot-scope="text, record">
+                        <div v-for="(item,index) in record.detail" :key="index">
+                            @{{ item.mapu_material_name }} * @{{ item.mapu_number }}(@{{ item.mapu_unit }})</span>
+                        </div>
+                    </div>
+
                     <div slot="status" slot-scope="text, record">
-                        <a-tag v-if="record.status == 0"  color="red">禁用</a-tag>
-                        <a-tag v-else color="green">启用</a-tag>
+                        <a-tag v-if="record.mapu_status == 1">待审批</a-tag>
+                        <a-tag v-else-if="record.mapu_status == 2">申购中</a-tag>
+                        <a-tag v-else-if="record.mapu_status == 3" color="green">已完成</a-tag>
+                        <a-tag v-else color="red">已拒绝</a-tag>
                     </div>
 
                     <div slot="action" slot-scope="text, record">
@@ -39,16 +47,45 @@
                                 删除
                             </a>
                         </a-popconfirm>
+
                         <div>
-                            <a style="margin-right: 8px" @click="onIncoming()">
-                                入库
-                            </a>
+                            <a-popconfirm
+                                v-if="record.agree_auth"
+                                title="是否确定同意申购?"
+                                ok-text="确认"
+                                cancel-text="取消"
+                                @confirm="onDel(record)"
+                            >
+                                <a style="margin-right: 8px">
+                                    同意
+                                </a>
+                            </a-popconfirm>
 
-                            <a style="margin-right: 8px" @click="onOutcoming()">
-                                出库
-                            </a>
+
+                            <a-popconfirm
+                                v-if="record.agree_auth"
+                                title="是否确定驳回申购?"
+                                ok-text="确认"
+                                cancel-text="取消"
+                                @confirm="onDel(record)"
+                            >
+                                <a style="margin-right: 8px">
+                                    驳回
+                                </a>
+                            </a-popconfirm>
+
+                            <a-popconfirm
+                                v-if="record.complete_auth"
+                                title="是否确定完成申购?"
+                                ok-text="确认"
+                                cancel-text="取消"
+                                @confirm="onDel(record)"
+                            >
+                                <a style="margin-right: 8px">
+                                    完成
+                                </a>
+                            </a-popconfirm>
                         </div>
-
                     </div>
                 </a-table>
             </div>
@@ -56,7 +93,9 @@
             <a-modal :mask-closable="false" v-model="dialogFormVisible"
                      :title="dialogStatus"
                      width="800px" :footer="null">
-                <purchase-add ref="purchaseAdd"
+                <purchase-add
+                    style="max-height: 600px;overflow: auto"
+                            ref="purchaseAdd"
                              :id="id"
                              @update="update"
                              @add="add"
@@ -95,22 +134,26 @@
                 columns:[
                     {
                         title: 'Id',
-                        dataIndex: 'id',
+                        dataIndex: 'mapu_id',
                         width: 80
                     },
                     {
-                        title: '库存',
-                        scopedSlots: { customRender: 'number' },
-                        dataIndex: 'number'
+                        title: '详情',
+                        scopedSlots: { customRender: 'detail' },
+                        dataIndex: 'detail'
                     },
                     {
                         title: '状态',
                         scopedSlots: { customRender: 'status' },
-                        dataIndex: 'status'
+                        dataIndex: 'mapu_status'
+                    },
+                    {
+                        title: '备注',
+                        dataIndex: 'mapu_remark'
                     },
                     {
                         title: '提交时间',
-                        dataIndex: 'created_at'
+                        dataIndex: 'mapu_crt_time'
                     },
                     {
                         title: '操作',
@@ -147,7 +190,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/materialPurchase/getList',
+                        url: '/api/materialPurchase/getList',
                         // 传递参数
                         data: this.listQuery,
                         responseType: 'json',
@@ -164,12 +207,12 @@
                     });
                 },
                 onCreate(){
-                    this.dialogStatus = 'create';
+                    this.dialogStatus = '新增';
                     this.dialogFormVisible = true;
                 },
                 onUpdate(row){
-                    this.id = row.id;
-                    this.dialogStatus = 'update';
+                    this.id = row.mapu_id;
+                    this.dialogStatus = '修改';
                     this.dialogFormVisible = true;
                 },
                 update(){
@@ -188,7 +231,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/materialPurchase/delete',
+                        url: '/api/materialPurchase/delete',
                         // 传递参数
                         data: {
                             id:row.id

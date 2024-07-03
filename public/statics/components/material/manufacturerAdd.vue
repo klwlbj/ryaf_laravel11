@@ -84,7 +84,7 @@ module.exports = {
                         axios({
                             // 默认请求方式为get
                             method: 'post',
-                            url: '/admin/materialManufacturer/update',
+                            url: '/api/materialManufacturer/update',
                             // 传递参数
                             data: that.formData,
                             responseType: 'json',
@@ -107,7 +107,7 @@ module.exports = {
                         axios({
                             // 默认请求方式为get
                             method: 'post',
-                            url: '/admin/materialManufacturer/add',
+                            url: '/api/materialManufacturer/add',
                             // 传递参数
                             data: that.formData,
                             responseType: 'json',
@@ -141,7 +141,7 @@ module.exports = {
             axios({
                 // 默认请求方式为get
                 method: 'post',
-                url: '/admin/materialManufacturer/getInfo',
+                url: '/api/materialManufacturer/getInfo',
                 // 传递参数
                 data: {
                     id:id

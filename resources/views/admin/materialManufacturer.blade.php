@@ -139,7 +139,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/materialManufacturer/getList',
+                        url: '/api/materialManufacturer/getList',
                         // 传递参数
                         data: this.listQuery,
                         responseType: 'json',
@@ -168,7 +168,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/materialManufacturer/delete',
+                        url: '/api/materialManufacturer/delete',
                         // 传递参数
                         data: {
                             id:row.mama_id

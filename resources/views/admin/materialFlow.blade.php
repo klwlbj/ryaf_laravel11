@@ -190,7 +190,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/materialFlow/getList',
+                        url: '/api/materialFlow/getList',
                         // 传递参数
                         data: this.listQuery,
                         responseType: 'json',
@@ -226,7 +226,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/material/delete',
+                        url: '/api/material/delete',
                         // 传递参数
                         data: {
                             id:row.mate_id

@@ -88,32 +88,32 @@ module.exports = {
                         {
                             id:4,
                             label:'厂家管理',
-                            url:this.localUrl +'/admin/materialManufacturer/view',
+                            url:this.localUrl +'/materialManufacturer/view',
                         },
                         {
                             id:4,
                             label:'分类管理',
-                            url:this.localUrl +'/admin/materialCategory/view',
+                            url:this.localUrl +'/materialCategory/view',
                         },
                         {
                             id:5,
                             label:'规格管理',
-                            url:this.localUrl +'/admin/materialSpecification/view',
+                            url:this.localUrl +'/materialSpecification/view',
                         },
                         {
                             id:6,
                             label:'物品管理',
-                            url:this.localUrl +'/admin/material/view',
+                            url:this.localUrl +'/material/view',
                         },
                         {
                             id:6,
                             label:'库存流水',
-                            url:this.localUrl +'/admin/materialFlow/view',
+                            url:this.localUrl +'/materialFlow/view',
                         },
                         {
                             id:6,
                             label:'物品申购',
-                            url:this.localUrl +'/admin/materialPurchase/view',
+                            url:this.localUrl +'/materialPurchase/view',
                         },
                     ]
                 }
@@ -137,7 +137,7 @@ module.exports = {
         }
     },
     created () {
-        console.log(this.list);
+        // console.log(this.list);
     },
     watch: {
 

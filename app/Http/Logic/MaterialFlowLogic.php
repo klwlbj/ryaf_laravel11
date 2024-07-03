@@ -17,7 +17,7 @@ class MaterialFlowLogic extends BaseLogic
         $query = MaterialFlow::query()
             ->leftJoin('material','material_flow.mafl_material_id','=','material.mate_id')
             ->leftJoin('admin as receive_user','material_flow.mafl_receive_user_id','=','receive_user.admin_id')
-            ->leftJoin('admin','material_flow.mafl_operator_id','=','admin.admin_id')
+            ->leftJoin('node_account','material_flow.mafl_operator_id','=','node_account.noac_id')
         ;
 
         if(isset($params['material_id']) && $params['material_id']){
@@ -34,7 +34,7 @@ class MaterialFlowLogic extends BaseLogic
             ->select([
                 'material_flow.*',
                 'material.mate_name as mafl_material_name',
-                'admin.admin_name as mafl_created_user',
+                'node_account.noac_name as mafl_created_user',
                 'receive_user.admin_name as mafl_receive_user',
             ])
             ->orderBy('material_flow.mafl_id','desc')
@@ -64,7 +64,7 @@ class MaterialFlowLogic extends BaseLogic
             'mafl_expire_date' => $params['expire_date'],
             'mafl_date' => $params['date'],
             'mafl_remark' => $params['remark'] ?? '',
-            'mafl_operator_id' => 2 #操作人 默认写死2
+            'mafl_operator_id' => AuthLogic::$userId #操作人 默认写死2
         ];
 
         DB::beginTransaction();
@@ -119,7 +119,7 @@ class MaterialFlowLogic extends BaseLogic
             'mafl_approve_image' => $params['approve_image'] ?? '',
             'mafl_date' => $params['date'],
             'mafl_remark' => $params['remark'] ?? '',
-            'mafl_operator_id' => 2 #操作人 默认写死2
+            'mafl_operator_id' => AuthLogic::$userId #操作人 默认写死2
         ];
 
         DB::beginTransaction();

@@ -39,7 +39,7 @@ module.exports = {
             axios({
                 // 默认请求方式为get
                 method: 'post',
-                url: '/admin/materialSpecification/getAllList',
+                url: '/api/materialSpecification/getAllList',
                 // 传递参数
                 data: {
                     category_id:categoryId

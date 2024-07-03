@@ -13,6 +13,7 @@
 <script src="{{asset('statics/js/httpVueLoader.js')}}"></script>
 <script src="{{asset('statics/js/antd.min.js')}}"></script>
 <script src="{{asset('statics/js/axios.min.js')}}"></script>
+<script src="{{asset('statics/js/cookie.js')}}"></script>
 <style>
 .sidebar{
     border-radius: 0;
@@ -44,8 +45,15 @@
         </div>
     </div>
 </div>
+<script src="{{asset('statics/js/axios-interceptors.js')}}"></script>
+<script>
+    var token = "{!! $token ?? '' !!}";
 
+    if(token){
+        setCookie('X-Token',token,1);
+    }
 
+</script>
 
 
 <script>

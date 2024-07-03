@@ -123,7 +123,7 @@ module.exports = {
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/materialFlow/outComing',
+                        url: '/api/materialFlow/outComing',
                         // 传递参数
                         data: that.formData,
                         responseType: 'json',
@@ -167,7 +167,7 @@ module.exports = {
             axios({
                 // 默认请求方式为get
                 method: 'post',
-                url: '/admin/upload',
+                url: '/api/upload',
                 // 传递参数
                 data: formData,
                 responseType: 'json',

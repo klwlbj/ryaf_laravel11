@@ -4,7 +4,7 @@
             <a-form-model-item label="申购明细">
                 <a-table  :columns="columns" :data-source="formData.detail" :loading="loading"  :row-key="(record, index) => { return index }" :pagination="false">
                     <div slot="id" slot-scope="text, record">
-                        <material-select :default-data="materialId" @change="(value) => {materialChange(value,record)}"></material-select>
+                        <material-select :default-data="record.id" @change="(value) => {materialChange(value,record)}"></material-select>
                     </div>
 
                     <div slot="number" slot-scope="text, record">
@@ -71,11 +71,6 @@ module.exports = {
                     title: '单位',
                     dataIndex: 'unit',
                 },
-                {
-                    title: '操作',
-                    dataIndex: 'action',
-                    scopedSlots: { customRender: 'action' },
-                },
             ],
             dialogFormLabelCol: { span: 4 },
             dialogFormWrapperCol: { span: 14 },
@@ -110,14 +105,51 @@ module.exports = {
                     }
                     if(this.id){
                         params.id = this.id;
-                        update(params).then(() => {
-                            that.$emit('update');
-                        })
-                    }else{
-                        add(params).then(() => {
-                            that.$emit('submit');
+                        axios({
+                            // 默认请求方式为get
+                            method: 'post',
+                            url: '/api/materialPurchase/update',
+                            // 传递参数
+                            data: params,
+                            responseType: 'json',
+                            headers:{
+                                'Content-Type': 'multipart/form-data'
+                            }
+                        }).then(response => {
+                            this.loading = false;
+                            let res = response.data;
+                            if(res.code !== 0){
+                                this.$message.error(res.message);
+                                return false;
+                            }
                             this.initForm();
-                        })
+                            that.$emit('update');
+                        }).catch(error => {
+                            this.$message.error('请求失败');
+                        });
+                    }else{
+                        axios({
+                            // 默认请求方式为get
+                            method: 'post',
+                            url: '/api/materialPurchase/add',
+                            // 传递参数
+                            data: params,
+                            responseType: 'json',
+                            headers:{
+                                'Content-Type': 'multipart/form-data'
+                            }
+                        }).then(response => {
+                            this.loading = false;
+                            let res = response.data;
+                            if(res.code !== 0){
+                                this.$message.error(res.message);
+                                return false;
+                            }
+                            this.initForm();
+                            that.$emit('add');
+                        }).catch(error => {
+                            this.$message.error('请求失败');
+                        });
                     }
 
                 }else{
@@ -135,7 +167,7 @@ module.exports = {
             axios({
                 // 默认请求方式为get
                 method: 'post',
-                url: '/admin/materialPurchase/getInfo',
+                url: '/api/material/getInfo',
                 // 传递参数
                 data: {
                     id:id
@@ -164,21 +196,41 @@ module.exports = {
                 return false;
             }
             this.loading = true;
-            getInfo(id).then(response => {
-                this.loading = false;
-                this.formData = {
-                    detail: response.data.detail,
-                    remark: response.data.remark
+            axios({
+                // 默认请求方式为get
+                method: 'post',
+                url: '/api/materialPurchase/getInfo',
+                // 传递参数
+                data: {
+                    id:id
+                },
+                responseType: 'json',
+                headers:{
+                    'Content-Type': 'multipart/form-data'
                 }
-                // let count = this.formData.detail.length;
-                // if(count < 6){
-                //     for(let i=0;i< 6-count;i++){
-                //         this.formData.detail.push({id:undefined,number:0,last_month_used:0,remain:0,name:null})
-                //     }
-                // }
-                // console.log(this.formData.detail);
-            })
-
+            }).then(response => {
+                this.loading = false;
+                let res = response.data;
+                if(res.code !== 0){
+                    this.$message.error(res.message);
+                    return false;
+                }
+                this.formData = {
+                    detail: [],
+                    remark: res.data.mapu_remark
+                }
+                for (let item of res.data.detail){
+                    this.formData.detail.push({
+                        id:item.mapu_material_id,
+                        number:item.mapu_number,
+                        remain:0,
+                        name:null
+                    })
+                }
+                this.$forceUpdate();
+            }).catch(error => {
+                this.$message.error('请求失败');
+            });
         },
         detailAdd(){
             this.formData.detail.push({id:undefined,number:0,remain:0,name:null})

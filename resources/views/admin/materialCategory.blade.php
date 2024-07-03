@@ -141,7 +141,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/materialCategory/getList',
+                        url: '/api/materialCategory/getList',
                         // 传递参数
                         data: this.listQuery,
                         responseType: 'json',
@@ -170,7 +170,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/admin/materialCategory/delete',
+                        url: '/api/materialCategory/delete',
                         // 传递参数
                         data: {
                             id:row.maca_id

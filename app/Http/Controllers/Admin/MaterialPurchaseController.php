@@ -30,6 +30,29 @@ class MaterialPurchaseController
         }
         return ResponseLogic::apiResult(0,'ok',$res);
     }
+
+    public function getInfo(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+
+        ],[
+
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialPurchaseLogic::getInstance()->getInfo($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
     public function add(Request $request)
     {
         $params = $request->all();
@@ -44,5 +67,57 @@ class MaterialPurchaseController
         {
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
+
+        $res = MaterialPurchaseLogic::getInstance()->add($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function update(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+            'detail' => 'required',
+        ],[
+            'id.required' => 'id不得为空',
+            'detail.required' => '申购详情不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialPurchaseLogic::getInstance()->update($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function delete(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+        ],[
+            'id.required' => 'id不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialPurchaseLogic::getInstance()->delete($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
     }
 }
