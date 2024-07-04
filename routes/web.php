@@ -6,6 +6,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+
+
 Route::middleware(['login'])->group(function () {
     Route::prefix('materialManufacturer')->group(function () {
         Route::view('/view', 'admin.materialManufacturer');
@@ -29,6 +31,10 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('materialPurchase')->group(function () {
         Route::view('/view', 'admin.materialPurchase');
+    });
+
+    Route::prefix('advancedOrder')->group(function () {
+        Route::view('/view', 'admin.advancedOrder');
     });
 });
 

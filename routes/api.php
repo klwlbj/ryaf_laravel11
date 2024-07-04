@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AdvancedOrderController;
+use App\Http\Controllers\Admin\AreaController;
 use App\Http\Controllers\Admin\MaterialCategoryController;
 use App\Http\Controllers\Admin\MaterialController;
 use App\Http\Controllers\Admin\MaterialFlowController;
@@ -90,5 +92,21 @@ Route::middleware(['login'])->group(function () {
         Route::post('/update', [MaterialPurchaseController::class, 'update']);
         Route::post('/delete', [MaterialPurchaseController::class, 'delete']);
     });
+    Route::prefix('advancedOrder')->group(function () {
+        Route::post('/getList', [AdvancedOrderController::class, 'getList']);
+        Route::post('/getInfo', [AdvancedOrderController::class, 'getInfo']);
+        Route::post('/add', [AdvancedOrderController::class, 'add']);
+        Route::post('/update', [AdvancedOrderController::class, 'update']);
+        Route::post('/delete', [AdvancedOrderController::class, 'delete']);
+    });
+
+    Route::prefix('area')->group(function (){
+        Route::post('/getList', [AreaController::class, 'getList']);
+        Route::get('/generateJson', [AreaController::class, 'generateJson']);
+    });
+
+
 });
+
+
 
