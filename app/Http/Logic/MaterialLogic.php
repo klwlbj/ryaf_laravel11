@@ -3,6 +3,7 @@
 namespace App\Http\Logic;
 
 use App\Models\Material;
+use App\Models\MaterialDetail;
 use Illuminate\Support\Facades\DB;
 
 class MaterialLogic extends BaseLogic
@@ -51,6 +52,30 @@ class MaterialLogic extends BaseLogic
             ->orderBy('mate_sort','desc')
             ->orderBy('mate_id','desc')
             ->offset($point)->limit($pageSize)->get()->toArray();
+
+        $ids = array_column($list,'mate_id');
+
+        $expireArr = MaterialDetail::query()
+            ->whereIn('made_material_id',$ids)
+            ->where(['made_status' => 1])
+            ->whereRaw("DATEDIFF(made_expire_date,NOW()) <= 30")
+            ->select([
+                'made_material_id',
+                DB::raw('count(made_material_id) as count')
+            ])->groupBy(['made_material_id'])->get()->pluck('count','made_material_id')->toArray();
+
+//        print_r($expireArr);die;
+
+
+        foreach ($list as $key => &$value){
+            if(isset($expireArr[$value['mate_id']])){
+                $value['expire_count'] = $expireArr[$value['mate_id']];
+            }else{
+                $value['expire_count'] = 0;
+            }
+        }
+
+        unset($value);
 
         return [
             'total' => $total,
@@ -145,6 +170,8 @@ class MaterialLogic extends BaseLogic
             return false;
         }
 
+        Material::delCacheById($params['id']);
+
         return [];
     }
 
@@ -156,6 +183,37 @@ class MaterialLogic extends BaseLogic
         }
 
         Material::query()->where(['mate_id' => $params['id']])->delete();
+        Material::delCacheById($params['id']);
         return [];
+    }
+
+    public function getDetailList($params)
+    {
+        $page = $params['page'] ?? 1;
+        $pageSize = $params['page_size'] ?? 10;
+        $point = ($page - 1) * $pageSize;
+
+        $query = MaterialDetail::query()->where(['made_status' => 1]);
+
+        if(isset($params['material_id']) && $params['material_id']){
+            $query->where(['made_material_id' => $params['material_id']]);
+        }
+
+        $total = $query->count();
+
+        $list = $query
+            ->orderBy('made_id','desc')
+            ->offset($point)->limit($pageSize)->get()->toArray();
+
+        foreach ($list as $key => &$value){
+            $value['is_expire'] = ((strtotime($value['made_expire_date']) - time()) <= 60*60*24*30) ? 1 : 0;
+        }
+
+        unset($value);
+
+        return [
+            'total' => $total,
+            'list' => $list,
+        ];
     }
 }

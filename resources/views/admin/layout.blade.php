@@ -10,6 +10,7 @@
 </head>
 <script src="{{asset('statics/js/vue.js')}}"></script>
 <script src="{{asset('statics/js/moment.js')}}"></script>
+<script src="{{asset('statics/js/moment-zh-cn.js')}}"></script>
 <script src="{{asset('statics/js/httpVueLoader.js')}}"></script>
 <script src="{{asset('statics/js/antd.min.js')}}"></script>
 <script src="{{asset('statics/js/axios.min.js')}}"></script>
@@ -31,7 +32,7 @@
         <div style="height: 50px;background-color: #134974;color: white;display: flex;align-items:center;justify-content:space-between;padding: 0 5px;">
             <span style="font-size: 22px;">平安穗粤 智慧消防平台 - 运营管理后台VER 2.1</span>
             <span id="time" style="font-size: 22px;font-weight: bold"></span>
-            <span style="font-size: 16px;font-weight: bold"><span>石井街道办事处，您好。</span>     <a style="margin-left:20px;color: white;text-underline: none" href="">数据大屏</a> <a style="color: white;text-underline: none" href="">退出</a></span>
+            <span style="font-size: 16px;font-weight: bold"><span>{{ $accountInfo['noac_name'] }}，您好。</span>     <a style="margin-left:20px;color: white;text-underline: none" href="https://pingansuiyue.crzfxjzn.com/node/big_screen_new.php">数据大屏</a> <a style="color: white;text-underline: none" href="https://pingansuiyue.crzfxjzn.com/node/logout.php">退出</a></span>
         </div>
     </div>
     <div style="width: 100%;flex: 1;display: flex;">
@@ -47,6 +48,7 @@
 </div>
 <script src="{{asset('statics/js/axios-interceptors.js')}}"></script>
 <script>
+    moment.locale('zh-cn');
     var token = "{!! $token ?? '' !!}";
 
     if(token){

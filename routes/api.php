@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\MaterialFlowController;
 use App\Http\Controllers\Admin\MaterialManufacturerController;
 use App\Http\Controllers\Admin\MaterialPurchaseController;
 use App\Http\Controllers\Admin\MaterialSpecificationController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\UploadController;
 use App\Http\Controllers\Admin\WarehouseController;
 use Illuminate\Http\Request;
@@ -26,8 +27,6 @@ Route::middleware(['login'])->group(function () {
 
 //物品厂家
     Route::prefix('materialManufacturer')->group(function () {
-//    Route::view('/view', 'admin.materialManufacturer');
-//    Route::any('/view', [MaterialManufacturerController::class, 'view']);
         Route::post('/getList', [MaterialManufacturerController::class, 'getList']);
         Route::post('/getInfo', [MaterialManufacturerController::class, 'getInfo']);
         Route::post('/getAllList', [MaterialManufacturerController::class, 'getAllList']);
@@ -38,8 +37,6 @@ Route::middleware(['login'])->group(function () {
 
 //物料分类
     Route::prefix('materialCategory')->group(function () {
-//    Route::view('/view', 'admin.materialCategory');
-//    Route::any('/view', [MaterialCategoryController::class, 'view']);
         Route::post('/getList', [MaterialCategoryController::class, 'getList']);
         Route::post('/getInfo', [MaterialCategoryController::class, 'getInfo']);
         Route::post('/getAllList', [MaterialCategoryController::class, 'getAllList']);
@@ -50,8 +47,6 @@ Route::middleware(['login'])->group(function () {
 
 //物料分类规格
     Route::prefix('materialSpecification')->group(function () {
-//    Route::view('/view', 'admin.materialSpecification');
-//    Route::any('/view', [MaterialSpecificationController::class, 'view']);
         Route::post('/getList', [MaterialSpecificationController::class, 'getList']);
         Route::post('/getInfo', [MaterialSpecificationController::class, 'getInfo']);
         Route::post('/getAllList', [MaterialSpecificationController::class, 'getAllList']);
@@ -63,32 +58,37 @@ Route::middleware(['login'])->group(function () {
 
 //物料
     Route::prefix('material')->group(function () {
-//    Route::view('/view', 'admin.material');
-//    Route::any('/view', [MaterialController::class, 'view']);
         Route::post('/getList', [MaterialController::class, 'getList']);
         Route::post('/getInfo', [MaterialController::class, 'getInfo']);
         Route::post('/getAllList', [MaterialController::class, 'getAllList']);
         Route::post('/add', [MaterialController::class, 'add']);
         Route::post('/update', [MaterialController::class, 'update']);
         Route::post('/delete', [MaterialController::class, 'delete']);
+        Route::post('/getDetailList', [MaterialController::class, 'getDetailList']);
     });
 
     Route::prefix('materialFlow')->group(function () {
-//    Route::view('/view', 'admin.materialFlow');
-//    Route::any('/view', [MaterialFlowController::class, 'view']);
         Route::post('/getList', [MaterialFlowController::class, 'getList']);
         Route::post('/inComing', [MaterialFlowController::class, 'inComing']);
         Route::post('/outComing', [MaterialFlowController::class, 'outComing']);
     });
 
     Route::prefix('materialPurchase')->group(function () {
-//    Route::view('/view', 'admin.materialPurchase');
-
         Route::post('/getList', [MaterialPurchaseController::class, 'getList']);
         Route::post('/add', [MaterialPurchaseController::class, 'add']);
         Route::post('/getInfo', [MaterialPurchaseController::class, 'getInfo']);
         Route::post('/update', [MaterialPurchaseController::class, 'update']);
         Route::post('/delete', [MaterialPurchaseController::class, 'delete']);
+        Route::post('/complete', [MaterialPurchaseController::class, 'complete']);
+    });
+
+    Route::prefix('order')->group(function () {
+        Route::post('/getList', [OrderController::class, 'getList']);
+        Route::post('/add', [MaterialPurchaseController::class, 'add']);
+        Route::post('/getInfo', [MaterialPurchaseController::class, 'getInfo']);
+        Route::post('/update', [MaterialPurchaseController::class, 'update']);
+        Route::post('/delete', [MaterialPurchaseController::class, 'delete']);
+        Route::post('/complete', [MaterialPurchaseController::class, 'complete']);
     });
 });
 

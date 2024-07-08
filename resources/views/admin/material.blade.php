@@ -9,6 +9,9 @@
                         <a-input v-model="listQuery.keyword" placeholder="物品名称" style="width: 200px;" />
                     </a-form-item>
                     <a-form-item>
+                        <manufacturer-select @change="manufacturerChange"></manufacturer-select>
+                    </a-form-item>
+                    <a-form-item>
                         <category-select @change="categoryChange"></category-select>
                     </a-form-item>
                     <a-form-item>
@@ -20,7 +23,7 @@
 
                 </a-form>
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                         :pagination="pagination">
+                         :pagination="false">
 
                     <div slot="is_deliver" slot-scope="text, record">
                         <a-tag v-if="record.mate_is_deliver == 0"  color="red">否</a-tag>
@@ -28,8 +31,14 @@
                     </div>
 
                     <div slot="number" slot-scope="text, record">
-                        <span v-if="record.mate_warning>record.mate_number" style="color: red;font-weight: bold;">@{{ record.mate_number }}</span>
-                        <span v-else>@{{ record.mate_number }}</span>
+                        <div style="cursor: pointer" @click="stockDetail(record)">
+                            <span v-if="record.mate_warning>record.mate_number" style="color: red;font-weight: bold;">@{{ record.mate_number }}</span>
+                            <span v-else>@{{ record.mate_number }}</span>
+                            /
+                            <span v-if="record.expire_count > 0" style="color: red">@{{ record.expire_count }}</span>
+                            <span v-else>@{{ record.expire_count }}</span>
+                        </div>
+
                     </div>
 
                     <div slot="status" slot-scope="text, record">
@@ -53,17 +62,26 @@
                             </a>
                         </a-popconfirm>
                         <div>
-                            <a style="margin-right: 8px" @click="onInComing()">
+                            <a style="margin-right: 8px" @click="onInComing(record)">
                                 入库
                             </a>
 
-                            <a style="margin-right: 8px" @click="onOutComing()">
+                            <a style="margin-right: 8px" @click="onOutComing(record)">
                                 出库
                             </a>
                         </div>
 
                     </div>
                 </a-table>
+
+                <div style="text-align: right;margin-top: 10px">
+                    <a-pagination
+                        :current="pagination.current"
+                        :page-size="pagination.pageSize"
+                        :total="pagination.total"
+                        @change="paginationChange"
+                    ></a-pagination>
+                </div>
             </div>
 
             <a-modal :mask-closable="false" v-model="dialogFormVisible"
@@ -84,6 +102,7 @@
                      title="入库"
                      width="800px" :footer="null">
                 <material-in-coming ref="inComing"
+                                    :default-material-id="inComingMaterialId"
                                     @submit="inComingSubmit"
                                     @close="inComingFormVisible = false;"
                 >
@@ -94,10 +113,23 @@
                      title="出库"
                      width="800px" :footer="null">
                 <material-out-coming ref="outComing"
+                                     :default-material-id="outComingMaterialId"
                                      @submit="outComingSubmit"
                                      @close="outComingFormVisible = false;"
                 >
                 </material-out-coming>
+            </a-modal>
+
+            <a-modal :mask-closable="false" v-model="detailFormVisible"
+                     :title="detailStatus"
+                     width="800px" :footer="null">
+                <material-detail-list
+                    style="height: 600px;overflow: auto"
+                    ref="materialDetailList"
+                    :id="detailId"
+                    @close="dialogFormVisible = false;"
+                >
+                </material-detail-list>
             </a-modal>
 
         </a-card>
@@ -114,6 +146,7 @@
             data: {
                 listQuery: {
                     keyword: "",
+                    manufacturer_id:'',
                     category_id:'',
                 },
                 listSource: [],
@@ -162,7 +195,7 @@
                         dataIndex: 'mate_unit'
                     },
                     {
-                        title: '库存',
+                        title: '库存/过期',
                         scopedSlots: { customRender: 'number' },
                         dataIndex: 'mate_number'
                     },
@@ -191,7 +224,12 @@
                 dialogFormVisible:false,
                 inComingFormVisible:false,
                 outComingFormVisible:false,
-                id:null
+                detailFormVisible:false,
+                id:null,
+                inComingMaterialId:null,
+                outComingMaterialId:null,
+                detailId:null,
+                detailStatus:'',
             },
             created () {
                 this.listQuery.page_size = this.pagination.pageSize;
@@ -199,6 +237,8 @@
             },
             components: {
                 "material-add":  httpVueLoader('/statics/components/material/materialAdd.vue'),
+                "material-detail-list":  httpVueLoader('/statics/components/material/materialDetailList.vue'),
+                "manufacturer-select":  httpVueLoader('/statics/components/material/manufacturerSelect.vue'),
                 "category-select":  httpVueLoader('/statics/components/material/categorySelect.vue'),
                 "material-in-coming":  httpVueLoader('/statics/components/material/materialInComing.vue'),
                 "material-out-coming":  httpVueLoader('/statics/components/material/materialOutComing.vue')
@@ -247,6 +287,11 @@
                     this.dialogStatus = '更新';
                     this.dialogFormVisible = true;
                 },
+                stockDetail(row){
+                    this.detailId = row.mate_id;
+                    this.detailStatus = row.mate_name;
+                    this.detailFormVisible = true;
+                },
                 onDel(row){
                     axios({
                         // 默认请求方式为get
@@ -285,11 +330,13 @@
                     this.dialogFormVisible = false;
                     this.handleFilter();
                 },
-                onInComing(){
+                onInComing(row){
+                    this.inComingMaterialId = row.mate_id
                     // this.incomingId = row.id;
                     this.inComingFormVisible = true;
                 },
-                onOutComing(){
+                onOutComing(row){
+                    this.outComingMaterialId = row.mate_id
                     this.outComingFormVisible = true;
                 },
                 inComingSubmit(){
@@ -304,6 +351,9 @@
                 },
                 categoryChange(value){
                     this.listQuery.category_id = value;
+                },
+                manufacturerChange(value){
+                    this.listQuery.manufacturer_id = value;
                 }
             },
 

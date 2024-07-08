@@ -23,6 +23,11 @@ class MaterialPurchaseLogic extends BaseLogic
             $query->where('mapu_crt_time', '<=', $params['end_date']);
         }
 
+        if (isset($params['material_id']) && $params['material_id']) {
+            $ids = MaterialPurchaseDetail::query()->where(['mapu_material_id' => $params['material_id']])->pluck('mapu_pid')->toArray();
+            $query->whereIn('mapu_id', $ids);
+        }
+
         $total = $query->count();
 
         $list = $query
@@ -51,8 +56,6 @@ class MaterialPurchaseLogic extends BaseLogic
                 $value['detail'] = [];
             }
 
-            $value['agree_auth'] = ($value['mapu_status'] == 1) ? AuthLogic::materialPurchaseAuth() : false;
-            $value['reject_auth'] = ($value['mapu_status'] == 1) ? AuthLogic::materialPurchaseAuth() : false;
             $value['complete_auth'] = ($value['mapu_status'] == 2) ? true : false;
         }
 
@@ -118,13 +121,12 @@ class MaterialPurchaseLogic extends BaseLogic
 
     public function update($params)
     {
-        $data = MaterialPurchase::query()->where(['mapu_id' => $params['id']])->first();
+        $data = MaterialPurchase::getDataById($params['id']);
         if(!$data){
             ResponseLogic::setMsg('数据不存在');
             return false;
         }
 
-        $data = $data->toArray();
         if($data['mapu_status'] != 1){
             ResponseLogic::setMsg('申购记录不为待审批状态，不能修改');
             return false;
@@ -163,19 +165,19 @@ class MaterialPurchaseLogic extends BaseLogic
         }
         MaterialPurchaseDetail::query()->where(['mapu_pid' => $params['id']])->delete();
         MaterialPurchaseDetail::query()->insert($realDetail);
+        MaterialPurchase::delCacheById($params['id']);
 
         return ['id' => $params['id']];
     }
 
     public function delete($params)
     {
-        $data = MaterialPurchase::query()->where(['mapu_id' => $params['id']])->first();
+        $data = MaterialPurchase::getDataById($params['id']);
         if(!$data){
             ResponseLogic::setMsg('数据不存在');
             return false;
         }
 
-        $data = $data->toArray();
         if($data['mapu_status'] != 1){
             ResponseLogic::setMsg('申购记录不为待审批状态，不能删除');
             return false;
@@ -183,7 +185,32 @@ class MaterialPurchaseLogic extends BaseLogic
 
         MaterialPurchaseDetail::query()->where(['mapu_pid' => $params['id']])->delete();
         MaterialPurchase::query()->where(['mapu_id' => $params['id']])->delete();
+        MaterialPurchase::delCacheById($params['id']);
+        return [];
+    }
 
+    /**驳回
+     * @param $params
+     * @return false|array
+     */
+    public function complete($params): false|array
+    {
+        $data = MaterialPurchase::getDataById($params['id']);
+        if(!$data){
+            ResponseLogic::setMsg('数据不存在');
+            return false;
+        }
+
+        if($data['mapu_status'] != 2){
+            ResponseLogic::setMsg('申购记录不为申购中状态，不能完成');
+            return false;
+        }
+
+        MaterialPurchase::query()->where(['mapu_id' => $params['id']])->update([
+            'mapu_operator_id' => AuthLogic::$userId,
+            'mapu_status' => 2,
+        ]);
+        MaterialPurchase::delCacheById($params['id']);
         return [];
     }
 }

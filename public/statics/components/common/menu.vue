@@ -55,28 +55,13 @@ module.exports = {
                 },
                 {
                     id:3,
-                    label:'告警信息',
+                    label:'进销存',
                     spread: true,
                     child:[
                         {
                             id:4,
-                            label:'待处理',
-                            url:'https://pingansuiyue.crzfxjzn.com/node/place.php',
-                        },
-                        {
-                            id:4,
-                            label:'处理中',
-                            url:'https://pingansuiyue.crzfxjzn.com/node/place.php',
-                        },
-                        {
-                            id:5,
-                            label:'已处理',
-                            url:'https://pingansuiyue.crzfxjzn.com/node/place.php',
-                        },
-                        {
-                            id:6,
-                            label:'已处理[存档]',
-                            url:'https://pingansuiyue.crzfxjzn.com/node/place.php',
+                            label:'订单管理',
+                            url:this.localUrl +'/order/view',
                         },
                     ]
                 },

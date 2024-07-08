@@ -25,6 +25,10 @@
                 </a-select>
             </a-form-model-item>
 
+            <a-form-model-item label="申请人" prop="apply_user_id">
+                <apply_user-select ref="applyUserSelect" @change="applyUserChange" :default-data="applyUserId"></apply_user-select>
+            </a-form-model-item>
+
             <a-form-model-item label="领用人" prop="receive_user_id">
                 <admin-select ref="adminSelect" @change="receiveUserChange" :default-data="receiveUserId"></admin-select>
             </a-form-model-item>
@@ -73,9 +77,15 @@ module.exports = {
     components: {
         "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
         "admin-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
+        "apply_user-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
     },
     props: {
         id: {
+            default:function(){
+                return null
+            },
+        },
+        defaultMaterialId: {
             default:function(){
                 return null
             },
@@ -94,7 +104,8 @@ module.exports = {
             },
             loading :false,
             materialId:undefined,
-            receiveUserId:undefined
+            receiveUserId:undefined,
+            applyUserId:undefined
         }
     },
     methods: {
@@ -105,6 +116,7 @@ module.exports = {
                 number:0,
                 date:moment().format("YYYY-MM-DD"),
                 receive_user_id:null,
+                apply_user_id:null,
                 purpose:undefined,
                 approve_image:'',
                 remark:'',
@@ -219,10 +231,16 @@ module.exports = {
         },
         receiveUserChange(value){
             this.formData.receive_user_id = value;
+        },
+        applyUserChange(value){
+            this.formData.apply_user_id = value;
         }
     },
     created () {
         this.initForm();
+        if(this.defaultMaterialId){
+            this.materialId = this.defaultMaterialId;
+        }
     },
     watch: {
         id (newData,oldData) {
@@ -237,6 +255,13 @@ module.exports = {
             }
 
             // this.getDetail(newData);
+        },
+        defaultMaterialId (newData,oldData) {
+            if(newData === oldData){
+                return false
+            }
+
+            this.materialId = newData;
         }
     },
     computed: {

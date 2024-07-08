@@ -21,6 +21,17 @@
                 <specification-select ref="specificationSelect" :category-id="categoryId" :default-data="specificationId" @change="specificationChange"></specification-select>
             </a-form-model-item>
 
+            <a-form-model-item label="是否出货" prop="is_deliver">
+                <a-radio-group v-model="formData.is_deliver">
+                    <a-radio :value="0">
+                        否
+                    </a-radio>
+                    <a-radio :value="1">
+                        是
+                    </a-radio>
+                </a-radio-group>
+            </a-form-model-item>
+
             <a-form-model-item label="单位" prop="unit">
                 <a-input v-model="formData.unit" />
             </a-form-model-item>
@@ -129,6 +140,7 @@ module.exports = {
                 category_id:undefined,
                 manufacturer_id:undefined,
                 specification_id:undefined,
+                is_deliver:0,
                 warning:0,
                 unit:'',
                 image:'',
@@ -309,6 +321,7 @@ module.exports = {
                     name: res.data.mate_name,
                     warehouse_id: res.data.mate_warehouse_id,
                     category_id: res.data.mate_category_id,
+                    is_deliver:res.data.mate_is_deliver,
                     manufacturer_id: res.data.mate_manufacturer_id,
                     specification_id: res.data.mate_specification_id,
                     warning: res.data.mate_warning,

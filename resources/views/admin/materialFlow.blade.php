@@ -9,7 +9,7 @@
                         <material-select @change="materialChange"></material-select>
                     </a-form-item>
                     <a-form-item label="类型">
-                        <a-select v-model="listQuery.type" show-search placeholder="请选择" :maxTagCount="1"
+                        <a-select v-model="listQuery.type" show-search placeholder="请选择" :max-tag-count="1"
                                   style="width: 200px;" allow-clear>
                             <a-select-option :value="1">
                                 入库
@@ -30,8 +30,8 @@
                         <a-button @click="onOutComing" type="primary">出库</a-button>
                     </a-form-item>
                 </a-form>
-                <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :rowKey="(record, index) => { return index }"
-                         :pagination="pagination" :scroll="{ x: 1500,y:500 }">
+                <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
+                         :pagination="false" :scroll="{ x: 1500 }">
 
                     <div slot="type" slot-scope="text, record">
                         <a-tag v-if="record.mafl_type == 1"  color="green">入库</a-tag>
@@ -45,10 +45,14 @@
                     </div>
 
                     <div slot="approve_image" slot-scope="text, record">
-                        <a v-if="record.approve_image" target='_blank' :href="getImage(record.mafl_approve_image)">
+                        <a v-if="record.mafl_approve_image" target='_blank' :href="getImage(record.mafl_approve_image)">
                             <img width="100px" :src="getImage(record.mafl_approve_image)" alt="" :preview="true">
                         </a>
                         <span v-else></span>
+                    </div>
+
+                    <div slot="apply_user" slot-scope="text, record">
+                        <span>@{{  record.mafl_apply_user }}/@{{  record.mafl_receive_user }}</span>
                     </div>
 
                     <div slot="number" slot-scope="text, record">
@@ -56,6 +60,15 @@
                         <span v-else style="color:red">- @{{ record.mafl_number }}</span>
                     </div>
                 </a-table>
+
+                <div style="text-align: right;margin-top: 10px">
+                    <a-pagination
+                        :current="pagination.current"
+                        :page-size="pagination.pageSize"
+                        :total="pagination.total"
+                        @change="paginationChange"
+                    ></a-pagination>
+                </div>
             </div>
 
             <a-modal :mask-closable="false" v-model="inComingFormVisible"
@@ -125,22 +138,23 @@
                         dataIndex: 'mafl_number'
                     },
                     {
+                        title: '出/入库时间',
+                        dataIndex: 'mafl_date'
+                    },
+                    {
                         title: '用途',
                         scopedSlots: { customRender: 'purpose' },
                         dataIndex: 'mafl_purpose'
                     },
                     {
-                        title: '领用人',
-                        dataIndex: 'mafl_receive_user'
+                        title: '申请人/领用人',
+                        scopedSlots: { customRender: 'apply_user' },
+                        dataIndex: 'mafl_apply_user'
                     },
                     {
                         title: '审批图片',
                         scopedSlots: { customRender: 'approve_image' },
                         dataIndex: 'mafl_approve_image'
-                    },
-                    {
-                        title: '出/入库时间',
-                        dataIndex: 'mafl_date'
                     },
                     {
                         title: '过期时间',
@@ -149,10 +163,6 @@
                     {
                         title: '备注',
                         dataIndex: 'mafl_remark'
-                    },
-                    {
-                        title: '提交人',
-                        dataIndex: 'mafl_created_user'
                     }
                 ],
                 dialogFormVisible:false,

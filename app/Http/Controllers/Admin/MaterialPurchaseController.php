@@ -120,4 +120,26 @@ class MaterialPurchaseController
         }
         return ResponseLogic::apiResult(0,'ok',$res);
     }
+
+    public function complete(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+        ],[
+            'id.required' => 'id不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialPurchaseLogic::getInstance()->complete($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
 }

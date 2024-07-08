@@ -9,9 +9,6 @@
                         <a-input v-model="listQuery.keyword" placeholder="厂家名称" style="width: 200px;" />
                     </a-form-item>
                     <a-form-item>
-                        <a-input v-model="listQuery.keyword" placeholder="厂家名称" style="width: 200px;" />
-                    </a-form-item>
-                    <a-form-item>
                         <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                     </a-form-item>
                     <a-form-item>
@@ -20,7 +17,7 @@
                 </a-form>
 
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                         :pagination="pagination">
+                         :pagination="false">
 
                     <div slot="status" slot-scope="text, record">
                         <a-tag v-if="record.status == 0"  color="red">禁用</a-tag>
@@ -44,6 +41,15 @@
                         </a-popconfirm>
                     </div>
                 </a-table>
+
+                <div style="text-align: right;margin-top: 10px">
+                    <a-pagination
+                        :current="pagination.current"
+                        :page-size="pagination.pageSize"
+                        :total="pagination.total"
+                        @change="paginationChange"
+                    ></a-pagination>
+                </div>
             </div>
 
             <a-modal :mask-closable="false" v-model="dialogFormVisible"

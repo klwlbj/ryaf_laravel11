@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Support\Facades\Cache;
 
-class MaterialPurchase extends BaseModel
+class NodeAccount extends BaseModel
 {
-    protected $table   = 'material_purchase';
+    protected $table   = 'node_account';
     public $timestamps = null;
 
     public static function getDataById($id)
@@ -16,7 +16,7 @@ class MaterialPurchase extends BaseModel
             return $data;
         }
 
-        $data = self::query()->where(['mapu_id' => $id])->first();
+        $data = self::query()->where(['noac_id' => $id])->first();
         if(!$data){
             return null;
         }
@@ -25,10 +25,5 @@ class MaterialPurchase extends BaseModel
 
         Cache::set(self::class.'_'.$id,$data,60*60);
         return $data;
-    }
-
-    public static function delCacheById($id)
-    {
-        Cache::delete(self::class.'_'.$id);
     }
 }

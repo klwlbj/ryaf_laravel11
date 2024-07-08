@@ -30,5 +30,9 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('materialPurchase')->group(function () {
         Route::view('/view', 'admin.materialPurchase');
     });
+
+    Route::prefix('order')->group(function () {
+        Route::view('/view', 'admin.order');
+    });
 });
 

@@ -3,6 +3,7 @@
 namespace App\Http\Logic;
 
 use App\Models\Material;
+use App\Models\MaterialDetail;
 use App\Models\MaterialFlow;
 use Illuminate\Support\Facades\DB;
 
@@ -17,7 +18,8 @@ class MaterialFlowLogic extends BaseLogic
         $query = MaterialFlow::query()
             ->leftJoin('material','material_flow.mafl_material_id','=','material.mate_id')
             ->leftJoin('admin as receive_user','material_flow.mafl_receive_user_id','=','receive_user.admin_id')
-            ->leftJoin('node_account','material_flow.mafl_operator_id','=','node_account.noac_id')
+            ->leftJoin('admin as apply_user','material_flow.mafl_apply_user_id','=','apply_user.admin_id')
+//            ->leftJoin('node_account','material_flow.mafl_operator_id','=','node_account.noac_id')
         ;
 
         if(isset($params['material_id']) && $params['material_id']){
@@ -34,8 +36,9 @@ class MaterialFlowLogic extends BaseLogic
             ->select([
                 'material_flow.*',
                 'material.mate_name as mafl_material_name',
-                'node_account.noac_name as mafl_created_user',
+//                'node_account.noac_name as mafl_created_user',
                 'receive_user.admin_name as mafl_receive_user',
+                'apply_user.admin_name as mafl_apply_user',
             ])
             ->orderBy('material_flow.mafl_id','desc')
             ->offset($point)->limit($pageSize)->get()->toArray();
@@ -48,8 +51,7 @@ class MaterialFlowLogic extends BaseLogic
 
     public function inComing($params)
     {
-        $materialData = MaterialFlow::query()
-            ->where(['mate_id' => $params['material_id']])->select(['mate_id','mate_number'])->first();
+        $materialData = Material::getDataById($params['material_id']);
 
         if(!$materialData){
             ResponseLogic::setMsg('物品数据不存在');
@@ -80,6 +82,7 @@ class MaterialFlowLogic extends BaseLogic
             $detailInsert[] = [
                 'made_material_id' => $params['material_id'],
                 'made_in_id' => $flowId,
+                'made_is_deliver' => $materialData['mate_is_deliver'],
                 'made_production_date' => $params['production_date'],
                 'made_expire_date' => $params['expire_date'],
                 'made_date' => $params['date'],
@@ -87,9 +90,11 @@ class MaterialFlowLogic extends BaseLogic
             ];
         }
 
-        DB::connection('admin')->table('material_detail')->insert($detailInsert);
+        MaterialDetail::query()->insert($detailInsert);
 
         DB::commit();
+
+        Material::delCacheById($params['material_id']);
 
         return ['id' => $flowId];
     }
@@ -115,6 +120,7 @@ class MaterialFlowLogic extends BaseLogic
             'mafl_type' => 2,
             'mafl_number' => $params['number'],
             'mafl_purpose' => $params['purpose'],
+            'mafl_apply_user_id' => $params['apply_user_id'],
             'mafl_receive_user_id' => $params['receive_user_id'],
             'mafl_approve_image' => $params['approve_image'] ?? '',
             'mafl_date' => $params['date'],
@@ -131,7 +137,7 @@ class MaterialFlowLogic extends BaseLogic
             'mate_number' => DB::raw("mate_number-".$params['number']),
         ]);
         #把物品变更成出库状态
-        DB::connection('admin')->table('material_detail')
+        MaterialDetail::query()
             ->where(['made_material_id' => $params['material_id']])
             ->orderBy('made_id','asc')
             ->limit($params['number'])
@@ -143,6 +149,8 @@ class MaterialFlowLogic extends BaseLogic
 
 
         DB::commit();
+
+        Material::delCacheById($params['material_id']);
 
         return [];
     }

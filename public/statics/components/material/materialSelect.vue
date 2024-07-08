@@ -59,7 +59,7 @@ module.exports = {
         },
         clearData(){
             this.id = undefined;
-        }
+        },
     },
     created () {
         if(this.mode === 'default'){
@@ -80,6 +80,7 @@ module.exports = {
             }
 
             this.id = newData;
+            this.$emit('change',newData);
         }
     },
     computed: {

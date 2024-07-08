@@ -6,39 +6,37 @@
             <div>
                 <a-form layout="inline" >
                     <a-form-item>
-                        <a-input v-model="listQuery.keyword" placeholder="类型名称" style="width: 200px;" />
+                        <a-input v-model="listQuery.keyword" placeholder="订单编号" style="width: 200px;" />
                     </a-form-item>
                     <a-form-item>
-                        <a-button icon="search" @click="handleFilter">查询</a-button>
+                        <a-range-picker
+                            :placeholder="['开始时间', '结束时间']"
+                            @change="dateChange"
+                            :default-value="[defaultDate,defaultDate]"></a-range-picker>
                     </a-form-item>
                     <a-form-item>
-                        <a-button @click="onCreate" type="primary" icon="edit">添加类型</a-button>
+                        <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                     </a-form-item>
                 </a-form>
 
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                         :pagination="false">
+                         :pagination="false"  :scroll="{ x: 1500 }">
 
-                    <div slot="status" slot-scope="text, record">
-                        <a-tag v-if="record.maca_status == 0"  color="red">禁用</a-tag>
-                        <a-tag v-else color="green">启用</a-tag>
+                    <div slot="order_place" slot-scope="text, record">
+                        <div v-for="item in record.order_place">
+                            @{{ item.plac_address }}
+                        </div>
+                    </div>
+
+                    <div slot="order_user" slot-scope="text, record">
+                        <div>@{{ record.order_user_name }}</div>
+                        <div>@{{ record.order_user_mobile }}</div>
                     </div>
 
                     <div slot="action" slot-scope="text, record">
                         <a style="margin-right: 8px" @click="onUpdate(record)">
-                            修改
+                            添加收款流水
                         </a>
-
-                        <a-popconfirm
-                            title="是否确定删除商品?"
-                            ok-text="确认"
-                            cancel-text="取消"
-                            @confirm="onDel(record)"
-                        >
-                            <a style="margin-right: 8px">
-                                删除
-                            </a>
-                        </a-popconfirm>
                     </div>
                 </a-table>
 
@@ -50,20 +48,18 @@
                         @change="paginationChange"
                     ></a-pagination>
                 </div>
+
             </div>
 
             <a-modal :mask-closable="false" v-model="dialogFormVisible"
-                     :title="dialogStatus"
+                     :title="status"
                      width="800px" :footer="null">
-                <category-add ref="categoryAdd"
-                              :id="id"
-                              @update="update"
-                              @add="add"
-                              @close="dialogFormVisible = false;"
+                <manufacturer-add ref="manufacturerAdd"
+                                  :id="id"
+                                  @close="dialogFormVisible = false;"
                 >
-                </category-add>
+                </manufacturer-add>
             </a-modal>
-
 
         </a-card>
     </div>
@@ -77,10 +73,12 @@
             data: {
                 listQuery: {
                     keyword: "",
+                    start_date:null,
+                    end_date:null,
                 },
                 listSource: [],
                 listLoading:false,
-                dialogStatus:'新增',
+                status:'新增',
                 pagination: {
                     pageSize: 10,
                     total: 0,
@@ -89,54 +87,86 @@
                     onShowSizeChange: this.paginationChange,
                 },
                 columns:[
+                    // {
+                    //     title: 'Id',
+                    //     dataIndex: 'order_id',
+                    //     width: 80
+                    // },
                     {
-                        title: 'Id',
-                        dataIndex: 'maca_id',
-                        width: 80
-                    },
-                    {
-                        title: '类别名称',
-                        dataIndex: 'maca_name',
+                        title: '订单编号',
+                        dataIndex: 'order_iid',
                         width: 100
                     },
                     {
-                        title: '排序',
-                        dataIndex: 'maca_sort'
+                        title: '监控中心',
+                        dataIndex: 'order_node_name'
                     },
                     {
-                        title: '备注',
-                        dataIndex: 'maca_remark'
+                        title: '客户信息',
+                        scopedSlots: { customRender: 'order_user' },
+                        dataIndex: 'order_user_name'
+                    },
+                    {
+                        title: '安装地址',
+                        scopedSlots: { customRender: 'order_place' },
+                        dataIndex: 'order_place',
+                        width: 300
                     },
                     {
                         title: '状态',
-                        scopedSlots: { customRender: 'status' },
-                        dataIndex: 'maca_status'
+                        dataIndex: 'order_status'
                     },
                     {
-                        title: '提交时间',
-                        dataIndex: 'maca_crt_time'
+                        title: '合约类型',
+                        dataIndex: 'order_contract_type'
+                    },
+                    {
+                        title: '服务时长',
+                        dataIndex: 'order_service_month_count'
+                    },
+                    {
+                        title: '应收款',
+                        dataIndex: 'order_account_receivable'
+                    },
+                    {
+                        title: '实收款',
+                        dataIndex: 'order_funds_received'
+                    },
+                    // {
+                    //     title: '设备数',
+                    //     dataIndex: 'order_device_count'
+                    // },
+                    {
+                        title: '创建日期',
+                        dataIndex: 'order_crt_time'
                     },
                     {
                         title: '操作',
+                        fixed: 'right',
                         scopedSlots: { customRender: 'action' },
                     }
                 ],
                 dialogFormVisible:false,
-                id:null
+                id:null,
+                defaultDate:undefined
             },
             created () {
                 this.listQuery.page_size = this.pagination.pageSize;
                 this.handleFilter()
             },
             components: {
-                "category-add":  httpVueLoader('/statics/components/material/categoryAdd.vue')
+                "manufacturer-add":  httpVueLoader('/statics/components/material/manufacturerAdd.vue')
             },
             methods: {
+                moment,
                 paginationChange (current, pageSize) {
                     this.listQuery.page = current;
                     this.pagination.current = current;
                     this.listQuery.page_size = pageSize;
                     this.getPageList()
+                },
+                onUpdate(row){
+
                 },
                 // 刷新列表
                 handleFilter () {
@@ -150,7 +180,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/api/materialCategory/getList',
+                        url: '/api/order/getList',
                         // 传递参数
                         data: this.listQuery,
                         responseType: 'json',
@@ -166,58 +196,12 @@
                         this.$message.error('请求失败');
                     });
                 },
-                onCreate(){
-                    this.status = '添加';
-                    this.dialogFormVisible = true;
-                },
-                onUpdate(row){
-                    this.id = row.maca_id
-                    this.status = '更新';
-                    this.dialogFormVisible = true;
-                },
-                onDel(row){
-                    axios({
-                        // 默认请求方式为get
-                        method: 'post',
-                        url: '/api/materialCategory/delete',
-                        // 传递参数
-                        data: {
-                            id:row.maca_id
-                        },
-                        responseType: 'json',
-                        headers:{
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    }).then(response => {
-                        this.loading = false;
-                        let res = response.data;
-                        if(res.code !== 0){
-                            this.$message.error(res.message);
-                            return false;
-                        }
-                        this.$message.success('删除成功');
-                        this.handleFilter();
-                    }).catch(error => {
-                        this.$message.error('请求失败');
-                    });
-                },
-                add(){
-                    this.id = null;
-                    this.$message.success('添加成功');
-                    this.dialogFormVisible = false;
-                    this.handleFilter();
-                },
-                update(){
-                    this.id = null;
-                    this.$message.success('编辑成功');
-                    this.dialogFormVisible = false;
-                    this.handleFilter();
+                dateChange(value,arr){
+                    this.listQuery.start_date = arr[0];
+                    this.listQuery.end_date = arr[1];
                 }
             },
 
         })
-
-
     </script>
 @endsection
-

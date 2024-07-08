@@ -55,6 +55,11 @@ module.exports = {
                 return null
             },
         },
+        defaultMaterialId: {
+            default:function(){
+                return null
+            },
+        },
     },
     data () {
         return {
@@ -125,7 +130,7 @@ module.exports = {
             this.formData.production_date = str;
         },
         expireDateChange(value,str){
-            this.formData.expire = str;
+            this.formData.expire_date = str;
         },
         dateChange(value,str){
             this.formData.date = str;
@@ -133,6 +138,9 @@ module.exports = {
     },
     created () {
         this.initForm();
+        if(this.defaultMaterialId){
+            this.materialId = this.defaultMaterialId;
+        }
     },
     watch: {
         id (newData,oldData) {
@@ -145,8 +153,14 @@ module.exports = {
 
                 return false;
             }
-
             // this.getDetail(newData);
+        },
+        defaultMaterialId (newData,oldData) {
+            if(newData === oldData){
+                return false
+            }
+
+            this.materialId = newData;
         }
     },
     computed: {

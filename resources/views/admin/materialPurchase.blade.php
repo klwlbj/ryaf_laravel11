@@ -5,8 +5,25 @@
         <a-card>
             <div>
                 <a-form layout="inline" >
-                    <a-form-item label="物品">
+                    <a-form-item>
                         <material-select @change="materialChange"></material-select>
+                    </a-form-item>
+                    <a-form-item>
+                        <a-select v-model="listQuery.status" show-search placeholder="请选择状态" :max-tag-count="1"
+                                  style="width: 200px;" allow-clear>
+                            <a-select-option :value="1">
+                                待审批
+                            </a-select-option>
+                            <a-select-option :value="2">
+                                申购中
+                            </a-select-option>
+                            <a-select-option :value="3">
+                                已驳回
+                            </a-select-option>
+                            <a-select-option :value="4">
+                                已完成
+                            </a-select-option>
+                        </a-select>
                     </a-form-item>
                     <a-form-item>
                         <a-button icon="search" @click="handleFilter">查询</a-button>
@@ -17,7 +34,7 @@
 
                 </a-form>
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                         :pagination="pagination">
+                         :pagination="false">
 
                     <div slot="detail" slot-scope="text, record">
                         <div v-for="(item,index) in record.detail" :key="index">
@@ -50,44 +67,28 @@
 
                         <div>
                             <a-popconfirm
-                                v-if="record.agree_auth"
-                                title="是否确定同意申购?"
-                                ok-text="确认"
-                                cancel-text="取消"
-                                @confirm="onDel(record)"
-                            >
-                                <a style="margin-right: 8px">
-                                    同意
-                                </a>
-                            </a-popconfirm>
-
-
-                            <a-popconfirm
-                                v-if="record.agree_auth"
-                                title="是否确定驳回申购?"
-                                ok-text="确认"
-                                cancel-text="取消"
-                                @confirm="onDel(record)"
-                            >
-                                <a style="margin-right: 8px">
-                                    驳回
-                                </a>
-                            </a-popconfirm>
-
-                            <a-popconfirm
                                 v-if="record.complete_auth"
                                 title="是否确定完成申购?"
                                 ok-text="确认"
                                 cancel-text="取消"
-                                @confirm="onDel(record)"
+                                @confirm="onComplete(record)"
                             >
                                 <a style="margin-right: 8px">
-                                    完成
+                                    完成申购
                                 </a>
                             </a-popconfirm>
                         </div>
                     </div>
                 </a-table>
+
+                <div style="text-align: right;margin-top: 10px">
+                    <a-pagination
+                        :current="pagination.current"
+                        :page-size="pagination.pageSize"
+                        :total="pagination.total"
+                        @change="paginationChange"
+                    ></a-pagination>
+                </div>
             </div>
 
             <a-modal :mask-closable="false" v-model="dialogFormVisible"
@@ -120,6 +121,7 @@
                     keyword: "",
                     category_id:'',
                     material_id:'',
+                    status:undefined,
                 },
                 listSource: [],
                 listLoading:false,
@@ -234,7 +236,7 @@
                         url: '/api/materialPurchase/delete',
                         // 传递参数
                         data: {
-                            id:row.id
+                            id:row.mapu_id
                         },
                         responseType: 'json',
                         headers:{
@@ -253,8 +255,34 @@
                         this.$message.error('请求失败');
                     });
                 },
+                onComplete(row){
+                    axios({
+                        // 默认请求方式为get
+                        method: 'post',
+                        url: '/api/materialPurchase/complete',
+                        // 传递参数
+                        data: {
+                            id:row.mapu_id
+                        },
+                        responseType: 'json',
+                        headers:{
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }).then(response => {
+                        this.loading = false;
+                        let res = response.data;
+                        if(res.code !== 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
+                        this.$message.success('操作成功');
+                        this.handleFilter();
+                    }).catch(error => {
+                        this.$message.error('请求失败');
+                    });
+                },
                 materialChange(value){
-
+                    this.listQuery.material_id = value
                 }
             },
 
