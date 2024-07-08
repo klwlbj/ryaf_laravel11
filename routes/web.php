@@ -34,5 +34,9 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('order')->group(function () {
         Route::view('/view', 'admin.order');
     });
+
+    Route::prefix('advancedOrder')->group(function () {
+        Route::view('/view', 'admin.advancedOrder');
+    });
 });
 
