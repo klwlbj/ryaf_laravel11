@@ -125,6 +125,10 @@
                         dataIndex: 'order_service_month_count'
                     },
                     {
+                        title: '设备数',
+                        dataIndex: 'order_device_count'
+                    },
+                    {
                         title: '应收款',
                         dataIndex: 'order_account_receivable'
                     },
@@ -132,10 +136,6 @@
                         title: '实收款',
                         dataIndex: 'order_funds_received'
                     },
-                    // {
-                    //     title: '设备数',
-                    //     dataIndex: 'order_device_count'
-                    // },
                     {
                         title: '创建日期',
                         dataIndex: 'order_crt_time'
