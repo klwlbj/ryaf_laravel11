@@ -32,7 +32,6 @@ module.exports = {
     name: 'adminMenu',
     components: {},
     props: {
-
     },
     data () {
         return {
