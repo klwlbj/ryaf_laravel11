@@ -32,11 +32,7 @@ module.exports = {
     name: 'adminMenu',
     components: {},
     props: {
-        localUrl: {
-            default:function(){
-                return 'http://ryaf-laravel11.com'
-            },
-        },
+
     },
     data () {
         return {
@@ -61,7 +57,7 @@ module.exports = {
                         {
                             id:4,
                             label:'订单管理',
-                            url:this.localUrl +'/order/view',
+                            url:this.getLocalUrl('/order/view'),
                         },
                     ]
                 },
@@ -73,32 +69,32 @@ module.exports = {
                         {
                             id:4,
                             label:'厂家管理',
-                            url:this.localUrl +'/materialManufacturer/view',
+                            url:this.getLocalUrl('/materialManufacturer/view'),
                         },
                         {
                             id:4,
                             label:'分类管理',
-                            url:this.localUrl +'/materialCategory/view',
+                            url:this.getLocalUrl('/materialCategory/view'),
                         },
                         {
                             id:5,
                             label:'规格管理',
-                            url:this.localUrl +'/materialSpecification/view',
+                            url:this.getLocalUrl('/materialSpecification/view'),
                         },
                         {
                             id:6,
                             label:'物品管理',
-                            url:this.localUrl +'/material/view',
+                            url:this.getLocalUrl('/material/view'),
                         },
                         {
                             id:6,
                             label:'库存流水',
-                            url:this.localUrl +'/materialFlow/view',
+                            url:this.getLocalUrl('/materialFlow/view'),
                         },
                         {
                             id:6,
                             label:'物品申购',
-                            url:this.localUrl +'/materialPurchase/view',
+                            url:this.getLocalUrl('/materialPurchase/view'),
                         },
                     ]
                 }
@@ -106,6 +102,9 @@ module.exports = {
         }
     },
     methods: {
+        getLocalUrl(url){
+            return url;
+        },
         parentClick(row){
             row.spread = !row.spread;
         },
