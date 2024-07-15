@@ -14,7 +14,7 @@ class AdvancedOrderLogic extends BaseLogic
 
         $query = AdvancedOrder::query();
 
-        $queryConditions = ['name', 'street_id', 'address', 'phone', 'customer_type', 'payment_type', 'income_type', 'remark'];
+        $queryConditions = ['name', 'street_id', 'address', 'phone', 'customer_type', 'payment_type', 'pay_way', 'remark'];
 
         foreach ($queryConditions as $queryCondition) {
             switch ($queryCondition) {
@@ -33,16 +33,13 @@ class AdvancedOrderLogic extends BaseLogic
                     break;
                 case 'customer_type':
                 case 'payment_type':
-                case 'income_type':
+                case 'pay_way':
                     if (!empty($params[$queryCondition])) {
                         $query->where($queryCondition, $params[$queryCondition]);
                     }
                     break;
             }
         }
-        // if (!empty($params['keyword'])) {
-        //     $query->where('name', 'like', '%' . $params['keyword'] . '%');
-        // }
 
         $total = $query->count();
 
@@ -51,22 +48,20 @@ class AdvancedOrderLogic extends BaseLogic
             ->offset($point)->limit($pageSize)
             ->get()
             ->map(function ($item) {
-                $item->income_type_name   = AdvancedOrder::$formatIncomeTypeMaps[$item->income_type] ?? '';
+                $item->pay_way_name       = AdvancedOrder::$formatPayWayMaps[$item->pay_way] ?? '';
                 $item->customer_type_name = AdvancedOrder::$formatCustomerTypeMaps[$item->customer_type] ?? '';
                 $item->payment_type_name  = AdvancedOrder::$formatPaymentTypeMaps[$item->payment_type] ?? '';
+
+                $area                 = $item->area;
+                $item->community_name = $area?->name;
+                // 访问上级
+                $parentArea        = $area?->parentArea;
+                $item->street_name = $parentArea?->name;
+                // 访问上上级
+                $grandParentArea     = $parentArea?->parentArea;
+                $item->district_name = $grandParentArea?->name;
                 return $item;
             });
-
-        foreach ($list as $item) {
-            $area                 = $item->area;
-            $item->community_name = $area?->name;
-            // 访问上级
-            $parentArea        = $area?->parentArea;
-            $item->street_name = $parentArea?->name;
-            // 访问上上级
-            $grandParentArea     = $parentArea?->parentArea;
-            $item->district_name = $grandParentArea?->name;
-        }
 
         return [
             'total' => $total,
@@ -74,11 +69,11 @@ class AdvancedOrderLogic extends BaseLogic
         ];
     }
 
-    public function getInfo($params)
+    public function getInfo($id)
     {
         $data = AdvancedOrder::query()
             ->with(['area', 'area.parentArea', 'area.parentArea.parentArea'])
-            ->where(['id' => $params['id']])
+            ->where(['ador_id' => $id])
             ->first();
 
         $area                 = $data->area;
@@ -115,11 +110,11 @@ class AdvancedOrderLogic extends BaseLogic
             'customer_type'            => $params['customer_type'] ?? '',
             'advanced_total_installed' => $params['advanced_total_installed'] ?? '',
             'payment_type'             => $params['payment_type'] ?? '',
-            'income_type'              => $params['income_type'] ?? '',
+            'pay_way'                  => $params['pay_way'] ?? '',
             'operator_user_id'         => AuthLogic::$userId ?? 0,
         ];
 
-        $res = isset($id) ? AdvancedOrder::where(['id' => $id])->update($insertData) : AdvancedOrder::insert($insertData);
+        $res = isset($id) ? AdvancedOrder::where(['ador_id' => $id])->update($insertData) : AdvancedOrder::insert($insertData);
         if ($res === false) {
             ResponseLogic::setMsg('添加或更新失败');
             return false;
@@ -130,7 +125,7 @@ class AdvancedOrderLogic extends BaseLogic
 
     public function delete($params)
     {
-        AdvancedOrder::where(['id' => $params['id']])->delete();
+        AdvancedOrder::where(['ador_id' => $params['id']])->delete();
         return [];
     }
 }

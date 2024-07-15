@@ -38,7 +38,7 @@ class AdvancedOrderController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = AdvancedOrderLogic::getInstance()->getInfo($params);
+        $res = AdvancedOrderLogic::getInstance()->getInfo($params['id']);
         if ($res === false) {
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
@@ -56,7 +56,7 @@ class AdvancedOrderController
             'advanced_amount'          => 'required|numeric',
             'advanced_total_installed' => 'required|int',
             'payment_type'             => 'required|int',
-            'income_type'              => 'required|int',
+            'pay_way'                  => 'required|int',
         ]);
 
         if ($validate->fails()) {
@@ -75,14 +75,14 @@ class AdvancedOrderController
         $params = $request->all();
 
         $validate = Validator::make($params, [
-            'id'                       => 'required|string|exists:advanced_orders,id',
+            'id'                       => 'required|string|exists:advanced_order,ador_id',
             'name'                     => 'required',
             'address'                  => 'required',
             'phone'                    => 'required',
             'advanced_amount'          => 'required|numeric',
             'advanced_total_installed' => 'required|int',
             'payment_type'             => 'required|int',
-            'income_type'              => 'required|int',
+            'pay_way'                  => 'required|int',
         ]);
 
         if ($validate->fails()) {

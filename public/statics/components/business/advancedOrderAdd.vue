@@ -44,8 +44,8 @@
                 </a-radio-group>
             </a-form-model-item>
 
-            <a-form-model-item label="收款方式" prop="income_type">
-                <a-radio-group v-model="formData.income_type">
+            <a-form-model-item label="收款方式" prop="pay_way">
+                <a-radio-group v-model="formData.pay_way">
                     <a-radio :value="1">
                         微信
                     </a-radio>
@@ -133,7 +133,7 @@ module.exports = {
                 advanced_total_installed:0,
                 payment_type:1,
                 customer_type:1,
-                income_type:1,
+                pay_way:1,
             };
         },
         // 获取枚举列表
@@ -244,15 +244,16 @@ module.exports = {
                     advanced_total_installed:res.data.advanced_total_installed,
                     payment_type:res.data.payment_type,
                     customer_type:res.data.customer_type,
-                    income_type:res.data.income_type,
+                    pay_way:res.data.pay_way,
                 }
-                console.log(this.formData )
             }).catch(error => {
                 this.$message.error('请求失败');
             });
         }
     },
     created () {
+      console.log(this.id)
+
         this.initForm();
         if(this.id){
             this.getDetail(this.id);
