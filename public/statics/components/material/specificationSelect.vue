@@ -1,6 +1,6 @@
 <template>
-    <a-select v-model="id" show-search placeholder="请选择规格" :max-tag-count="1"
-              :mode="mode" style="width: 200px;" allow-clear @change="handleChange" option-filter-prop="label">
+    <a-select v-model="id" show-search placeholder="请选择规格" :max-tag-count="5"
+              :mode="mode" style="width: 400px;" allow-clear @change="handleChange" option-filter-prop="label">
         <a-select-option v-for="(item, key) in list" :key="key" :value="item.masp_id" :label="item.masp_name">
             {{ item.masp_name }}
         </a-select-option>

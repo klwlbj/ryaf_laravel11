@@ -9,18 +9,24 @@
                         <a-input v-model="listQuery.keyword" placeholder="订单编号" style="width: 200px;" />
                     </a-form-item>
                     <a-form-item>
+                        <a-input v-model="listQuery.address" placeholder="地址" style="width: 200px;" />
+                    </a-form-item>
+                    <a-form-item>
+                        <a-input v-model="listQuery.user_keyword" placeholder="用户名/用户手机号" style="width: 200px;" />
+                    </a-form-item>
+                    <a-form-item>
                         <a-range-picker
                             :placeholder="['开始时间', '结束时间']"
                             @change="dateChange"
                             :default-value="[defaultDate,defaultDate]"></a-range-picker>
-                    </a-form-item>
+                        </a-form-item>
                     <a-form-item>
                         <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                     </a-form-item>
                 </a-form>
 
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                         :pagination="false"  :scroll="{ x: 1500 }">
+                         :pagination="false"  :scroll="{ x: 1800,y: 650}">
 
                     <div slot="order_place" slot-scope="text, record">
                         <div v-for="item in record.order_place">
@@ -34,9 +40,16 @@
                     </div>
 
                     <div slot="action" slot-scope="text, record">
-                        <a style="margin-right: 8px" @click="onUpdate(record)">
-                            添加收款流水
-                        </a>
+                        <div>
+                            <a style="margin-right: 8px" @click="onAdd(record)">
+                                添加收款流水
+                            </a>
+                        </div>
+                        <div>
+                            <a style="margin-right: 8px" @click="onFlow(record)">
+                                流水明细 <span v-if="record.account_flow_count" style="color: red">(未审批:@{{record.account_flow_count}})</span>
+                            </a>
+                        </div>
                     </div>
                 </a-table>
 
@@ -54,11 +67,23 @@
             <a-modal :mask-closable="false" v-model="dialogFormVisible"
                      :title="status"
                      width="800px" :footer="null">
-                <manufacturer-add ref="manufacturerAdd"
+                <account-flow-add ref="accountFlowAdd"
                                   :id="id"
+                                  @add="afterAdd"
                                   @close="dialogFormVisible = false;"
                 >
-                </manufacturer-add>
+                </account-flow-add>
+            </a-modal>
+
+            <a-modal :mask-closable="false" v-model="flowFormVisible"
+                     title="流水明细"
+                     width="1200px" :footer="null">
+                <account-flow-list ref="accountFlowList"
+                                  :id="orderId"
+                                  @approve="afterApprove"
+                                  @close="flowFormVisible = false;"
+                >
+                </account-flow-list>
             </a-modal>
 
         </a-card>
@@ -73,12 +98,14 @@
             data: {
                 listQuery: {
                     keyword: "",
+                    address:'',
+                    user_keyword:'',
                     start_date:null,
                     end_date:null,
                 },
                 listSource: [],
                 listLoading:false,
-                status:'新增',
+                status:'新增回款流水',
                 pagination: {
                     pageSize: 10,
                     total: 0,
@@ -147,7 +174,9 @@
                     }
                 ],
                 dialogFormVisible:false,
+                flowFormVisible:false,
                 id:null,
+                orderId:null,
                 defaultDate:undefined
             },
             created () {
@@ -155,7 +184,8 @@
                 this.handleFilter()
             },
             components: {
-                "manufacturer-add":  httpVueLoader('/statics/components/material/manufacturerAdd.vue')
+                "account-flow-list":  httpVueLoader('/statics/components/order/accountFlowList.vue'),
+                "account-flow-add":  httpVueLoader('/statics/components/order/accountFlowAdd.vue')
             },
             methods: {
                 moment,
@@ -165,8 +195,23 @@
                     this.listQuery.page_size = pageSize;
                     this.getPageList()
                 },
-                onUpdate(row){
-
+                onAdd(row){
+                    this.id = row.order_id;
+                    this.dialogFormVisible = true;
+                },
+                onFlow(row){
+                    this.orderId = row.order_id;
+                    this.flowFormVisible = true;
+                },
+                afterAdd(){
+                    this.id = null;
+                    this.orderId = null;
+                    this.dialogFormVisible = false;
+                    this.getPageList();
+                },
+                afterApprove(){
+                    // this.orderId = null;
+                    this.getPageList();
                 },
                 // 刷新列表
                 handleFilter () {

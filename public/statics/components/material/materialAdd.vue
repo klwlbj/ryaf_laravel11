@@ -5,10 +5,6 @@
                 <a-input v-model="formData.name" />
             </a-form-model-item>
 
-            <a-form-model-item label="仓库" prop="warehouse_id">
-                <warehouse-select ref="warehouseSelect" :default-data="warehouseId" @change="warehouseChange"></warehouse-select>
-            </a-form-model-item>
-
             <a-form-model-item label="厂家" prop="manufacturer_id">
                 <manufacturer-select ref="manufacturerSelect" :default-data="manufacturerId" @change="manufacturerChange"></manufacturer-select>
             </a-form-model-item>
@@ -18,7 +14,7 @@
             </a-form-model-item>
 
             <a-form-model-item label="规格" prop="specification_id">
-                <specification-select ref="specificationSelect" :category-id="categoryId" :default-data="specificationId" @change="specificationChange"></specification-select>
+                <specification-select ref="specificationSelect" mode="multiple" :category-id="categoryId" :default-data="specificationId" @change="specificationChange"></specification-select>
             </a-form-model-item>
 
             <a-form-model-item label="是否出货" prop="is_deliver">
@@ -120,7 +116,6 @@ module.exports = {
             formRules: {
                 name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
                 unit: [{ required: true, message: '请输入单位', trigger: 'blur' }],
-                warehouse_id: [{ required: true, message: '请选择仓库', trigger: 'change' }],
                 category_id: [{ required: true, message: '请选择分类', trigger: 'change' }],
                 manufacturer_id: [{ required: true, message: '请选择厂家', trigger: 'change' }],
                 specification_id: [{ required: true, message: '请选择', trigger: 'change' }],
@@ -128,15 +123,13 @@ module.exports = {
             loading :false,
             categoryId:undefined,
             manufacturerId:undefined,
-            specificationId:undefined,
-            warehouseId:2,
+            specificationId:[],
         }
     },
     methods: {
         initForm(){
             this.formData= {
                 name:'',
-                warehouse_id:2,
                 category_id:undefined,
                 manufacturer_id:undefined,
                 specification_id:undefined,
@@ -151,13 +144,9 @@ module.exports = {
 
             this.imageList = [];
 
-            // this.categoryId = undefined;
-            // this.manufacturerId = undefined;
-            // this.specificationId = undefined;
-
-            if(this.$refs['warehouseSelect']){
-                this.$refs['warehouseSelect'].clearData();
-            }
+            this.categoryId = undefined;
+            this.manufacturerId = undefined;
+            this.specificationId = undefined;
 
             if(this.$refs['categorySelect']){
                 this.$refs['categorySelect'].clearData();
@@ -232,14 +221,16 @@ module.exports = {
             let that = this;
             this.$refs.dataForm.validate((valid) => {
                 if (valid) {
+                    let submitData = JSON.parse(JSON.stringify(that.formData))
+                    submitData.specification_id = submitData.specification_id.join(',');
                     if(that.id){
-                        that.formData.id = that.id;
+                        submitData.id = that.id;
                         axios({
                             // 默认请求方式为get
                             method: 'post',
                             url: '/api/material/update',
                             // 传递参数
-                            data: that.formData,
+                            data: submitData,
                             responseType: 'json',
                             headers:{
                                 'Content-Type': 'multipart/form-data'
@@ -262,7 +253,7 @@ module.exports = {
                             method: 'post',
                             url: '/api/material/add',
                             // 传递参数
-                            data: that.formData,
+                            data: submitData,
                             responseType: 'json',
                             headers:{
                                 'Content-Type': 'multipart/form-data'

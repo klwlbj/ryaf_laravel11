@@ -30,6 +30,10 @@
                         <a-tag v-else color="green">是</a-tag>
                     </div>
 
+                    <div slot="mate_specification_name" slot-scope="text, record">
+                        <a-tag v-for="(item,i) in record.mate_specification_name" :key="i" color="green">@{{ item }}</a-tag>
+                    </div>
+
                     <div slot="number" slot-scope="text, record">
                         <div style="cursor: pointer" @click="stockDetail(record)">
                             <span v-if="record.mate_warning>record.mate_number" style="color: red;font-weight: bold;">@{{ record.mate_number }}</span>
@@ -187,8 +191,8 @@
                     },
                     {
                         title: '规格',
+                        scopedSlots: { customRender: 'mate_specification_name' },
                         dataIndex: 'mate_specification_name',
-                        width: 100
                     },
                     {
                         title: '单位',

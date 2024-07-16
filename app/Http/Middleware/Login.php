@@ -4,9 +4,11 @@ namespace App\Http\Middleware;
 
 use App\Http\Logic\AuthLogic;
 use App\Http\Logic\ResponseLogic;
+use App\Http\Logic\ToolsLogic;
 use App\Http\Server\Hikvision\Response;
 use App\Models\NodeAccount;
 use Closure;
+use Illuminate\Support\Facades\Cookie;
 
 class Login
 {
@@ -39,6 +41,7 @@ class Login
         }
 
         $accountInfo = NodeAccount::getDataById($userId);
+
         view()->share('accountInfo',$accountInfo);
 
         AuthLogic::$userId = $userId;

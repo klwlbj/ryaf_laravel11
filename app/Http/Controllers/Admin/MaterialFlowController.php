@@ -38,14 +38,16 @@ class MaterialFlowController
 
         $validate = Validator::make($params, [
             'material_id' => 'required',
+            'warehouse_id' => 'required',
             'number' => 'required',
-            'date' => 'required',
+            'datetime' => 'required',
             'production_date' => 'required',
             'expire_date' => 'required',
         ],[
             'material_id.required' => '物品不得为空',
+            'warehouse_id.required' => '仓库不得为空',
             'number.required' => '数量不得为空',
-            'date.required' => '入库日期不得为空',
+            'datetime.required' => '入库日期不得为空',
             'production_date.required' => '生产日期不得为空',
             'expire_date.required' => '质保期不得为空',
         ]);
@@ -68,15 +70,17 @@ class MaterialFlowController
 
         $validate = Validator::make($params, [
             'material_id' => 'required',
+            'warehouse_id' => 'required',
             'number' => 'required',
-            'date' => 'required',
+            'datetime' => 'required',
             'purpose' => 'required',
             'apply_user_id' => 'required',
             'receive_user_id' => 'required',
         ],[
             'material_id.required' => '物品不得为空',
+            'warehouse_id.required' => '仓库不得为空',
             'number.required' => '数量不得为空',
-            'date.required' => '出库日期不得为空',
+            'datetime.required' => '出库日期不得为空',
             'purpose.required' => '用途不得为空',
             'apply_user_id.required' => '申请人不得为空',
             'receive_user_id.required' => '领用人不得为空',

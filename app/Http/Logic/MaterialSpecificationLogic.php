@@ -4,6 +4,7 @@ namespace App\Http\Logic;
 
 use App\Models\Material;
 use App\Models\MaterialSpecification;
+use App\Models\MaterialSpecificationRelation;
 use Illuminate\Support\Facades\DB;
 
 class MaterialSpecificationLogic extends BaseLogic
@@ -117,7 +118,7 @@ class MaterialSpecificationLogic extends BaseLogic
 
     public function delete($params)
     {
-        if(Material::query()->where(['mate_specification_id',$params['id']])->exists()){
+        if(MaterialSpecificationRelation::query()->where(['masp_specification_id',$params['id']])->exists()){
             ResponseLogic::setMsg('该规格下存在物品，请删除物品后再删除规格');
             return false;
         }

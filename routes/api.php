@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::any('/upload', [UploadController::class, 'upload']);
 
+Route::any('/pushUnits', [\App\Http\Controllers\ScriptController::class, 'pushUnits']);
+
 Route::middleware(['login'])->group(function () {
     //管理员
     Route::prefix('admin')->group(function () {
@@ -86,12 +88,12 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('order')->group(function () {
         Route::post('/getList', [OrderController::class, 'getList']);
-        Route::post('/add', [MaterialPurchaseController::class, 'add']);
-        Route::post('/getInfo', [MaterialPurchaseController::class, 'getInfo']);
-        Route::post('/update', [MaterialPurchaseController::class, 'update']);
-        Route::post('/delete', [MaterialPurchaseController::class, 'delete']);
-        Route::post('/complete', [MaterialPurchaseController::class, 'complete']);
+        Route::post('/addAccountFlow', [OrderController::class, 'addAccountFlow']);
+        Route::post('/getAccountFlow', [OrderController::class, 'getAccountFlow']);
+        Route::post('/approveAccountFlow', [OrderController::class, 'approveAccountFlow']);
     });
+
+
     Route::prefix('advancedOrder')->group(function () {
         Route::post('/getList', [AdvancedOrderController::class, 'getList']);
         Route::post('/getInfo', [AdvancedOrderController::class, 'getInfo']);

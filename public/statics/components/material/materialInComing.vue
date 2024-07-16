@@ -5,6 +5,10 @@
                 <material-select  ref="materialSelect" :default-data="materialId" @change="materialChange"></material-select>
             </a-form-model-item>
 
+            <a-form-model-item label="仓库" prop="warehouse_id">
+                <warehouse-select ref="warehouseSelect" :default-data="warehouseId" @change="warehouseChange"></warehouse-select>
+            </a-form-model-item>
+
             <a-form-model-item label="入库数量" prop="number">
                 <a-input-number v-model="formData.number" :min="0"/>
             </a-form-model-item>
@@ -17,8 +21,8 @@
                 <a-date-picker @change="expireDateChange" format="YYYY-MM-DD" :default-value="moment().format('YYYY-MM-DD')"/>
             </a-form-model-item>
 
-            <a-form-model-item label="入库日期" prop="date">
-                <a-date-picker @change="dateChange" format="YYYY-MM-DD" :default-value="moment().format('YYYY-MM-DD')"/>
+            <a-form-model-item label="入库时间" prop="datetime">
+                <a-date-picker @change="dateChange" show-time format="YYYY-MM-DD HH:mm:ss" :default-value="moment().format('YYYY-MM-DD HH:mm:ss')"/>
             </a-form-model-item>
 
             <a-form-model-item label="备注" prop="remark">
@@ -47,6 +51,7 @@
 module.exports = {
     name: 'materialInComing',
     components: {
+        "warehouse-select":  httpVueLoader('/statics/components/material/warehouseSelect.vue'),
         "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
     },
     props: {
@@ -75,7 +80,8 @@ module.exports = {
                 number: [{ required: true, message: '请输入数量', trigger: 'blur' }],
             },
             loading :false,
-            materialId:undefined
+            materialId:undefined,
+            warehouseId:2
         }
     },
     methods: {
@@ -83,10 +89,11 @@ module.exports = {
         initForm(){
             this.formData= {
                 material_id:'',
+                warehouse_id:2,
                 number:0,
                 production_date:moment().format("YYYY-MM-DD"),
                 expire_date:moment().format("YYYY-MM-DD"),
-                date:moment().format("YYYY-MM-DD"),
+                datetime:moment().format("YYYY-MM-DD HH:mm:ss"),
                 remark:'',
             };
         },
@@ -133,8 +140,11 @@ module.exports = {
             this.formData.expire_date = str;
         },
         dateChange(value,str){
-            this.formData.date = str;
+            this.formData.datetime = str;
         },
+        warehouseChange(value){
+            this.formData.warehouse_id = value;
+        }
     },
     created () {
         this.initForm();

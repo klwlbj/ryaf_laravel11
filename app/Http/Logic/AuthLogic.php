@@ -10,7 +10,8 @@ class AuthLogic extends BaseLogic
      * @param $userId
      * @return boolean
      */
-    public static function materialPurchaseAuth()
+
+    public static function orderAccountApproveAuth()
     {
         return true;
     }

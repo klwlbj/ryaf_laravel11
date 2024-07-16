@@ -5,12 +5,16 @@
                 <material-select  ref="materialSelect" :default-data="materialId" @change="materialChange"></material-select>
             </a-form-model-item>
 
+            <a-form-model-item label="仓库" prop="warehouse_id">
+                <warehouse-select ref="warehouseSelect" :default-data="warehouseId" @change="warehouseChange"></warehouse-select>
+            </a-form-model-item>
+
             <a-form-model-item label="出库数量" prop="number">
                 <a-input-number v-model="formData.number" :min="0"/>
             </a-form-model-item>
 
-            <a-form-model-item label="出库日期" prop="date">
-                <a-date-picker @change="dateChange" format="YYYY-MM-DD" :default-value="moment().format('YYYY-MM-DD')"/>
+            <a-form-model-item label="出库日期" prop="datetime">
+                <a-date-picker @change="dateChange" format="YYYY-MM-DD HH:mm:ss" :default-value="moment().format('YYYY-MM-DD HH:mm:ss')"/>
             </a-form-model-item>
 
             <a-form-model-item label="用途" prop="purpose">
@@ -75,6 +79,7 @@
 module.exports = {
     name: 'materialOutComing',
     components: {
+        "warehouse-select":  httpVueLoader('/statics/components/material/warehouseSelect.vue'),
         "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
         "admin-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
         "apply_user-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
@@ -105,7 +110,8 @@ module.exports = {
             loading :false,
             materialId:undefined,
             receiveUserId:undefined,
-            applyUserId:undefined
+            applyUserId:undefined,
+            warehouseId:2
         }
     },
     methods: {
@@ -113,14 +119,22 @@ module.exports = {
         initForm(){
             this.formData= {
                 material_id:'',
+                warehouse_id:2,
                 number:0,
-                date:moment().format("YYYY-MM-DD"),
+                datetime:moment().format("YYYY-MM-DD HH:mm:ss"),
                 receive_user_id:null,
                 apply_user_id:null,
                 purpose:undefined,
                 approve_image:'',
                 remark:'',
             };
+
+            this.receiveUserId = undefined;
+            this.applyUserId = undefined;
+
+            if(this.$refs['applyUserSelect']){
+                this.$refs['applyUserSelect'].clearData();
+            }
 
             if(this.$refs['adminSelect']){
                 this.$refs['adminSelect'].clearData();
@@ -227,13 +241,16 @@ module.exports = {
             this.formData.material_id = value;
         },
         dateChange(value,str){
-            this.formData.date = str;
+            this.formData.datetime = str;
         },
         receiveUserChange(value){
             this.formData.receive_user_id = value;
         },
         applyUserChange(value){
             this.formData.apply_user_id = value;
+        },
+        warehouseChange(value){
+            this.formData.warehouse_id = value;
         }
     },
     created () {

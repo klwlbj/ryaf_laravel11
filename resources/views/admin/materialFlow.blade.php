@@ -128,6 +128,10 @@
                         width: 100
                     },
                     {
+                        title: '出库仓库',
+                        dataIndex: 'mafl_warehouse_name',
+                    },
+                    {
                         title: '类型',
                         scopedSlots: { customRender: 'type' },
                         dataIndex: 'mafl_type'
@@ -139,7 +143,7 @@
                     },
                     {
                         title: '出/入库时间',
-                        dataIndex: 'mafl_date'
+                        dataIndex: 'mafl_datetime'
                     },
                     {
                         title: '用途',

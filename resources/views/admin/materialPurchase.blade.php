@@ -43,10 +43,8 @@
                     </div>
 
                     <div slot="status" slot-scope="text, record">
-                        <a-tag v-if="record.mapu_status == 1">待审批</a-tag>
-                        <a-tag v-else-if="record.mapu_status == 2">申购中</a-tag>
-                        <a-tag v-else-if="record.mapu_status == 3" color="green">已完成</a-tag>
-                        <a-tag v-else color="red">已拒绝</a-tag>
+                        <a-tag v-if="record.mapu_status == 1">申购中</a-tag>
+                        <a-tag color="green" v-else-if="record.mapu_status == 2">已完成</a-tag>
                     </div>
 
                     <div slot="action" slot-scope="text, record">

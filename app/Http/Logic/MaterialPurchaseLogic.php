@@ -56,7 +56,7 @@ class MaterialPurchaseLogic extends BaseLogic
                 $value['detail'] = [];
             }
 
-            $value['complete_auth'] = ($value['mapu_status'] == 2) ? true : false;
+            $value['complete_auth'] = ($value['mapu_status'] == 1) ? true : false;
         }
 
         unset($value);
@@ -201,7 +201,7 @@ class MaterialPurchaseLogic extends BaseLogic
             return false;
         }
 
-        if($data['mapu_status'] != 2){
+        if($data['mapu_status'] != 1){
             ResponseLogic::setMsg('申购记录不为申购中状态，不能完成');
             return false;
         }

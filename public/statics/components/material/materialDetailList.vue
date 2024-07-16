@@ -51,8 +51,12 @@ module.exports = {
                     width: 80
                 },
                 {
-                    title: '入库日期',
-                    dataIndex: 'made_date',
+                    title: '仓库',
+                    dataIndex: 'made_warehouse_name',
+                },
+                {
+                    title: '入库时间',
+                    dataIndex: 'made_datetime',
                 },
                 {
                     title: '生产日期',

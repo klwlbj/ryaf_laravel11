@@ -4,6 +4,7 @@ namespace App\Http\Logic;
 
 use App\Models\Material;
 use App\Models\MaterialDetail;
+use App\Models\MaterialSpecificationRelation;
 use Illuminate\Support\Facades\DB;
 
 class MaterialLogic extends BaseLogic
@@ -17,7 +18,6 @@ class MaterialLogic extends BaseLogic
         $query = Material::query()
             ->leftJoin('material_manufacturer','material.mate_manufacturer_id','=','material_manufacturer.mama_id')
             ->leftJoin('material_category','material.mate_category_id','=','material_category.maca_id')
-            ->leftJoin('material_specification','material.mate_specification_id','=','material_specification.masp_id')
         ;
 
         if(isset($params['keyword']) && $params['keyword']){
@@ -47,7 +47,6 @@ class MaterialLogic extends BaseLogic
                 'material.*',
                 'material_manufacturer.mama_name as mate_manufacturer_name',
                 'material_category.maca_name as mate_category_name',
-                'material_specification.masp_name as mate_specification_name'
             ])
             ->orderBy('mate_sort','desc')
             ->orderBy('mate_id','desc')
@@ -64,7 +63,15 @@ class MaterialLogic extends BaseLogic
                 DB::raw('count(made_material_id) as count')
             ])->groupBy(['made_material_id'])->get()->pluck('count','made_material_id')->toArray();
 
-//        print_r($expireArr);die;
+        $specificationArr = MaterialSpecificationRelation::query()
+            ->leftJoin('material_specification','material_specification.masp_id','=','material_specification_relation.masp_specification_id')
+            ->whereIn('masp_material_id',$ids)
+            ->orderBy('material_specification.masp_sort','desc')
+            ->orderBy('material_specification.masp_id','desc')
+            ->select([
+                'masp_material_id',
+                'material_specification.masp_name'
+            ])->get()->groupBy('masp_material_id')->toArray();
 
 
         foreach ($list as $key => &$value){
@@ -72,6 +79,12 @@ class MaterialLogic extends BaseLogic
                 $value['expire_count'] = $expireArr[$value['mate_id']];
             }else{
                 $value['expire_count'] = 0;
+            }
+
+            if(isset($specificationArr[$value['mate_id']])){
+                $value['mate_specification_name'] = array_column($specificationArr[$value['mate_id']],'masp_name');
+            }else{
+                $value['mate_specification_name'] = [];
             }
         }
 
@@ -106,16 +119,19 @@ class MaterialLogic extends BaseLogic
             return false;
         }
 
+        $data['mate_specification_id'] = MaterialSpecificationRelation::query()
+            ->where(['masp_material_id' => $params['id']])
+            ->select(['masp_specification_id'])
+            ->pluck('masp_specification_id')->toArray();
+
         return $data;
     }
 
     public function add($params)
     {
         $insertData = [
-            'mate_warehouse_id' => $params['warehouse_id'] ?: 2,
             'mate_manufacturer_id' => $params['manufacturer_id'],
             'mate_category_id' => $params['category_id'],
-            'mate_specification_id' => $params['specification_id'],
             'mate_name' => $params['name'],
             'mate_is_deliver' => $params['is_deliver'] ?? 0,
             'mate_number' => $params['number'] ?? 0,
@@ -133,11 +149,29 @@ class MaterialLogic extends BaseLogic
             return false;
         }
 
+        $specificationIds = explode(',',$params['specification_id']);
+
+        if(empty($specificationIds)){
+            ResponseLogic::setMsg('规格不得为空');
+            return false;
+        }
+
         $id = Material::query()->insertGetId($insertData);
         if($id === false){
             ResponseLogic::setMsg('添加失败');
             return false;
         }
+
+        #插入规格关系表
+        $specificationInsert = [];
+        foreach ($specificationIds as $specificationId){
+            $specificationInsert[] = [
+                'masp_material_id' => $id,
+                'masp_specification_id' => $specificationId,
+            ];
+        }
+
+        MaterialSpecificationRelation::query()->insert($specificationInsert);
 
         return ['id' => $id];
     }
@@ -145,10 +179,8 @@ class MaterialLogic extends BaseLogic
     public function update($params)
     {
         $insertData = [
-            'mate_warehouse_id' => $params['warehouse_id'] ?: 2,
             'mate_manufacturer_id' => $params['manufacturer_id'],
             'mate_category_id' => $params['category_id'],
-            'mate_specification_id' => $params['specification_id'],
             'mate_name' => $params['name'],
             'mate_is_deliver' => $params['is_deliver'] ?? 0,
             'mate_unit' => $params['unit'],
@@ -160,15 +192,36 @@ class MaterialLogic extends BaseLogic
             'mate_operator_id' => 2, #操作id  默认写死
         ];
 
+        $specificationIds = explode(',',$params['specification_id']);
+
+        if(empty($specificationIds)){
+            ResponseLogic::setMsg('规格不得为空');
+            return false;
+        }
+
         if(Material::query()->where('mate_id','<>',$params['id'])->where(['mate_name' => $params['name']])->exists()){
             ResponseLogic::setMsg('厂家名称已存在');
             return false;
         }
 
+
         if(Material::query()->where(['mate_id' => $params['id']])->update($insertData) === false){
             ResponseLogic::setMsg('更新失败');
             return false;
         }
+
+        #删除关系表数据
+        MaterialSpecificationRelation::query()->where(['masp_material_id' => $params['id']])->delete();
+        #插入规格关系表
+        $specificationInsert = [];
+        foreach ($specificationIds as $specificationId){
+            $specificationInsert[] = [
+                'masp_material_id' => $params['id'],
+                'masp_specification_id' => $specificationId,
+            ];
+        }
+
+        MaterialSpecificationRelation::query()->insert($specificationInsert);
 
         Material::delCacheById($params['id']);
 
@@ -193,7 +246,9 @@ class MaterialLogic extends BaseLogic
         $pageSize = $params['page_size'] ?? 10;
         $point = ($page - 1) * $pageSize;
 
-        $query = MaterialDetail::query()->where(['made_status' => 1]);
+        $query = MaterialDetail::query()
+            ->leftJoin('warehouse','waho_id','=','material_detail.made_warehouse_id')
+            ->where(['made_status' => 1]);
 
         if(isset($params['material_id']) && $params['material_id']){
             $query->where(['made_material_id' => $params['material_id']]);
@@ -202,6 +257,10 @@ class MaterialLogic extends BaseLogic
         $total = $query->count();
 
         $list = $query
+            ->select([
+                'material_detail.*',
+                'warehouse.waho_name as made_warehouse_name',
+            ])
             ->orderBy('made_id','desc')
             ->offset($point)->limit($pageSize)->get()->toArray();
 
