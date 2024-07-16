@@ -9,6 +9,8 @@ class AdvancedOrder extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'advanced_order';
+
     protected array $dates = ['deleted_at'];
 
     public function area()
@@ -16,18 +18,18 @@ class AdvancedOrder extends Model
         return $this->belongsTo(Area::class, 'area_id');
     }
 
-    public const INCOME_TYPE_WECHAT = 1;
-    public const INCOME_TYPE_ALIPAY = 2;
-    public const INCOME_TYPE_BANK   = 3;
-    public const INCOME_TYPE_MONEY  = 4;
-    public const INCOME_TYPE_QRCODE = 5;
+    public const PAY_WAY_WECHAT = 1;
+    public const PAY_WAY_ALIPAY = 2;
+    public const PAY_WAY_BANK   = 3;
+    public const PAY_WAY_MONEY  = 4;
+    public const PAY_WAY_QRCODE = 5;
 
-    public static array $formatIncomeTypeMaps = [
-        self::INCOME_TYPE_WECHAT => '微信',
-        self::INCOME_TYPE_ALIPAY => '支付宝',
-        self::INCOME_TYPE_BANK   => '银行',
-        self::INCOME_TYPE_MONEY  => '现金',
-        self::INCOME_TYPE_QRCODE => '扫二维码',
+    public static array $formatPayWayMaps = [
+        self::PAY_WAY_WECHAT => '微信',
+        self::PAY_WAY_ALIPAY => '支付宝',
+        self::PAY_WAY_BANK   => '银行',
+        self::PAY_WAY_MONEY  => '现金',
+        self::PAY_WAY_QRCODE => '扫二维码',
     ];
 
     public const  CUSTOMER_TYPE_TO_B = 1;

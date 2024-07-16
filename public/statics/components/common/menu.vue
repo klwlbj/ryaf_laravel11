@@ -96,7 +96,46 @@ module.exports = {
                             url:this.getLocalUrl('/materialPurchase/view'),
                         },
                     ]
-                }
+                },
+
+              {
+                id:7,
+                label:'商务管理',
+                spread: true,
+                child:[
+                  {
+                    id:8,
+                    label:'预付订单管理',
+                    url:this.getLocalUrl('/advancedOrder/view'),
+                  },
+                ]
+              },
+              {
+                id:9,
+                label:'财务管理',
+                spread: true,
+                child:[
+                  {
+                    id:10,
+                    label:'财务收款台账管理',
+                    url:this.getLocalUrl('/financialIncome/view'),
+
+                  },
+                  {
+                    id:11,
+                    label:'预收情况管理',
+                    url:this.getLocalUrl('/advancedOrder/view'),
+
+
+                  },
+                  {
+                    id:11,
+                    label:'保证金（押金）管理',
+                    url:this.getLocalUrl('/advancedOrder/view'),
+
+                  },
+                ]
+              },
             ]
         }
     },

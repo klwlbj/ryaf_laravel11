@@ -1,19 +1,19 @@
 <?php
 
-use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Admin\AdvancedOrderController;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AreaController;
-use App\Http\Controllers\Admin\MaterialCategoryController;
-use App\Http\Controllers\Admin\MaterialController;
-use App\Http\Controllers\Admin\MaterialFlowController;
-use App\Http\Controllers\Admin\MaterialManufacturerController;
-use App\Http\Controllers\Admin\MaterialPurchaseController;
-use App\Http\Controllers\Admin\MaterialSpecificationController;
+use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\UploadController;
+use App\Http\Controllers\Admin\MaterialController;
 use App\Http\Controllers\Admin\WarehouseController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\MaterialFlowController;
+use App\Http\Controllers\Admin\AdvancedOrderController;
+use App\Http\Controllers\Admin\FinancialIncomeController;
+use App\Http\Controllers\Admin\MaterialCategoryController;
+use App\Http\Controllers\Admin\MaterialPurchaseController;
+use App\Http\Controllers\Admin\MaterialManufacturerController;
+use App\Http\Controllers\Admin\MaterialSpecificationController;
 
 Route::any('/upload', [UploadController::class, 'upload']);
 
@@ -29,7 +29,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/getAllList', [WarehouseController::class, 'getAllList']);
     });
 
-//物品厂家
+    //物品厂家
     Route::prefix('materialManufacturer')->group(function () {
         Route::post('/getList', [MaterialManufacturerController::class, 'getList']);
         Route::post('/getInfo', [MaterialManufacturerController::class, 'getInfo']);
@@ -39,7 +39,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/delete', [MaterialManufacturerController::class, 'delete']);
     });
 
-//物料分类
+    //物料分类
     Route::prefix('materialCategory')->group(function () {
         Route::post('/getList', [MaterialCategoryController::class, 'getList']);
         Route::post('/getInfo', [MaterialCategoryController::class, 'getInfo']);
@@ -49,7 +49,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/delete', [MaterialCategoryController::class, 'delete']);
     });
 
-//物料分类规格
+    //物料分类规格
     Route::prefix('materialSpecification')->group(function () {
         Route::post('/getList', [MaterialSpecificationController::class, 'getList']);
         Route::post('/getInfo', [MaterialSpecificationController::class, 'getInfo']);
@@ -59,8 +59,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/delete', [MaterialSpecificationController::class, 'delete']);
     });
 
-
-//物料
+    //物料
     Route::prefix('material')->group(function () {
         Route::post('/getList', [MaterialController::class, 'getList']);
         Route::post('/getInfo', [MaterialController::class, 'getInfo']);
@@ -97,18 +96,19 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('advancedOrder')->group(function () {
         Route::post('/getList', [AdvancedOrderController::class, 'getList']);
         Route::post('/getInfo', [AdvancedOrderController::class, 'getInfo']);
+        Route::post('/getLinkInfo', [AdvancedOrderController::class, 'getLinkInfo']);
         Route::post('/add', [AdvancedOrderController::class, 'add']);
         Route::post('/update', [AdvancedOrderController::class, 'update']);
         Route::post('/delete', [AdvancedOrderController::class, 'delete']);
     });
 
-    Route::prefix('area')->group(function (){
+    Route::prefix('area')->group(function () {
         Route::post('/getList', [AreaController::class, 'getList']);
         Route::get('/generateJson', [AreaController::class, 'generateJson']);
     });
 
-
+    Route::prefix('financialIncome')->group(function () {
+        Route::post('/getList', [FinancialIncomeController::class, 'getList']);
+        Route::post('/getStageInfo', [FinancialIncomeController::class, 'getStageInfo']);
+    });
 });
-
-
-
