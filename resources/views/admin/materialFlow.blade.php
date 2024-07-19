@@ -44,10 +44,13 @@
                         <span v-else>-</span>
                     </div>
 
-                    <div slot="approve_image" slot-scope="text, record">
-                        <a v-if="record.mafl_approve_image" target='_blank' :href="getImage(record.mafl_approve_image)">
-                            <img width="100px" :src="getImage(record.mafl_approve_image)" alt="" :preview="true">
-                        </a>
+                    <div slot="file_list" slot-scope="text, record">
+                        <div v-for="item in record.file_list">
+                            <a :href="item.file_path">
+                                @{{item.file_name}}
+                            </a>
+                        </div>
+
                         <span v-else></span>
                     </div>
 
@@ -156,9 +159,9 @@
                         dataIndex: 'mafl_apply_user'
                     },
                     {
-                        title: '审批图片',
-                        scopedSlots: { customRender: 'approve_image' },
-                        dataIndex: 'mafl_approve_image'
+                        title: '附件',
+                        scopedSlots: { customRender: 'file_list' },
+                        dataIndex: 'file_list'
                     },
                     {
                         title: '过期时间',

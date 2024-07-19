@@ -2,6 +2,7 @@
 
 namespace App\Http\Logic;
 
+use App\Models\File;
 use App\Models\Material;
 use App\Models\MaterialDetail;
 use App\Models\MaterialFlow;
@@ -44,6 +45,18 @@ class MaterialFlowLogic extends BaseLogic
             ])
             ->orderBy('material_flow.mafl_id','desc')
             ->offset($point)->limit($pageSize)->get()->toArray();
+
+        $ids = array_column($list, 'mafl_id');
+
+        $fileList = File::query()
+            ->whereIn('file_relation_id', $ids)->where(['file_type' => 'material_flow'])
+            ->select(['file_relation_id','file_name','file_path'])->get()->groupBy('file_relation_id')->toArray();
+
+        foreach ($list as $key => &$value) {
+            $value['file_list'] = $fileList[$value['mafl_id']] ?? '';
+        }
+
+        unset($value);
 
         return [
             'total' => $total,
@@ -98,7 +111,7 @@ class MaterialFlowLogic extends BaseLogic
                 return false;
             }
         }else{
-            if(MaterialInventory::query()->where(['id' => $inventoryId])->update(['main_number' => DB::raw("main_number+".$params['number'])]) === false){
+            if(MaterialInventory::query()->where(['main_id' => $inventoryId])->update(['main_number' => DB::raw("main_number+".$params['number'])]) === false){
                 DB::rollBack();
                 ResponseLogic::setMsg('更新物品仓库库存失败');
                 return false;
@@ -162,6 +175,8 @@ class MaterialFlowLogic extends BaseLogic
             return false;
         }
 
+        $fileList = ToolsLogic::jsonDecode($params['file_list']);
+
         $outComingData = [
             'mafl_material_id'  => $params['material_id'],
             'mafl_warehouse_id'  => $params['warehouse_id'],
@@ -170,7 +185,6 @@ class MaterialFlowLogic extends BaseLogic
             'mafl_purpose' => $params['purpose'],
             'mafl_apply_user_id' => $params['apply_user_id'],
             'mafl_receive_user_id' => $params['receive_user_id'],
-            'mafl_approve_image' => $params['approve_image'] ?? '',
             'mafl_datetime' => $params['datetime'],
             'mafl_remark' => $params['remark'] ?? '',
             'mafl_operator_id' => AuthLogic::$userId #操作人 默认写死2
@@ -184,6 +198,26 @@ class MaterialFlowLogic extends BaseLogic
             ResponseLogic::setMsg('插入流水记录失败');
             return false;
         }
+
+        $fileInsertData = [];
+        if(!empty($fileList)){
+            foreach ($fileList as $key => $value){
+                $fileInsertData[] = [
+                    'file_relation_id' => $flowId,
+                    'file_type' => 'material_flow',
+                    'file_name' => $value['name'],
+                    'file_ext' => $value['ext'],
+                    'file_path' => $value['url'],
+                ];
+            }
+        }
+
+        if(File::query()->insert($fileInsertData) === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('插入附件失败');
+            return false;
+        }
+
         #变更该仓库物品流水
         if(MaterialInventory::query()->where(['main_warehouse_id' => $params['warehouse_id'],'main_material_id' => $params['material_id']])->update(['main_number' => DB::raw("main_number-".$params['number'])]) === false){
             DB::rollBack();

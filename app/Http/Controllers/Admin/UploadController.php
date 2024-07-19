@@ -18,6 +18,6 @@ class UploadController
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
-        return ResponseLogic::apiResult(0,'ok',['url' => $res]);
+        return ResponseLogic::apiResult(0,'ok',$res);
     }
 }

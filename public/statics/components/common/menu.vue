@@ -50,18 +50,6 @@ module.exports = {
                 },
                 {
                     id:3,
-                    label:'进销存',
-                    spread: true,
-                    child:[
-                        {
-                            id:4,
-                            label:'订单管理',
-                            url:this.getLocalUrl('/order/view'),
-                        },
-                    ]
-                },
-                {
-                    id:3,
                     label:'库存管理',
                     spread: true,
                     child:[
@@ -108,6 +96,11 @@ module.exports = {
                     label:'预付订单管理',
                     url:this.getLocalUrl('/advancedOrder/view'),
                   },
+                    {
+                        id:4,
+                        label:'订单回款管理',
+                        url:this.getLocalUrl('/order/view'),
+                    },
                 ]
               },
               {

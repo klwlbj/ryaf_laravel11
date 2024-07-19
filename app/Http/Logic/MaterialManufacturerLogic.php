@@ -35,7 +35,7 @@ class MaterialManufacturerLogic extends BaseLogic
 
     public function getAllList($params)
     {
-        $query = MaterialManufacturer::query();
+        $query = MaterialManufacturer::query()->where(['mama_status' => 1]);
 
         if(isset($params['keyword']) && $params['keyword']){
             $query->where('mama_name','like','%'.$params['keyword'].'%');

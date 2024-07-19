@@ -1,23 +1,23 @@
 <template>
     <div>
         <a-form-model :loading="loading" :model="formData" ref="dataForm" :label-col="dialogFormLabelCol" :wrapper-col="dialogFormWrapperCol" :rules="formRules">
-            <a-form-model-item label="物品" prop="name">
+            <a-form-model-item required label="物品" prop="material_id">
                 <material-select  ref="materialSelect" :default-data="materialId" @change="materialChange"></material-select>
             </a-form-model-item>
 
-            <a-form-model-item label="仓库" prop="warehouse_id">
+            <a-form-model-item required label="仓库" prop="warehouse_id">
                 <warehouse-select ref="warehouseSelect" :default-data="warehouseId" @change="warehouseChange"></warehouse-select>
             </a-form-model-item>
 
-            <a-form-model-item label="出库数量" prop="number">
+            <a-form-model-item required label="出库数量" prop="number">
                 <a-input-number v-model="formData.number" :min="0"/>
             </a-form-model-item>
 
-            <a-form-model-item label="出库日期" prop="datetime">
+            <a-form-model-item required label="出库日期" prop="datetime">
                 <a-date-picker @change="dateChange" format="YYYY-MM-DD HH:mm:ss" :default-value="moment().format('YYYY-MM-DD HH:mm:ss')"/>
             </a-form-model-item>
 
-            <a-form-model-item label="用途" prop="purpose">
+            <a-form-model-item required label="用途" prop="purpose">
                 <a-select v-model="formData.purpose" show-search placeholder="请选择" :max-tag-count="1"
                           style="width: 200px;" allow-clear>
                     <a-select-option :value="1">
@@ -29,27 +29,26 @@
                 </a-select>
             </a-form-model-item>
 
-            <a-form-model-item label="申请人" prop="apply_user_id">
+            <a-form-model-item required label="申请人" prop="apply_user_id">
                 <apply_user-select ref="applyUserSelect" @change="applyUserChange" :default-data="applyUserId"></apply_user-select>
             </a-form-model-item>
 
-            <a-form-model-item label="领用人" prop="receive_user_id">
+            <a-form-model-item required label="领用人" prop="receive_user_id">
                 <admin-select ref="adminSelect" @change="receiveUserChange" :default-data="receiveUserId"></admin-select>
             </a-form-model-item>
 
-            <a-form-model-item label="审批图" prop="image">
-                <a-upload list-type="picture-card"
-                          :file-list="imageList"
-                          :remove="imageHandleRemove"
-                          :before-upload="imageBeforeUpload"
-                          @change="imageHandleChange" accept="image/*">
+            <a-form-model-item label="审批图" prop="file">
+                <a-upload
+                    :file-list="fileList"
+                    :multiple="false"
+                    :remove="fileHandleRemove"
+                    :before-upload="fileBeforeUpload"
+                    @change="fileHandleChange">
 
-                    <div v-if="imageList.length < 1">
-                        <a-icon type="plus" ></a-icon>
-                        <div class="ant-upload-text">
-                            上传审批图
-                        </div>
-                    </div>
+                    <a-button>
+                        <a-icon type="upload" ></a-icon>
+                        上传文件
+                    </a-button>
                 </a-upload>
             </a-form-model-item>
 
@@ -101,7 +100,7 @@ module.exports = {
             formData: {
 
             },
-            imageList: [],
+            fileList: [],
             dialogFormLabelCol: { span: 4 },
             dialogFormWrapperCol: { span: 14 },
             formRules: {
@@ -142,7 +141,16 @@ module.exports = {
         },
         submitData(){
             let that = this;
-            console.log(this.formData);
+
+            let file = [];
+            for(let item of that.fileList){
+                file.push({
+                    url:item.url,
+                    name:item.name,
+                    ext:item.ext,
+                });
+            }
+            that.formData.file_list = JSON.stringify(file);
 
             this.$refs.dataForm.validate((valid) => {
                 if (valid) {
@@ -173,14 +181,14 @@ module.exports = {
                 }
             })
         },
-        imageHandleRemove(file){
-            this.formData.image = '';
-            let index = this.imageList.indexOf(file);
-            let newFileList = this.imageList.slice();
+        fileHandleRemove(file){
+            // this.formData.file = '';
+            let index = this.fileList.indexOf(file);
+            let newFileList = this.fileList.slice();
             newFileList.splice(index, 1);
-            this.imageList = newFileList;
+            this.fileList = newFileList;
         },
-        imageHandleChange(file){
+        fileHandleChange(file){
             if(file.file.status && file.file.status === 'removed'){
                 return false;
             }
@@ -206,26 +214,16 @@ module.exports = {
                     this.$message.error(res.message);
                     return false;
                 }
-                this.imageList[0].url = this.getImage(res.data.url);
-                this.formData.image = res.data.url;
+                this.fileList[this.fileList.length - 1].url = res.data.url;
+                this.fileList[this.fileList.length - 1].name = res.data.name;
+                this.fileList[this.fileList.length - 1].ext = res.data.ext;
             })
         },
-        imageBeforeUpload(file) {
-            const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg';
-            if (!isJpgOrPng) {
-                this.$message.error('图片格式非法');
-                return false;
-            }
-            const isLt5M = file.size / 1024 / 1024 < 5;
-            if (!isLt5M) {
-                this.$message.error('图片不能超过5M!');
-                return false;
-            }
-
-            this.imageList = [...this.imageList, {
+        fileBeforeUpload(file) {
+            this.fileList = [...this.fileList, {
                 url:'',
                 uid:'-1',
-                name: 'image',
+                name: 'file',
                 status: 'done',
             }];
             return false;

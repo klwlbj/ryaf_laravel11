@@ -23,7 +23,7 @@
                          :pagination="false">
 
                     <div slot="status" slot-scope="text, record">
-                        <a-tag v-if="record.status == 0"  color="red">禁用</a-tag>
+                        <a-tag v-if="record.masp_status == 0"  color="red">禁用</a-tag>
                         <a-tag v-else color="green">启用</a-tag>
                     </div>
 
@@ -120,8 +120,8 @@
                         dataIndex: 'masp_status'
                     },
                     {
-                        title: '提交时间',
-                        dataIndex: 'masp_crt_time'
+                        title: '更新时间',
+                        dataIndex: 'masp_upd_time'
                     },
                     {
                         title: '操作',

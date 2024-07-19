@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-class User extends BaseModel
+class File extends BaseModel
 {
-    protected $table   = 'user';
+    protected $table   = 'file';
     public $timestamps = null;
 }

@@ -39,12 +39,12 @@ class OrderController
 
         $validate = Validator::make($params, [
             'order_id' => 'required',
-            'date' => 'required',
+            'datetime' => 'required',
             'pay_way' => 'required',
             'funds_received' => 'required',
         ],[
             'order_id.required' => '订单id不得为空',
-            'date.required' => '回款日期不得为空',
+            'datetime.required' => '回款日期不得为空',
             'pay_way.required' => '支付方式不得为空',
             'funds_received.required' => '回款金额不得为空',
         ]);

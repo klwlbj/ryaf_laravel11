@@ -14,6 +14,7 @@ class Login
 {
     public function handle($request, Closure $next)
     {
+//        ToolsLogic::writeLog('config','config',config('database'));
         $token = $request->get('token');
         if(!empty($token)){
             view()->share('token',$token);

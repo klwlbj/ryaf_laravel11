@@ -2,6 +2,7 @@
 
 namespace App\Http\Logic;
 
+use App\Models\File;
 use App\Models\Order;
 use App\Models\OrderAccountFlow;
 use App\Models\Place;
@@ -33,13 +34,13 @@ class OrderLogic extends BaseLogic
         }
 
         if(isset($params['user_keyword']) && !empty($params['user_keyword'])){
-            $orderIds = User::query()
+            $userIds = User::query()
                 ->where(function (Builder $q) use($params){
                     $q->orWhere('user_name','like',"%{$params['user_keyword']}%")
-                        ->orWhere('user_phone','like',"%{$params['user_keyword']}%");
+                        ->orWhere('user_mobile','like',"%{$params['user_keyword']}%");
                 })->select(['user_id'])->pluck('user_id')->toArray();
 
-            $query->whereIn('order_id',$orderIds);
+            $query->whereIn('order_user_id',$userIds);
         }
 
         if(isset($params['start_date']) && !empty($params['start_date'])){
@@ -50,11 +51,19 @@ class OrderLogic extends BaseLogic
             $query->where('order_crt_time','<=',$params['end_date']);
         }
 
+        if(isset($params['is_debt']) && !empty($params['is_debt'])){
+            $query->whereRaw("CASE
+			WHEN cast( order_pay_cycle AS SIGNED ) > 1 THEN
+		( TIMESTAMPDIFF( MONTH, order_actual_delivery_date, CURDATE() ) / cast( order_pay_cycle AS SIGNED ) * order_account_receivable ) > order_funds_received ELSE order_account_receivable > order_funds_received END");
+        }
+
         $total = $query->count();
 
         $list = $query
             ->select([
                 'order.*',
+                DB::raw("(case when cast( order_pay_cycle AS SIGNED ) > 1
+                             then (case when (TIMESTAMPDIFF( MONTH, order_actual_delivery_date, CURDATE() ) / cast( order_pay_cycle AS SIGNED ) * order_account_receivable ) > order_funds_received then 1 else 0 end) else (case when order_account_receivable > order_funds_received then 1 else 0 end) end) as is_debt"),
                 'node.node_name as order_node_name'
             ])
             ->orderBy('order_id','desc')
@@ -106,18 +115,38 @@ class OrderLogic extends BaseLogic
             return false;
         }
 
+        $fileList = ToolsLogic::jsonDecode($params['image_list'] ?? []);
+
         $insertData = [
             'orac_order_id' => $params['order_id'],
-            'orac_date' => $params['date'],
+            'orac_datetime' => $params['datetime'],
             'orac_pay_way' => $params['pay_way'],
             'orac_funds_received' => $params['funds_received'],
-            'orac_type' => (date('Y-m',strtotime($orderData->order_crt_time)) == date('Y-m',strtotime($params['date']))) ? 1 : 2,
+            'orac_type' => (date('Y-m',strtotime($orderData->order_crt_time)) == date('Y-m',strtotime($params['datetime']))) ? 1 : 2,
             'orac_remark' => $params['remark'] ?? '',
             'orac_status' => 1,
             'orac_operator_id' => AuthLogic::$userId,
         ];
 
-        OrderAccountFlow::query()->insert($insertData);
+        $id = OrderAccountFlow::query()->insertGetId($insertData);
+
+        $fileInsertData = [];
+        if(!empty($fileList)){
+            foreach ($fileList as $key => $value){
+                $fileInsertData[] = [
+                    'file_relation_id' => $id,
+                    'file_type' => 'order_account_flow',
+                    'file_name' => $value['name'],
+                    'file_ext' => $value['ext'],
+                    'file_path' => $value['url'],
+                ];
+            }
+        }
+
+        if(File::query()->insert($fileInsertData) === false){
+            ResponseLogic::setMsg('插入附件失败');
+            return false;
+        }
 
         return [];
     }
@@ -142,10 +171,17 @@ class OrderLogic extends BaseLogic
             ->orderBy('orac_approve_time','asc')
             ->get()->toArray();
 
+        $ids = array_column($list, 'orac_id');
+
+        $imageList = File::query()
+            ->whereIn('file_relation_id', $ids)->where(['file_type' => 'order_account_flow'])
+            ->select(['file_relation_id','file_name','file_path'])->get()->groupBy('file_relation_id')->toArray();
+
         foreach ($list as $key => &$value){
             $value['approve_auth'] = (AuthLogic::orderAccountApproveAuth() && $value['orac_status'] == 1) ? true : false;
             $value['orac_pay_way_msg'] = OrderAccountFlow::payWayMsg($value['orac_pay_way']);
             $value['orac_type_msg'] = OrderAccountFlow::typeMsg($value['orac_type']);
+            $value['image_list'] = $imageList[$value['orac_id']] ?? '';
         }
 
         unset($value);

@@ -113,8 +113,8 @@
                         dataIndex: 'maca_status'
                     },
                     {
-                        title: '提交时间',
-                        dataIndex: 'maca_crt_time'
+                        title: '更新时间',
+                        dataIndex: 'maca_upd_time'
                     },
                     {
                         title: '操作',

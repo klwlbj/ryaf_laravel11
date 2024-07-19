@@ -43,7 +43,7 @@ class MaterialSpecificationLogic extends BaseLogic
 
     public function getAllList($params)
     {
-        $query = MaterialSpecification::query();
+        $query = MaterialSpecification::query()->where(['masp_status' => 1]);
 
         if(isset($params['keyword']) && $params['keyword']){
             $query->where('masp_name','like','%'.$params['keyword'].'%');

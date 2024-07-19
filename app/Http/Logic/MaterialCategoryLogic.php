@@ -39,7 +39,7 @@ class MaterialCategoryLogic extends BaseLogic
 
     public function getAllList($params)
     {
-        $query = MaterialCategory::query();
+        $query = MaterialCategory::query()->where(['maca_status' => 1]);
 
         if(isset($params['keyword']) && $params['keyword']){
             $query->where('maca_name','like','%'.$params['keyword'].'%');

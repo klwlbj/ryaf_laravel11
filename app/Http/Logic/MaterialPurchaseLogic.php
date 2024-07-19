@@ -23,6 +23,10 @@ class MaterialPurchaseLogic extends BaseLogic
             $query->where('mapu_crt_time', '<=', $params['end_date']);
         }
 
+        if (isset($params['status']) && $params['status']) {
+            $query->where(['mapu_status' => $params['status']]);
+        }
+
         if (isset($params['material_id']) && $params['material_id']) {
             $ids = MaterialPurchaseDetail::query()->where(['mapu_material_id' => $params['material_id']])->pluck('mapu_pid')->toArray();
             $query->whereIn('mapu_id', $ids);

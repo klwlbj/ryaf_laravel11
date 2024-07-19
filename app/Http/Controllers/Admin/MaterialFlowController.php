@@ -36,6 +36,8 @@ class MaterialFlowController
     {
         $params = $request->all();
 
+//        print_r($params);die;
+
         $validate = Validator::make($params, [
             'material_id' => 'required',
             'warehouse_id' => 'required',

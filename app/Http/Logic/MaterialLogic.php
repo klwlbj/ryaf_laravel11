@@ -2,6 +2,7 @@
 
 namespace App\Http\Logic;
 
+use App\Http\Logic\Excel\ExportLogic;
 use App\Models\Material;
 use App\Models\MaterialDetail;
 use App\Models\MaterialSpecificationRelation;
@@ -42,15 +43,28 @@ class MaterialLogic extends BaseLogic
 
         $total = $query->count();
 
-        $list = $query
-            ->select([
-                'material.*',
-                'material_manufacturer.mama_name as mate_manufacturer_name',
-                'material_category.maca_name as mate_category_name',
-            ])
-            ->orderBy('mate_sort','desc')
-            ->orderBy('mate_id','desc')
-            ->offset($point)->limit($pageSize)->get()->toArray();
+        if(!empty($params['export'])){
+            $list = $query
+                ->select([
+                    'material.*',
+                    'material_manufacturer.mama_name as mate_manufacturer_name',
+                    'material_category.maca_name as mate_category_name',
+                ])
+                ->orderBy('mate_sort','desc')
+                ->orderBy('mate_id','desc')
+                ->get()->toArray();
+        }else{
+            $list = $query
+                ->select([
+                    'material.*',
+                    'material_manufacturer.mama_name as mate_manufacturer_name',
+                    'material_category.maca_name as mate_category_name',
+                ])
+                ->orderBy('mate_sort','desc')
+                ->orderBy('mate_id','desc')
+                ->offset($point)->limit($pageSize)->get()->toArray();
+        }
+
 
         $ids = array_column($list,'mate_id');
 
@@ -90,15 +104,49 @@ class MaterialLogic extends BaseLogic
 
         unset($value);
 
+        if(!empty($params['export'])){
+            return $this->export($list);
+        }
+
         return [
             'total' => $total,
             'list' => $list,
         ];
     }
 
+    public function export($list)
+    {
+        $title = ['名称','厂家','类别','规格','单位','库存','预警'];
+
+        $exportData = [];
+        $config = [
+            'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(7) . '1' => true],
+            'width' => ['A'=>20,'B'=>20,'C'=>20,'D'=>20,'E'=>20,'F'=>20,'G'=>20,]
+        ];
+        $row = 2;
+        foreach ($list as $key => $value){
+            $exportData[] = [
+                $value['mate_name'],
+                $value['mate_manufacturer_name'],
+                $value['mate_category_name'],
+                implode("\n",$value['mate_specification_name']),
+                $value['mate_unit'],
+                $value['mate_number'],
+                $value['mate_warning'],
+            ];
+
+            $row++;
+        }
+        $config['horizontal_center'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(7) . $row => true];
+        $config['wrap_text'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(7) . $row => true];
+
+        return ExportLogic::getInstance()->export($title,$exportData,'库存导出',$config);
+
+    }
+
     public function getAllList($params)
     {
-        $query = Material::query();
+        $query = Material::query()->where(['mate_status' => 1]);
 
         if(isset($params['keyword']) && $params['keyword']){
             $query->where('mate_id_name','like','%'.$params['keyword'].'%');

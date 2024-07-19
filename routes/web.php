@@ -1,9 +1,14 @@
 <?php
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 //Route::get('/', function () {
 //    return view('welcome');
+//});
+
+//Route::get('/myCommand', function () {
+//    print_r(Artisan::call('config:cache'));die;
 //});
 
 Route::middleware(['login'])->group(function () {

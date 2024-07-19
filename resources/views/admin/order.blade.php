@@ -15,6 +15,17 @@
                         <a-input v-model="listQuery.user_keyword" placeholder="用户名/用户手机号" style="width: 200px;" />
                     </a-form-item>
                     <a-form-item>
+                        <a-select v-model="listQuery.is_debt" show-search placeholder="是否欠款" :max-tag-count="1"
+                                  style="width: 200px;" allow-clear>
+                            <a-select-option :value="1">
+                                是
+                            </a-select-option>
+                            <a-select-option :value="2">
+                                否
+                            </a-select-option>
+                        </a-select>
+                    </a-form-item>
+                    <a-form-item>
                         <a-range-picker
                             :placeholder="['开始时间', '结束时间']"
                             @change="dateChange"
@@ -37,6 +48,14 @@
                     <div slot="order_user" slot-scope="text, record">
                         <div>@{{ record.order_user_name }}</div>
                         <div>@{{ record.order_user_mobile }}</div>
+                    </div>
+
+                    <div slot="order_pay_cycle" slot-scope="text, record">
+                        <span v-if="record.order_pay_cycle == 1">一次性付款</span>
+                        <span v-if="record.order_pay_cycle > 1">@{{  record.order_pay_cycle }}期</span>
+                        <span v-else>未知</span>
+
+                        <span v-if="record.is_debt == 1" style="color: red">(欠款)</span>
                     </div>
 
                     <div slot="action" slot-scope="text, record">
@@ -97,6 +116,7 @@
             el: '#app',
             data: {
                 listQuery: {
+                    is_debt:undefined,
                     keyword: "",
                     address:'',
                     user_keyword:'',
@@ -144,17 +164,14 @@
                         dataIndex: 'order_status'
                     },
                     {
-                        title: '合约类型',
-                        dataIndex: 'order_contract_type'
+                        title: '付款周期',
+                        scopedSlots: { customRender: 'order_pay_cycle' },
+                        dataIndex: 'order_pay_cycle'
                     },
-                    {
-                        title: '服务时长',
-                        dataIndex: 'order_service_month_count'
-                    },
-                    {
-                        title: '设备数',
-                        dataIndex: 'order_device_count'
-                    },
+                    // {
+                    //     title: '设备数',
+                    //     dataIndex: 'order_device_count'
+                    // },
                     {
                         title: '应收款',
                         dataIndex: 'order_account_receivable'
@@ -164,8 +181,16 @@
                         dataIndex: 'order_funds_received'
                     },
                     {
-                        title: '创建日期',
-                        dataIndex: 'order_crt_time'
+                        title: '合约类型',
+                        dataIndex: 'order_contract_type'
+                    },
+                    {
+                        title: '服务时长',
+                        dataIndex: 'order_service_month_count'
+                    },
+                    {
+                        title: '交付时间',
+                        dataIndex: 'order_actual_delivery_date'
                     },
                     {
                         title: '操作',

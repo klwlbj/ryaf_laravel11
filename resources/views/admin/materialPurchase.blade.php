@@ -12,15 +12,9 @@
                         <a-select v-model="listQuery.status" show-search placeholder="请选择状态" :max-tag-count="1"
                                   style="width: 200px;" allow-clear>
                             <a-select-option :value="1">
-                                待审批
-                            </a-select-option>
-                            <a-select-option :value="2">
                                 申购中
                             </a-select-option>
-                            <a-select-option :value="3">
-                                已驳回
-                            </a-select-option>
-                            <a-select-option :value="4">
+                            <a-select-option :value="2">
                                 已完成
                             </a-select-option>
                         </a-select>
@@ -48,11 +42,12 @@
                     </div>
 
                     <div slot="action" slot-scope="text, record">
-                        <a style="margin-right: 8px" @click="onUpdate(record)">
+                        <a v-if="record.mapu_status == 1" style="margin-right: 8px" @click="onUpdate(record)">
                             修改
                         </a>
 
                         <a-popconfirm
+                            v-if="record.mapu_status == 1"
                             title="是否确定删除商品?"
                             ok-text="确认"
                             cancel-text="取消"

@@ -16,6 +16,15 @@
                 <span v-else style="color:green">{{ record.orac_funds_received }}</span>
             </div>
 
+            <div slot="image_list" slot-scope="text, record">
+                <div v-if="record.image_list.length > 0" v-for="item in record.image_list">
+                    <a :href="item.file_path" target="_blank">
+                        <img width="100px" :src="getImage(item.file_path)" alt="">
+                    </a>
+                </div>
+                <div v-else></div>
+            </div>
+
             <div slot="action" slot-scope="text, record">
                 <a-popconfirm
                     v-if="record.approve_auth"
@@ -54,7 +63,7 @@ module.exports = {
             columns:[
                 {
                     title: '回款日期',
-                    dataIndex: 'orac_date',
+                    dataIndex: 'orac_datetime',
                 },
                 {
                     title: '回款金额',
@@ -64,6 +73,11 @@ module.exports = {
                 {
                     title: '收款方式',
                     dataIndex: 'orac_pay_way_msg',
+                },
+                {
+                    title: '收款图片',
+                    scopedSlots: { customRender: 'image_list' },
+                    dataIndex: 'image_list',
                 },
                 {
                     title: '回款类型',
@@ -134,7 +148,14 @@ module.exports = {
             }).catch(error => {
                 this.$message.error('请求失败');
             });
-        }
+        },
+        getImage(url){
+            if(url.substr(0,4).toLowerCase() == "http"){
+                return url;
+            }
+
+            return 'http://' + window.location.hostname + url;
+        },
     },
     created () {
         if(this.id){

@@ -18,6 +18,9 @@
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
                     <a-form-item>
+                        <a-button icon="search" @click="exportList">导出</a-button>
+                    </a-form-item>
+                    <a-form-item>
                         <a-button @click="onCreate" type="primary" icon="edit">添加物品</a-button>
                     </a-form-item>
 
@@ -46,7 +49,7 @@
                     </div>
 
                     <div slot="status" slot-scope="text, record">
-                        <a-tag v-if="record.status == 0"  color="red">禁用</a-tag>
+                        <a-tag v-if="record.mate_status == 0"  color="red">禁用</a-tag>
                         <a-tag v-else color="green">启用</a-tag>
                     </div>
 
@@ -217,8 +220,8 @@
                         dataIndex: 'mate_status'
                     },
                     {
-                        title: '提交时间',
-                        dataIndex: 'mate_crt_time'
+                        title: '更新时间',
+                        dataIndex: 'mate_upd_time'
                     },
                     {
                         title: '操作',
@@ -259,6 +262,26 @@
                     this.listQuery.page = 1
                     this.pagination.current = 1;
                     this.getPageList()
+                },
+                exportList(){
+                    let formData = JSON.parse(JSON.stringify(this.listQuery));
+                    formData.export = 1;
+                    axios({
+                        // 默认请求方式为get
+                        method: 'post',
+                        url: '/api/material/getList',
+                        // 传递参数
+                        data: formData,
+                        responseType: 'json',
+                        headers:{
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }).then(response => {
+                        let res = response.data;
+                        window.location.href = res.data.url
+                    }).catch(error => {
+                        this.$message.error('请求失败');
+                    });
                 },
                 // 获取列表
                 getPageList () {
@@ -344,11 +367,13 @@
                     this.outComingFormVisible = true;
                 },
                 inComingSubmit(){
+                    this.inComingMaterialId = null;
                     this.$message.success('入库成功');
                     this.inComingFormVisible = false;
                     this.handleFilter();
                 },
                 outComingSubmit(){
+                    this.outComingMaterialId = null;
                     this.$message.success('出库成功');
                     this.outComingFormVisible = false;
                     this.handleFilter();

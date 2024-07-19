@@ -20,7 +20,7 @@ class ScriptController
         $list = place::query()
             ->leftJoin('user','user.user_id','=','place.plac_user_id')
             ->leftJoin('node','node.node_id','=','place.plac_node_id')
-            ->whereIn('plac_id',[113662])
+            ->whereIn('plac_node_id',[58])
             ->whereIn('plac_node_id',[
             23
             ,58
@@ -69,7 +69,7 @@ class ScriptController
                 'phoneNum' => $value['user_mobile'],
                 'pointX' => $value['plac_lng'],
                 'pointY' => $value['plac_lat'],
-                'regionCode' => $this->getRegionCode($value['node_name']),
+                'nodeName' => $value['node_name'],
             ];
 //            print_r($params);die;
             $response = $client->post(
@@ -81,7 +81,7 @@ class ScriptController
                 ],
                 'json'    => (object)$params, // 将关联数组转换为 JSON 对象,PHP空数组转空对象
             ]);
-            print_r(ToolsLogic::jsonDecode($response->getBody()));die;
+
             ToolsLogic::writeLog($value['plac_id'] . ' res:','jg',ToolsLogic::jsonDecode($response->getBody()));
         }
         echo '推送成功';
