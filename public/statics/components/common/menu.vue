@@ -101,6 +101,11 @@ module.exports = {
                         label:'订单回款管理',
                         url:this.getLocalUrl('/order/view'),
                     },
+                  {
+                        id:5,
+                        label:'其它订单管理',
+                        url:this.getLocalUrl('/otherOder/view'),
+                    },
                 ]
               },
               {
@@ -117,7 +122,7 @@ module.exports = {
                   {
                     id:11,
                     label:'预收情况管理',
-                    url:this.getLocalUrl('/advancedOrder/view'),
+                    url:this.getLocalUrl('/financialAdvancedOrder/view'),
 
 
                   },

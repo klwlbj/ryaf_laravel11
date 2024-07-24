@@ -41,6 +41,14 @@ class AdvancedOrderLogic extends BaseLogic
             }
         }
 
+        if (!empty($params['start_date'])) {
+            $query->where('created_at', '>=', $params['start_date']);
+        }
+
+        if (!empty($params['end_date'])) {
+            $query->where('created_at', '<=', $params['end_date']);
+        }
+
         $total = $query->count();
 
         $list = $query->with(['area', 'area.parentArea', 'area.parentArea.parentArea'])

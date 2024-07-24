@@ -35,32 +35,32 @@ module.exports = {
       columns:[
         {
           title: '1个月内（30天内）',
-          dataIndex: 'amount',
+          dataIndex: 'arrears_1',
           width: 80
         },
         {
           title: '1-2个月内（30-60天内）',
-          dataIndex: 'date',
+          dataIndex: 'arrears_2',
           width: 80
         },
         {
           title: '2-3个月内（60-90天内）',
-          dataIndex: 'date',
+          dataIndex: 'arrears_3',
           width: 80
         },
         {
           title: '3-4个月内（90-120天内）',
-          dataIndex: 'date',
+          dataIndex: 'arrears_4',
           width: 80
         },
         {
           title: '4-5个月内（120-150天内）',
-          dataIndex: 'date',
+          dataIndex: 'arrears_5',
           width: 80
         },
         {
           title: '5-12个月内（150天至本年内）',
-          dataIndex: 'date',
+          dataIndex: 'arrears_6',
           width: 80
         },
       ],
@@ -81,7 +81,7 @@ module.exports = {
             axios({
                 // 默认请求方式为get
                 method: 'post',
-                url: '/api/financialIncome/getStageInfo',
+                url: '/api/financialIncome/getArrearsInfo',
                 // 传递参数
                 data: {
                     id:id

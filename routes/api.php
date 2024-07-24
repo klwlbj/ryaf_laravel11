@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\UploadController;
 use App\Http\Controllers\Admin\MaterialController;
 use App\Http\Controllers\Admin\WarehouseController;
+use App\Http\Controllers\Admin\OtherOrderController;
 use App\Http\Controllers\Admin\MaterialFlowController;
 use App\Http\Controllers\Admin\AdvancedOrderController;
 use App\Http\Controllers\Admin\FinancialIncomeController;
@@ -92,7 +93,6 @@ Route::middleware(['login'])->group(function () {
         Route::post('/approveAccountFlow', [OrderController::class, 'approveAccountFlow']);
     });
 
-
     Route::prefix('advancedOrder')->group(function () {
         Route::post('/getList', [AdvancedOrderController::class, 'getList']);
         Route::post('/getInfo', [AdvancedOrderController::class, 'getInfo']);
@@ -100,6 +100,13 @@ Route::middleware(['login'])->group(function () {
         Route::post('/add', [AdvancedOrderController::class, 'add']);
         Route::post('/update', [AdvancedOrderController::class, 'update']);
         Route::post('/delete', [AdvancedOrderController::class, 'delete']);
+    });
+
+    Route::prefix('otherOrder')->group(function () {
+        Route::post('/getInfo', [OtherOrderController::class, 'getInfo']);
+        Route::post('/add', [OtherOrderController::class, 'add']);
+        Route::post('/update', [OtherOrderController::class, 'update']);
+        Route::post('/delete', [OtherOrderController::class, 'delete']);
     });
 
     Route::prefix('area')->group(function () {
@@ -110,5 +117,6 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('financialIncome')->group(function () {
         Route::post('/getList', [FinancialIncomeController::class, 'getList']);
         Route::post('/getStageInfo', [FinancialIncomeController::class, 'getStageInfo']);
+        Route::post('/getArrearsInfo', [FinancialIncomeController::class, 'getArrearsInfo']);
     });
 });
