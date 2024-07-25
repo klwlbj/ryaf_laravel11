@@ -10,8 +10,11 @@ use Illuminate\Support\Facades\Route;
 //Route::get('/myCommand', function () {
 //    print_r(Artisan::call('config:cache'));die;
 //});
+Route::view('/login', 'admin.login');
 
 Route::middleware(['login'])->group(function () {
+    Route::view('/', 'admin.index');
+
     Route::prefix('materialManufacturer')->group(function () {
         Route::view('/view', 'admin.materialManufacturer');
     });
@@ -46,6 +49,18 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('financialIncome')->group(function () {
         Route::view('/view', 'admin.financialIncome');
+    });
+
+    Route::prefix('department')->group(function () {
+        Route::view('/view', 'admin.department');
+    });
+
+    Route::prefix('admin')->group(function () {
+        Route::view('/view', 'admin.admin');
+    });
+
+    Route::prefix('adminPermission')->group(function () {
+        Route::view('/view', 'admin.adminPermission');
     });
 });
 

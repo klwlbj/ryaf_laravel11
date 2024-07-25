@@ -141,6 +141,7 @@
                     // },
                     {
                         title: '订单编号',
+                        fixed: 'left',
                         dataIndex: 'order_iid',
                         width: 100
                     },

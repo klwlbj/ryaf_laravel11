@@ -31,7 +31,7 @@
                     </a-form-item>
                 </a-form>
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                         :pagination="false" :scroll="{ x: 1500 }">
+                         :pagination="false" :scroll="{ x: 1500,y: 650 }">
 
                     <div slot="type" slot-scope="text, record">
                         <a-tag v-if="record.mafl_type == 1"  color="green">入库</a-tag>
@@ -120,13 +120,14 @@
                     onShowSizeChange: this.paginationChange,
                 },
                 columns:[
-                    {
-                        title: 'Id',
-                        dataIndex: 'mafl_id',
-                        width: 80
-                    },
+                    // {
+                    //     title: 'Id',
+                    //     dataIndex: 'mafl_id',
+                    //     width: 80
+                    // },
                     {
                         title: '物品名称',
+                        fixed: 'left',
                         dataIndex: 'mafl_material_name',
                         width: 100
                     },

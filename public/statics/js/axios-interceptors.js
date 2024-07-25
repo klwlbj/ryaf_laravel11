@@ -17,8 +17,9 @@ axios.interceptors.request.use(
 // 相应拦截器
 axios.interceptors.response.use(
     function (response) {
+        // console.log(response);
         if(response['data']['code'] && response['data']['code'] == 401){
-            window.local.href = 'https://pingansuiyue.crzfxjzn.com/node/login.php';
+            window.location.href = 'https://pingansuiyue.crzfxjzn.com/node/login.php';
             return false;
         }
         // 对响应数据进行操作

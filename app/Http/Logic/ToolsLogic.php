@@ -88,16 +88,16 @@ class ToolsLogic
      * @param integer $pid   菜单父级id
      * @return array
      */
-    public static function toTree($arr, $pid = 0)
+    public static function toTree($arr, $pid = 0,$idKey = 'id',$parentIdKey = 'parent_id')
     {
         $tree = [];
 
         foreach ($arr as $k => $v) {
-            if ($v['parent_id'] == $pid) {
-                $childData = self::toTree($arr, $v['id']);
+            if ($v[$parentIdKey] == $pid) {
+                $childData = self::toTree($arr, $v[$idKey],$idKey,$parentIdKey);
                 // 这里根据前端，以及业务的需要来处理，加上这个判断，如果该菜单没有下级，就没有chlidren字段，不加判断，则返回[]
                 if (count($childData) > 0) {
-                    $v['children'] = self::toTree($arr, $v['id']);
+                    $v['children'] = $childData;
                 }
                 $tree[] = $v;
             }

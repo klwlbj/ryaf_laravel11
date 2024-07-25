@@ -11,14 +11,14 @@
                     <span style="float: left;margin-left: 5px">{{ parent.label }}</span>
 
                     <span style="float: right">
-                        <a-icon v-show="parent.spread" style="color:#134974 !important;" type="caret-up" ></a-icon>
-                        <a-icon v-show="!parent.spread" style="color:#134974 !important;" type="caret-down" ></a-icon>
+                        <a-icon v-show="parent.spread" style="color:#064a4a !important;" type="caret-up" ></a-icon>
+                        <a-icon v-show="!parent.spread" style="color:#064a4a !important;" type="caret-down" ></a-icon>
                     </span>
 
                 </div>
-                <div v-show="parent.spread" v-if="parent.child" class="child-box">
+                <div v-show="parent.spread" v-if="parent.children" class="child-box">
 
-                    <a v-for="child in parent.child" :href="child.url" :class="{is_current:checkCurrent(child)}">
+                    <a v-for="child in parent.children" :href="getLocalUrl(child.url)" :class="{is_current:checkCurrent(child)}">
                         <a-icon style="" type="right" ></a-icon>
                         {{ child.label }}</a>
                 </div>
@@ -36,103 +36,134 @@ module.exports = {
     data () {
         return {
             list:[
-                {
-                    id:1,
-                    label:'首页',
-                    spread: true,
-                    child:[
-                        {
-                            id:2,
-                            label:'首页',
-                            url:'https://pingansuiyue.crzfxjzn.com/node/index.php?init=1',
-                        }
-                    ]
-                },
-                {
-                    id:3,
-                    label:'库存管理',
-                    spread: true,
-                    child:[
-                        {
-                            id:4,
-                            label:'厂家管理',
-                            url:this.getLocalUrl('/materialManufacturer/view'),
-                        },
-                        {
-                            id:4,
-                            label:'分类管理',
-                            url:this.getLocalUrl('/materialCategory/view'),
-                        },
-                        {
-                            id:5,
-                            label:'规格管理',
-                            url:this.getLocalUrl('/materialSpecification/view'),
-                        },
-                        {
-                            id:6,
-                            label:'物品管理',
-                            url:this.getLocalUrl('/material/view'),
-                        },
-                        {
-                            id:6,
-                            label:'库存流水',
-                            url:this.getLocalUrl('/materialFlow/view'),
-                        },
-                        {
-                            id:6,
-                            label:'物品申购',
-                            url:this.getLocalUrl('/materialPurchase/view'),
-                        },
-                    ]
-                },
 
-              {
-                id:7,
-                label:'商务管理',
-                spread: true,
-                child:[
-                  {
-                    id:8,
-                    label:'预付订单管理',
-                    url:this.getLocalUrl('/advancedOrder/view'),
-                  },
-                    {
-                        id:4,
-                        label:'订单回款管理',
-                        url:this.getLocalUrl('/order/view'),
-                    },
-                ]
-              },
-              {
-                id:9,
-                label:'财务管理',
-                spread: true,
-                child:[
-                  {
-                    id:10,
-                    label:'财务收款台账管理',
-                    url:this.getLocalUrl('/financialIncome/view'),
-
-                  },
-                  {
-                    id:11,
-                    label:'预收情况管理',
-                    url:this.getLocalUrl('/advancedOrder/view'),
-
-
-                  },
-                  {
-                    id:11,
-                    label:'保证金（押金）管理',
-                    url:this.getLocalUrl('/advancedOrder/view'),
-
-                  },
-                ]
-              },
             ]
         }
     },
     methods: {
+        getList(){
+            // this.list = [
+            //     {
+            //         id:1,
+            //         label:'首页',
+            //         spread: true,
+            //         children:[
+            //             {
+            //                 id:2,
+            //                 label:'首页',
+            //                 url:'https://pingansuiyue.crzfxjzn.com/node/index.php?init=1',
+            //             }
+            //         ]
+            //     },
+            //     {
+            //         id:3,
+            //         label:'库存管理',
+            //         spread: true,
+            //         children:[
+            //             {
+            //                 id:4,
+            //                 label:'厂家管理',
+            //                 url:this.getLocalUrl('/materialManufacturer/view'),
+            //             },
+            //             {
+            //                 id:4,
+            //                 label:'分类管理',
+            //                 url:this.getLocalUrl('/materialCategory/view'),
+            //             },
+            //             {
+            //                 id:5,
+            //                 label:'规格管理',
+            //                 url:this.getLocalUrl('/materialSpecification/view'),
+            //             },
+            //             {
+            //                 id:6,
+            //                 label:'物品管理',
+            //                 url:this.getLocalUrl('/material/view'),
+            //             },
+            //             {
+            //                 id:6,
+            //                 label:'库存流水',
+            //                 url:this.getLocalUrl('/materialFlow/view'),
+            //             },
+            //             {
+            //                 id:6,
+            //                 label:'物品申购',
+            //                 url:this.getLocalUrl('/materialPurchase/view'),
+            //             },
+            //         ]
+            //     },
+            //
+            //     {
+            //         id:7,
+            //         label:'商务管理',
+            //         spread: true,
+            //         children:[
+            //             {
+            //                 id:8,
+            //                 label:'预付订单管理',
+            //                 url:this.getLocalUrl('/advancedOrder/view'),
+            //             },
+            //             {
+            //                 id:4,
+            //                 label:'订单回款管理',
+            //                 url:this.getLocalUrl('/order/view'),
+            //             },
+            //         ]
+            //     },
+            //     {
+            //         id:9,
+            //         label:'财务管理',
+            //         spread: true,
+            //         children:[
+            //             {
+            //                 id:10,
+            //                 label:'财务收款台账管理',
+            //                 url:this.getLocalUrl('/financialIncome/view'),
+            //
+            //             },
+            //             {
+            //                 id:11,
+            //                 label:'预收情况管理',
+            //                 url:this.getLocalUrl('/advancedOrder/view'),
+            //
+            //
+            //             },
+            //             {
+            //                 id:11,
+            //                 label:'保证金（押金）管理',
+            //                 url:this.getLocalUrl('/advancedOrder/view'),
+            //
+            //             },
+            //         ]
+            //     },
+            //     {
+            //         id:12,
+            //         label:'系统管理',
+            //         spread: true,
+            //         children:[
+            //             {
+            //                 id:11,
+            //                 label:'成员管理',
+            //                 url:this.getLocalUrl('/admin/view'),
+            //             },
+            //             {
+            //                 id:10,
+            //                 label:'部门管理',
+            //                 url:this.getLocalUrl('/department/view'),
+            //             },
+            //             {
+            //                 id:11,
+            //                 label:'权限管理',
+            //                 url:this.getLocalUrl('/adminPermission/view'),
+            //             }
+            //         ]
+            //     },
+            // ];
+
+            let menu = localStorage.getItem("menu");
+            this.list = JSON.parse(menu);
+
+        },
         getLocalUrl(url){
             return url;
         },
@@ -144,6 +175,9 @@ module.exports = {
             this.$forceUpdate();
         },
         checkCurrent(row){
+            if(window.location.pathname == '/'){
+                return false;
+            }
             if(row.url.search(window.location.pathname) != -1){
                 return true;
             }
@@ -152,7 +186,7 @@ module.exports = {
         }
     },
     created () {
-        // console.log(this.list);
+        this.getList();
     },
     watch: {
 
@@ -169,7 +203,7 @@ ul{
     padding: 0;
     margin: 0;
     list-style: none;
-    background-color: #134974 !important
+    background-color: #053434 !important
 }
 
 li{
@@ -187,7 +221,7 @@ li{
     display: block;
     padding: 0 20px;
     color: #FFFFFF !important;
-    background-color: #0A385C !important;
+    background-color: #053434 !important;
     cursor: pointer;
 }
 .child-box{
@@ -208,7 +242,7 @@ li{
     overflow: hidden;
     white-space: nowrap;
     color: #FFFFFF !important;
-    background-color: #134974;
+    background-color: #064a4a;
 }
 .is_current{
     background-color: #009688 !important;

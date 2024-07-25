@@ -19,7 +19,7 @@
 .sidebar{
     border-radius: 0;
     width: 150px;
-    background-color: #134974 !important;
+    background-color: #053434 !important;
 }
 .container{
     flex: 1;
@@ -29,10 +29,12 @@
 <body>
 <div style=" display: flex;flex-direction: column;height: 100vh; ">
     <div class="header">
-        <div style="height: 50px;background-color: #134974;color: white;display: flex;align-items:center;justify-content:space-between;padding: 0 5px;">
+        <div style="height: 50px;background-color: #053434;color: white;display: flex;align-items:center;justify-content:space-between;padding: 0 5px;">
             <span style="font-size: 22px;">平安穗粤 智慧消防平台 - 运营管理后台VER 2.1</span>
             <span id="time" style="font-size: 22px;font-weight: bold"></span>
-            <span style="font-size: 16px;font-weight: bold"><span>{{ $accountInfo['noac_name'] }}，您好。</span>     <a style="margin-left:20px;color: white;text-underline: none" href="https://pingansuiyue.crzfxjzn.com/node/big_screen_new.php">数据大屏</a> <a style="color: white;text-underline: none" href="https://pingansuiyue.crzfxjzn.com/node/logout.php">退出</a></span>
+            <span style="font-size: 16px;font-weight: bold"><span>{{ $adminInfo['admin_name'] }}，您好。</span>
+                <a style="color: white;text-underline: none" href="javascript:void(0);" onclick="logout()">退出</a>
+            </span>
         </div>
     </div>
     <div style="width: 100%;flex: 1;display: flex;">
@@ -49,12 +51,11 @@
 <script src="{{asset('statics/js/axios-interceptors.js')}}"></script>
 <script>
     moment.locale('zh-cn');
-    var token = "{!! $token ?? '' !!}";
-
-    if(token){
-        setCookie('X-Token',token,1);
+    function logout(){
+        deleteCookie('X-Token');
+        localStorage.removeItem("menu");
+        window.location.href='/login';
     }
-
 </script>
 
 

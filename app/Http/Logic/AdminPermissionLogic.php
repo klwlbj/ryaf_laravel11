@@ -1,0 +1,93 @@
+<?php
+
+namespace App\Http\Logic;
+
+use App\Models\Admin;
+use App\Models\AdminPermission;
+use App\Models\Department;
+
+class AdminPermissionLogic extends BaseLogic
+{
+    public function getTreeList($params)
+    {
+        $query = AdminPermission::query();
+
+        if(isset($params['keyword']) && $params['keyword']){
+            $query->where('adpe_name','like','%'.$params['keyword'].'%');
+        }
+
+        $list = $query
+            ->orderBy('adpe_id','asc')->orderBy('adpe_sort','desc')->get()->toArray();
+
+        $treeList = ToolsLogic::toTree($list,0,'adpe_id','adpe_parent_id');
+
+        return ['list' => $treeList ?: $list];
+    }
+
+    public function getInfo($params)
+    {
+        $data = AdminPermission::query()->where(['adpe_id' => $params['id']])->first();
+        if(!$data){
+            ResponseLogic::setMsg('数据不存在');
+            return false;
+        }
+
+        return $data;
+    }
+
+    public function add($params)
+    {
+        $insertData = [
+            'adpe_parent_id' => $params['parent_id'] ?? 0,
+            'adpe_name' => $params['name'],
+            'adpe_route' => $params['route'] ?? '',
+            'adpe_type' => $params['type'] ?? 1,
+            'adpe_sort' => $params['sort'] ?? 0,
+            'adpe_status' => $params['status'] ?? 0,
+        ];
+
+        $id = AdminPermission::query()->insertGetId($insertData);
+        if($id === false){
+            ResponseLogic::setMsg('添加失败');
+            return false;
+        }
+
+        return ['id' => $id];
+    }
+
+    public function update($params)
+    {
+        $insertData = [
+            'adpe_parent_id' => $params['parent_id'] ?? 0,
+            'adpe_name' => $params['name'],
+            'adpe_route' => $params['route'] ?? '',
+            'adpe_type' => $params['type'] ?? 1,
+            'adpe_sort' => $params['sort'] ?? 0,
+            'adpe_status' => $params['status'] ?? 0,
+        ];
+
+
+        if(Department::query()->where(['adpe_id' => $params['id']])->update($insertData) === false){
+            ResponseLogic::setMsg('更新失败');
+            return false;
+        }
+
+        return [];
+    }
+
+    public function delete($params)
+    {
+        if(Department::query()->where(['depa_parent_id' => $params['id']])->exists()){
+            ResponseLogic::setMsg('存在下级部门，不能删除');
+            return false;
+        }
+
+        if(Admin::query()->where(['admin_part_id' => $params['id']])->exists()){
+            ResponseLogic::setMsg('部门下存在人员，不能删除');
+            return false;
+        }
+
+        Admin::query()->where(['depa_id' => $params['id']])->delete();
+        return [];
+    }
+}

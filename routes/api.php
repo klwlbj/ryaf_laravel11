@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminPermissionController;
+use App\Http\Controllers\Admin\DepartmentController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AreaController;
 use App\Http\Controllers\Admin\AdminController;
@@ -19,10 +21,18 @@ Route::any('/upload', [UploadController::class, 'upload']);
 
 Route::any('/pushUnits', [\App\Http\Controllers\ScriptController::class, 'pushUnits']);
 
+Route::any('/login', [AdminController::class, 'login']);
+
+//Route::any('/importAdmin', [\App\Http\Controllers\Admin\ImportController::class, 'importAdmin']);
+
 Route::middleware(['login'])->group(function () {
     //管理员
     Route::prefix('admin')->group(function () {
+        Route::post('/getList', [AdminController::class, 'getList']);
         Route::post('/getAllList', [AdminController::class, 'getAllList']);
+        Route::post('/add', [AdminController::class, 'add']);
+        Route::post('/update', [AdminController::class, 'update']);
+        Route::post('/getInfo', [AdminController::class, 'getInfo']);
     });
 
     Route::prefix('warehouse')->group(function () {
@@ -110,5 +120,21 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('financialIncome')->group(function () {
         Route::post('/getList', [FinancialIncomeController::class, 'getList']);
         Route::post('/getStageInfo', [FinancialIncomeController::class, 'getStageInfo']);
+    });
+
+    Route::prefix('department')->group(function () {
+        Route::post('/getTreeList', [DepartmentController::class, 'getTreeList']);
+        Route::post('/add', [DepartmentController::class, 'add']);
+        Route::post('/update', [DepartmentController::class, 'update']);
+        Route::post('/getInfo', [DepartmentController::class, 'getInfo']);
+        Route::post('/delete', [DepartmentController::class, 'delete']);
+    });
+
+    Route::prefix('adminPermission')->group(function () {
+        Route::post('/getTreeList', [AdminPermissionController::class, 'getTreeList']);
+        Route::post('/add', [AdminPermissionController::class, 'add']);
+        Route::post('/update', [AdminPermissionController::class, 'update']);
+        Route::post('/getInfo', [AdminPermissionController::class, 'getInfo']);
+        Route::post('/delete', [AdminPermissionController::class, 'delete']);
     });
 });

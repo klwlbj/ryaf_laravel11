@@ -17,3 +17,8 @@ function getCookie(key)
     }
     return "";
 }
+
+function deleteCookie(key)
+{
+    setCookie(key,'',-1)
+}

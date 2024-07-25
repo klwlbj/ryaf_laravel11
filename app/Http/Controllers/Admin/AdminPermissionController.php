@@ -2,37 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Logic\AdminLogic;
+use App\Http\Logic\AdminPermissionLogic;
+use App\Http\Logic\DepartmentLogic;
 use App\Http\Logic\ResponseLogic;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class AdminController
+class AdminPermissionController
 {
-    public function login(Request $request)
-    {
-        $params = $request->all();
-
-        $validate = Validator::make($params, [
-            'mobile' => 'required',
-            'password' => 'required',
-        ],[
-            'mobile.required' => '账号不得为空',
-            'password.required' => '密码不得为空',
-        ]);
-
-        if($validate->fails())
-        {
-            return ResponseLogic::apiErrorResult($validate->errors()->first());
-        }
-
-        $res = AdminLogic::getInstance()->login($params);
-        if($res === false){
-            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
-        }
-        return ResponseLogic::apiResult(0,'ok',$res);
-    }
-    public function getList(Request $request)
+    public function getTreeList(Request $request)
     {
         $params = $request->all();
 
@@ -47,21 +25,23 @@ class AdminController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = AdminLogic::getInstance()->getList($params);
+        $res = AdminPermissionLogic::getInstance()->getTreeList($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
-    public function getAllList(Request $request)
+    public function add(Request $request)
     {
         $params = $request->all();
 
         $validate = Validator::make($params, [
-
+//            'parent_id' => 'required',
+            'name' => 'required',
         ],[
-
+//            'parent_id.required' => '父级不得为空',
+            'name.required' => '名称不得为空',
         ]);
 
         if($validate->fails())
@@ -69,7 +49,33 @@ class AdminController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = AdminLogic::getInstance()->getAllList($params);
+        $res = AdminPermissionLogic::getInstance()->add($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function update(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+//            'parent_id' => 'required',
+            'name' => 'required',
+        ],[
+            'id.required' => 'id不得为空',
+//            'parent_id.required' => '父级不得为空',
+            'name.required' => '部门名称不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = DepartmentLogic::getInstance()->update($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
@@ -91,61 +97,7 @@ class AdminController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = AdminLogic::getInstance()->getInfo($params);
-        if($res === false){
-            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
-        }
-        return ResponseLogic::apiResult(0,'ok',$res);
-    }
-
-    public function add(Request $request)
-    {
-        $params = $request->all();
-
-        $validate = Validator::make($params, [
-            'department_id' => 'required',
-            'name' => 'required',
-            'mobile' => 'required',
-        ],[
-            'department_id.required' => '部门不得为空',
-            'name.required' => '成员名称不得为空',
-            'mobile.required' => '手机号不得为空',
-        ]);
-
-        if($validate->fails())
-        {
-            return ResponseLogic::apiErrorResult($validate->errors()->first());
-        }
-
-        $res = AdminLogic::getInstance()->add($params);
-        if($res === false){
-            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
-        }
-        return ResponseLogic::apiResult(0,'ok',$res);
-    }
-
-    public function update(Request $request)
-    {
-        $params = $request->all();
-
-        $validate = Validator::make($params, [
-            'id' => 'required',
-            'department_id' => 'required',
-            'name' => 'required',
-            'mobile' => 'required',
-        ],[
-            'id.required' => 'id不得为空',
-            'department_id.required' => '部门不得为空',
-            'name.required' => '成员名称不得为空',
-            'mobile.required' => '手机号不得为空',
-        ]);
-
-        if($validate->fails())
-        {
-            return ResponseLogic::apiErrorResult($validate->errors()->first());
-        }
-
-        $res = AdminLogic::getInstance()->update($params);
+        $res = DepartmentLogic::getInstance()->getInfo($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
@@ -167,7 +119,7 @@ class AdminController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = AdminLogic::getInstance()->delete($params);
+        $res = DepartmentLogic::getInstance()->delete($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }

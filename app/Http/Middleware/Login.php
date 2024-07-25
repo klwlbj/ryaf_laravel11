@@ -6,46 +6,39 @@ use App\Http\Logic\AuthLogic;
 use App\Http\Logic\ResponseLogic;
 use App\Http\Logic\ToolsLogic;
 use App\Http\Server\Hikvision\Response;
+use App\Models\Admin;
 use App\Models\NodeAccount;
 use Closure;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
 
 class Login
 {
     public function handle($request, Closure $next)
     {
-//        ToolsLogic::writeLog('config','config',config('database'));
-        $token = $request->get('token');
-        if(!empty($token)){
-            view()->share('token',$token);
+        if($request->ajax()){
+            $token = $request->header('X-Token');
         }else{
-            if($request->ajax()){
-                $token = $request->header('X-Token');
-            }else{
-                $token = $_COOKIE['X-Token'] ?? '';
-            }
-        }
-
-        #目前先写死token属于用户2
-        if($token == 'abcdefg'){
-            $userId = 2;
+            $token = $_COOKIE['X-Token'] ?? '';
         }
 
 
-        if(empty($userId)){
+        $userInfo = Cache::get($token);
+
+
+        if(empty($userInfo)){
             if($request->ajax()){
                 return ResponseLogic::apiNoLoginResult();
             }else{
-                return response('https://pingansuiyue.crzfxjzn.com/node/login.php', 302)->header('Location', 'https://pingansuiyue.crzfxjzn.com/node/login.php');
+                return redirect('/login');
             }
 
         }
 
-        $accountInfo = NodeAccount::getDataById($userId);
 
-        view()->share('accountInfo',$accountInfo);
+        view()->share('adminInfo',$userInfo);
 
-        AuthLogic::$userId = $userId;
+        AuthLogic::$userId = $userInfo['admin_id'];
 
         return $next($request);
 
