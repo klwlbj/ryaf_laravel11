@@ -42,6 +42,9 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('order')->group(function () {
         Route::view('/view', 'admin.order');
     });
+    Route::prefix('otherOder')->group(function () {
+        Route::view('/view', 'admin.otherOder');
+    });
 
     Route::prefix('advancedOrder')->group(function () {
         Route::view('/view', 'admin.advancedOrder');
@@ -49,6 +52,9 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('financialIncome')->group(function () {
         Route::view('/view', 'admin.financialIncome');
+    });
+    Route::prefix('financialAdvancedOrder')->group(function () {
+        Route::view('/view', 'admin.financialAdvancedOrder');
     });
 
     Route::prefix('department')->group(function () {

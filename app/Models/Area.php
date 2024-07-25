@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Area extends Model
+class Area extends BaseModel
 {
     use HasFactory;
 
@@ -16,14 +15,14 @@ class Area extends Model
 
     public function children()
     {
-        return $this->hasMany(self::class, 'parent_id')->orderBy('id', 'asc');
+        return $this->hasMany(self::class, 'parent_id')->orderBy('id');
     }
 
     public function loadChildren()
     {
         $this->load('children');
 
-        $this->children->each(function($child) {
+        $this->children->each(function ($child) {
             $child->loadChildren();
         });
     }

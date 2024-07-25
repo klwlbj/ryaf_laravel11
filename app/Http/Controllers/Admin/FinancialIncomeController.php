@@ -44,4 +44,23 @@ class FinancialIncomeController
         }
         return ResponseLogic::apiResult(0, 'ok', $res);
     }
+
+    public function getArrearsInfo(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+        ]);
+
+        if ($validate->fails()) {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = FinancialIncomeLogic::getInstance()->getArrearsInfo($params);
+        if ($res === false) {
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0, 'ok', $res);
+    }
 }

@@ -59,12 +59,32 @@
                 <a-form-item>
                     <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                 </a-form-item>
+
+                <a-form-item>
+                    <a-button @click="onCreate" type="primary" icon="edit">添加非烟感订单</a-button>
+                </a-form-item>
             </a-form>
 
             <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                     :pagination="false" :scroll="{ x: 2000,y: 650}">
+                     :pagination="false"  :scroll="{ x: 2000,y: 650}">
 
                 <div slot="action" slot-scope="text, record">
+                    <a v-if="record.order_project_type != '烟感'" style="margin-right: 8px" @click="onUpdate(record)">
+                        修改
+                    </a>
+
+                    <a-popconfirm
+                            v-if="record.order_project_type != '烟感'"
+                            title="是否确定删除?"
+                            ok-text="确认"
+                            cancel-text="取消"
+                            v-on:confirm="onDel(record)"
+                    >
+                        <a style="margin-right: 8px">
+                            删除
+                        </a>
+                    </a-popconfirm>
+
                     <a style="margin-right: 8px" @click="onStageInfo(record)">
                         分期详情
                     </a>
@@ -133,7 +153,7 @@
                 start_date:null,
                 end_date:null,
                 address: '',
-                order_project_type: 0,
+                order_project_type:1,
                 arrears_duration: undefined,
             },
             listSource: [],
@@ -160,10 +180,12 @@
                 {
                     title: '发生日期',
                     dataIndex: 'order_prospecter_date',
+                    width: 80
                 },
                 {
                     title: '项目类型',
-                    dataIndex: 'project_type'
+                    dataIndex: 'order_project_type',
+                    width: 80
                 },
                 {
                     title: '数量',
@@ -281,7 +303,7 @@
                 axios({
                     // 默认请求方式为get
                     method: 'post',
-                    url: '/api/advancedOrder/delete',
+                    url: '/api/otherOrder/delete',
                     // 传递参数
                     data: {
                         id:row.id
@@ -305,6 +327,11 @@
             },
             onCreate(){
                 this.status = '添加';
+                this.dialogFormVisible = true;
+            },
+            onUpdate(row){
+                this.id = row.order_id
+                this.status = '更新';
                 this.dialogFormVisible = true;
             },
             stageInfoQuery(){
