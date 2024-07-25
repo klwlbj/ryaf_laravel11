@@ -18,7 +18,7 @@ class AdminLogic extends BaseLogic
         }
         $data = $data->toArray();
         if($data['admin_pwd'] != $params['password']){
-            ResponseLogic::setMsg('密码不存在');
+            ResponseLogic::setMsg('密码不正确');
             return false;
         }
 

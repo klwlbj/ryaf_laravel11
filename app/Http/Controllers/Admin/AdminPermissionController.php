@@ -75,7 +75,7 @@ class AdminPermissionController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = DepartmentLogic::getInstance()->update($params);
+        $res = AdminPermissionLogic::getInstance()->update($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
@@ -97,7 +97,7 @@ class AdminPermissionController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = DepartmentLogic::getInstance()->getInfo($params);
+        $res = AdminPermissionLogic::getInstance()->getInfo($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
@@ -119,7 +119,7 @@ class AdminPermissionController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = DepartmentLogic::getInstance()->delete($params);
+        $res = AdminPermissionLogic::getInstance()->delete($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
