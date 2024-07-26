@@ -184,7 +184,7 @@ module.exports = {
                 }
                 this.formData = {
                     parent_id:res.data.adpe_parent_id,
-                    name:res.data.adpe__name,
+                    name:res.data.adpe_name,
                     route:res.data.adpe_route,
                     type:res.data.adpe_type,
                     status:res.data.adpe_status,

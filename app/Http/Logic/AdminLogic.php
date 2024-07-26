@@ -24,8 +24,9 @@ class AdminLogic extends BaseLogic
 
         $token = AuthLogic::getToken($data);
         $menu = AdminPermissionRelation::getMenu($data['admin_id']);
+        $permission = AdminPermissionRelation::getPermissionArr($data['admin_id']);
 
-        return ['token' => $token, 'menu' => $menu];
+        return ['token' => $token, 'menu' => $menu,'permission' => $permission];
     }
 
     public function getList($params)

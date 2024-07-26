@@ -4,6 +4,7 @@
         :key="key"
         v-model:selectedKeys="id"
         :default-expand-all="true"
+        :check-strictly="true"
         :tree-data="list"
         :replace-fields="replaceFields"
         @check="handleChange"
@@ -62,7 +63,7 @@ module.exports = {
             });
         },
         handleChange(value){
-            this.$emit('change',value);
+            this.$emit('change',value.checked);
         },
         setData(value){
             this.id = value;

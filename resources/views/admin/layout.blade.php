@@ -54,12 +54,18 @@
     function logout(){
         deleteCookie('X-Token');
         localStorage.removeItem("menu");
+        localStorage.removeItem("permission");
         window.location.href='/login';
     }
+
 </script>
 
 
 <script>
+    Vue.prototype.$checkPermission = function(key){
+        let permission = JSON.parse(localStorage.getItem("permission"));
+        return (permission[key] !== 0);
+    }
     Vue.use(httpVueLoader)
     new Vue({
         el: '#sidebar',

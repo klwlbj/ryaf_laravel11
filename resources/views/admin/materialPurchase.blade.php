@@ -23,7 +23,7 @@
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
                     <a-form-item>
-                        <a-button @click="onCreate" type="primary" icon="edit">添加申购</a-button>
+                        <a-button v-if="$checkPermission('/api/materialPurchase/add')" @click="onCreate" type="primary" icon="edit">添加申购</a-button>
                     </a-form-item>
 
                 </a-form>
@@ -42,12 +42,12 @@
                     </div>
 
                     <div slot="action" slot-scope="text, record">
-                        <a v-if="record.mapu_status == 1" style="margin-right: 8px" @click="onUpdate(record)">
+                        <a v-if="record.mapu_status == 1 && $checkPermission('/api/materialPurchase/update')" style="margin-right: 8px" @click="onUpdate(record)">
                             修改
                         </a>
 
                         <a-popconfirm
-                            v-if="record.mapu_status == 1"
+                            v-if="record.mapu_status == 1 && $checkPermission('/api/materialPurchase/delete')"
                             title="是否确定删除商品?"
                             ok-text="确认"
                             cancel-text="取消"
@@ -60,7 +60,7 @@
 
                         <div>
                             <a-popconfirm
-                                v-if="record.complete_auth"
+                                v-if="record.complete_auth && $checkPermission('/api/materialPurchase/complete')"
                                 title="是否确定完成申购?"
                                 ok-text="确认"
                                 cancel-text="取消"

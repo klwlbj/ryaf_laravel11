@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Http\Logic\AuthLogic;
 use App\Http\Logic\ToolsLogic;
+use Illuminate\Support\Facades\DB;
 
 class AdminPermissionRelation extends BaseModel
 {
@@ -28,13 +29,13 @@ class AdminPermissionRelation extends BaseModel
 
         $list = [];
         foreach ($ids as $id){
-            $list = self::getPermissionList($permissionList,$id,$list);
+            $list = self::getMenuList($permissionList,$id,$list);
         }
 
         return ToolsLogic::toTree(array_values($list));
     }
 
-    public static function getPermissionList($permissionList,$id,$arr = [])
+    public static function getMenuList($permissionList,$id,$arr = [])
     {
         if(isset($arr[$id])){
             return $arr;
@@ -53,9 +54,28 @@ class AdminPermissionRelation extends BaseModel
                     break;
                 }
 
-                return self::getPermissionList($permissionList,$value['adpe_parent_id'],$arr);
+                return self::getMenuList($permissionList,$value['adpe_parent_id'],$arr);
             }
         }
         return $arr;
+    }
+
+    public static function getPermissionArr($adminId){
+        return AdminPermission::query()
+            ->leftJoin(
+                'admin_permission_relation',
+                'admin_permission_relation.adpe_permission_id',
+                '=',
+                DB::raw('admin_permission.adpe_id and admin_permission_relation.adpe_admin_id = '.$adminId)
+            )
+            ->where([
+                'admin_permission.adpe_status' => 1,
+                'admin_permission.adpe_type' => 2
+            ])
+            ->select([
+                DB::raw("case when admin_permission_relation.adpe_permission_id is null then 0 else 1 end as value"),
+                'admin_permission.adpe_route',
+            ])
+            ->pluck('value','adpe_route')->toArray();
     }
 }

@@ -37,10 +37,17 @@ class AdminPermissionLogic extends BaseLogic
 
     public function add($params)
     {
+        $parentLevel = adminPermission::query()->where(['adpe_id' => $params['parent_id']])->value('adpe_level') ?: 1;
+        if($parentLevel >= 2 && $params['type'] == 1){
+            ResponseLogic::setMsg('不可以添加3级菜单');
+            return false;
+        }
+
         $insertData = [
             'adpe_parent_id' => $params['parent_id'] ?? 0,
             'adpe_name' => $params['name'],
             'adpe_route' => $params['route'] ?? '',
+            'adpe_level' => $parentLevel + 1,
             'adpe_type' => $params['type'] ?? 1,
             'adpe_sort' => $params['sort'] ?? 0,
             'adpe_status' => $params['status'] ?? 0,
@@ -57,17 +64,23 @@ class AdminPermissionLogic extends BaseLogic
 
     public function update($params)
     {
+        $parentLevel = adminPermission::query()->where(['adpe_id' => $params['parent_id']])->value('adpe_level') ?: 1;
+        if($parentLevel >= 2 && $params['type'] == 1){
+            ResponseLogic::setMsg('不可以添加3级菜单');
+            return false;
+        }
+
         $insertData = [
             'adpe_parent_id' => $params['parent_id'] ?? 0,
             'adpe_name' => $params['name'],
+            'adpe_level' => $parentLevel + 1,
             'adpe_route' => $params['route'] ?? '',
             'adpe_type' => $params['type'] ?? 1,
             'adpe_sort' => $params['sort'] ?? 0,
             'adpe_status' => $params['status'] ?? 0,
         ];
 
-
-        if(Department::query()->where(['adpe_id' => $params['id']])->update($insertData) === false){
+        if(AdminPermission::query()->where(['adpe_id' => $params['id']])->update($insertData) === false){
             ResponseLogic::setMsg('更新失败');
             return false;
         }
@@ -77,7 +90,7 @@ class AdminPermissionLogic extends BaseLogic
 
     public function delete($params)
     {
-        if(Department::query()->where(['depa_parent_id' => $params['id']])->exists()){
+        if(AdminPermission::query()->where(['depa_parent_id' => $params['id']])->exists()){
             ResponseLogic::setMsg('存在下级部门，不能删除');
             return false;
         }

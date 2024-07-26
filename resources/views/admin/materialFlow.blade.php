@@ -23,11 +23,11 @@
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
                     <a-form-item>
-                        <a-button @click="onInComing" type="primary">入库</a-button>
+                        <a-button v-if="$checkPermission('/api/materialFlow/inComing')" @click="onInComing" type="primary">入库</a-button>
                     </a-form-item>
 
                     <a-form-item>
-                        <a-button @click="onOutComing" type="primary">出库</a-button>
+                        <a-button v-if="$checkPermission('/api/materialFlow/outComing')" @click="onOutComing" type="primary">出库</a-button>
                     </a-form-item>
                 </a-form>
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
@@ -50,8 +50,7 @@
                                 @{{item.file_name}}
                             </a>
                         </div>
-
-                        <span v-else></span>
+                        <span></span>
                     </div>
 
                     <div slot="apply_user" slot-scope="text, record">

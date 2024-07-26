@@ -31,7 +31,7 @@
 <div id="app">
     <div style="height: 10px"></div>
     <div class="login-form">
-        <div style="padding:15px; border-bottom:1px solid #EEEEEE; background-color:#5D87AF; color:#ffffff; font-size:16px;">如约安防内务平台登录</div>
+        <div style="padding:15px; border-bottom:1px solid #EEEEEE; background-color:#5D87AF; color:#ffffff; font-size:16px;">如约安防信息化系统登录</div>
         <div style="padding:15px;">
             <a-form
                 id="components-form-demo-normal-login"
@@ -106,6 +106,7 @@
                     }
                     setCookie('X-Token',res.data.token,1);
                     localStorage.setItem("menu",JSON.stringify(res.data.menu));
+                    localStorage.setItem("permission",JSON.stringify(res.data.permission));
                     window.location.href = '/'
                 }).catch(error => {
                     this.$message.error('请求失败');

@@ -12,7 +12,7 @@
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
                     <a-form-item>
-                        <a-button @click="onCreate" type="primary" icon="edit">添加类型</a-button>
+                        <a-button v-if="$checkPermission('/api/materialCategory/add')" @click="onCreate" type="primary" icon="edit">添加类型</a-button>
                     </a-form-item>
                 </a-form>
 
@@ -25,11 +25,12 @@
                     </div>
 
                     <div slot="action" slot-scope="text, record">
-                        <a style="margin-right: 8px" @click="onUpdate(record)">
+                        <a v-if="$checkPermission('/api/materialCategory/update')" style="margin-right: 8px" @click="onUpdate(record)">
                             修改
                         </a>
 
                         <a-popconfirm
+                            v-if="$checkPermission('/api/materialCategory/delete')"
                             title="是否确定删除商品?"
                             ok-text="确认"
                             cancel-text="取消"
@@ -158,10 +159,14 @@
                             'Content-Type': 'multipart/form-data'
                         }
                     }).then(response => {
+                        this.listLoading = false
                         let res = response.data;
+                        if(res.code != 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
                         this.listSource = res.data.list
                         this.pagination.total = res.data.total
-                        this.listLoading = false
                     }).catch(error => {
                         this.$message.error('请求失败');
                     });

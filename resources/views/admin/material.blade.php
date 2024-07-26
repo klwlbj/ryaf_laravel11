@@ -18,10 +18,10 @@
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
                     <a-form-item>
-                        <a-button icon="search" @click="exportList">导出</a-button>
+                        <a-button v-if="$checkPermission('/api/material/getList')" icon="search" @click="exportList">导出</a-button>
                     </a-form-item>
                     <a-form-item>
-                        <a-button @click="onCreate" type="primary" icon="edit">添加物品</a-button>
+                        <a-button v-if="$checkPermission('/api/material/add')" @click="onCreate" type="primary" icon="edit">添加物品</a-button>
                     </a-form-item>
 
                 </a-form>
@@ -54,11 +54,12 @@
                     </div>
 
                     <div slot="action" slot-scope="text, record">
-                        <a style="margin-right: 8px" @click="onUpdate(record)">
+                        <a v-if="$checkPermission('/api/material/update')" style="margin-right: 8px" @click="onUpdate(record)">
                             修改
                         </a>
 
                         <a-popconfirm
+                            v-if="$checkPermission('/api/material/delete')"
                             title="是否确定删除商品?"
                             ok-text="确认"
                             cancel-text="取消"
@@ -69,11 +70,11 @@
                             </a>
                         </a-popconfirm>
                         <div>
-                            <a style="margin-right: 8px" @click="onInComing(record)">
+                            <a v-if="$checkPermission('/api/materialFlow/inComing')" style="margin-right: 8px" @click="onInComing(record)">
                                 入库
                             </a>
 
-                            <a style="margin-right: 8px" @click="onOutComing(record)">
+                            <a v-if="$checkPermission('/api/materialFlow/outComing')" style="margin-right: 8px" @click="onOutComing(record)">
                                 出库
                             </a>
                         </div>

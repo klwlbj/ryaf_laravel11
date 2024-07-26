@@ -1,8 +1,11 @@
 @extends('admin.layout')
 
 @section('content')
-    <div id="app">
-       欢迎光临
+    <div id="app" style="display: flex;justify-content: center;align-items: center;height: 100%">
+        <div style="font-size: 32px;color:rgb(5, 52, 52)">
+            如约安防信息化系统
+        </div>
+
     </div>
 @endsection
 

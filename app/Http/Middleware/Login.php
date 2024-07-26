@@ -32,7 +32,10 @@ class Login
             }else{
                 return redirect('/login');
             }
+        }
 
+        if(!AuthLogic::checkPermission($userInfo['admin_id'])){
+            return ResponseLogic::apiErrorResult('没有权限访问');
         }
 
 

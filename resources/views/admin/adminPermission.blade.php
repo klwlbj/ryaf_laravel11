@@ -19,6 +19,11 @@
                 <a-table :key="key" :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return record.adpe_id }"
                          :pagination="false" :indent-size="30" :default-expand-all-rows="true" :scroll="{y: 650}">
 
+                    <div slot="type" slot-scope="text, record">
+                        <a-tag v-if="record.adpe_type == 1"  color="#009688">菜单</a-tag>
+                        <a-tag v-else color="blue">接口</a-tag>
+                    </div>
+
                     <div slot="status" slot-scope="text, record">
                         <a-tag v-if="record.adpe_status == 0"  color="red">禁用</a-tag>
                         <a-tag v-else color="green">启用</a-tag>
@@ -91,6 +96,11 @@
                     {
                         title: '路由',
                         dataIndex: 'adpe_route',
+                    },
+                    {
+                        title: '类型',
+                        scopedSlots: { customRender: 'type' },
+                        dataIndex: 'adpe_type'
                     },
                     {
                         title: '状态',
