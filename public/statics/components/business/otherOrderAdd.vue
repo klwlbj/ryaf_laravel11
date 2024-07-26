@@ -14,7 +14,7 @@
             </a-form-model-item>
 
             <a-form-model-item label="联系方式" prop="order_phone">
-                <a-input-number v-model="formData.order_phone" size="large" :max="10000000000000000"/>
+                <a-input-number v-model="formData.order_phone" size="large" :max="10000000000000000" style="width: 200px;"/>
             </a-form-model-item>
 
           <a-form-model-item label="收款日期" prop="order_actual_delivery_date">
@@ -34,12 +34,13 @@
             </a-form-model-item>
 
             <a-form-model-item label="应收金额" prop="order_account_receivable">
-                <a-input v-model="formData.order_account_receivable" />
+              <a-input-number v-model="formData.order_account_receivable"  :step="0.01"/>
             </a-form-model-item>
 
           <a-form-model-item label="实收金额" prop="order_funds_received">
-                <a-input v-model="formData.order_funds_received" />
+            <a-input-number v-model="formData.order_funds_received"  :step="0.01"/>
             </a-form-model-item>
+
 
           <a-form-model-item label="收款方式" prop="order_contract_type">
             <a-radio-group v-model="formData.order_contract_type">
@@ -53,6 +54,10 @@
                 异网接入
               </a-radio>
             </a-radio-group>
+          </a-form-model-item>
+
+          <a-form-model-item v-if="formData.order_contract_type == '1'" label="保证金金额" prop="security_deposit_funds">
+            <a-input-number v-model="formData.security_deposit_funds"  :step="0.01"/>
           </a-form-model-item>
 
             <a-form-model-item label="收款方式" prop="order_pay_way">
@@ -168,6 +173,7 @@ module.exports = {
               order_pay_cycle:1,
               order_pay_way:3,
               order_account_receivable:0,
+              security_deposit_funds:0,
               order_funds_received:0,
               order_contract_type:1,
 
@@ -285,6 +291,7 @@ module.exports = {
                   order_pay_way:res.data.order_pay_way,
                   order_account_receivable:res.data.order_account_receivable,
                   order_funds_received:res.data.order_funds_received,
+                  security_deposit_funds:res.data.security_deposit_funds,
                   order_contract_type:res.data.order_contract_type,
                 }
             }).catch(error => {

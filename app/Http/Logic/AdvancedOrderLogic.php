@@ -3,6 +3,7 @@
 namespace App\Http\Logic;
 
 use App\Models\AdvancedOrder;
+use App\Models\Order;
 
 class AdvancedOrderLogic extends BaseLogic
 {
@@ -28,7 +29,7 @@ class AdvancedOrderLogic extends BaseLogic
                     break;
                 case 'street_id':
                     if (!empty($params['street_id_2'])) {
-                        $query->where($queryCondition, $params['street_id_2']);
+                        $query->where('area_id', $params['street_id_2']);
                     }
                     break;
                 case 'customer_type':
@@ -106,6 +107,17 @@ class AdvancedOrderLogic extends BaseLogic
         return $data;
     }
 
+    public function getLinkInfo($id)
+    {
+        $data = Order::query()->where('advanced_order_id', $id)->pluck('order_iid');
+        if (!$data) {
+            ResponseLogic::setMsg('记录不存在');
+            return false;
+        }
+
+        return ['detail' => $data];
+    }
+
     public function addOrUpdate($params, $id = null)
     {
         $insertData = [
@@ -125,6 +137,21 @@ class AdvancedOrderLogic extends BaseLogic
         $res = isset($id) ? AdvancedOrder::where(['ador_id' => $id])->update($insertData) : AdvancedOrder::insert($insertData);
         if ($res === false) {
             ResponseLogic::setMsg('添加或更新失败');
+            return false;
+        }
+
+        return ['id' => $res];
+    }
+
+    public function linkOrder($params, $id = null)
+    {
+        $arrayData = json_decode($params['detail'], true); // 将 JSON 数据转换为 PHP 数组
+        $detail = collect($arrayData); // 将数组转换为集合
+        $res = Order::whereIn('order_iid', $detail->pluck('orderId'))->update([
+            'advanced_order_id' => $id,
+        ]);;
+        if ($res === false) {
+            ResponseLogic::setMsg('更新失败');
             return false;
         }
 

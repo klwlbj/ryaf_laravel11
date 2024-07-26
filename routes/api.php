@@ -106,6 +106,8 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('advancedOrder')->group(function () {
         Route::post('/getList', [AdvancedOrderController::class, 'getList']);
         Route::post('/getInfo', [AdvancedOrderController::class, 'getInfo']);
+        Route::post('/link', [AdvancedOrderController::class, 'link']);
+        Route::post('/getInfo', [AdvancedOrderController::class, 'getInfo']);
         Route::post('/getLinkInfo', [AdvancedOrderController::class, 'getLinkInfo']);
         Route::post('/add', [AdvancedOrderController::class, 'add']);
         Route::post('/update', [AdvancedOrderController::class, 'update']);

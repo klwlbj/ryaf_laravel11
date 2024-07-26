@@ -51,6 +51,7 @@ class OtherOrderLogic extends BaseLogic
             'order_pay_way'              => $params['order_pay_way'] ?? 0,
             'order_account_receivable'   => $params['order_account_receivable'] ?? 0,
             'order_funds_received'       => $params['order_funds_received'] ?? 0,
+            'security_deposit_funds'       => $params['security_deposit_funds'] ?? 0,
             'order_contract_type'        => $params['order_contract_type'] ?? 0,
             'order_operator_user_id'     => AuthLogic::$userId ?? 0,
         ];

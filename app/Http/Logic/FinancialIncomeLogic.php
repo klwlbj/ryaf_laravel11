@@ -17,6 +17,16 @@ class FinancialIncomeLogic extends BaseLogic
         $model = empty($params['order_project_type']) ? Order::class : OtherOrder::class;
         $query = $model::query();
 
+        if(isset($params['is_lease'])){
+            if(empty($params['order_project_type'])){
+            $query->where('order_contract_type', '以租代购');
+
+            }else{
+                $query->where('order_contract_type', OtherOrder::CONTRACT_TYPE_RENT);
+
+            }
+        }
+
         if (!empty($params['order_project_type'])) {
             $query->where('order_project_type', $params['order_project_type']);
         }

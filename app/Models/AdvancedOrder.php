@@ -39,9 +39,13 @@ class AdvancedOrder extends BaseModel
         self::CUSTOMER_TYPE_TO_C => 'TO C',
     ];
 
-    public const  PAYMENT_TYPE_PREPAYMENT = 1;
+    public const  PAYMENT_TYPE_BY_STAGES = 1;
+    public const  PAYMENT_TYPE_ONCE = 2;
+    public const  PAYMENT_TYPE_RENT = 3;
 
     public static array $formatPaymentTypeMaps = [
-        self::PAYMENT_TYPE_PREPAYMENT => '预付',
+        self::PAYMENT_TYPE_BY_STAGES => '分期',
+        self::PAYMENT_TYPE_ONCE => '一次性',
+        self::PAYMENT_TYPE_RENT => '租赁',
     ];
 }

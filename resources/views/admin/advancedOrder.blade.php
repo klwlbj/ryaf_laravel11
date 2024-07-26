@@ -24,7 +24,6 @@
                                 v-model="listQuery.customer_type"
                                 :allow-clear="true"
                                 style="width: 120px"
-                                @focus="focus"
                                 @change="handleChange"
                         >
                             <a-select-option value="1">toB</a-select-option>
@@ -41,7 +40,6 @@
                                 v-model="listQuery.payment_type"
                                 :allow-clear="true"
                                 style="width: 120px"
-                                @focus="focus"
                                 @change="handleChange"
                         >
                             <a-select-option value="1" >预付</a-select-option>
@@ -56,7 +54,6 @@
                                 v-model="listQuery.pay_way"
                                 style="width: 120px"
                                 :allow-clear="true"
-                                @focus="focus"
                                 @change="handleChange"
                         >
                             <a-select-option value="1" >微信</a-select-option>
@@ -149,6 +146,7 @@
     new Vue({
         el: '#app',
         data: {
+            areaList:[],
             listQuery: {
                 street_id:[],
                 address:'',
@@ -296,7 +294,9 @@
                     this.$message.error('请求失败');
                 });
             },
-
+            handleChange(value){
+                this.$emit('change',value);
+            },
             onCreate(){
                 this.status = '添加';
                 this.dialogFormVisible = true;

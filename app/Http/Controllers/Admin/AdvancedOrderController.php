@@ -45,6 +45,45 @@ class AdvancedOrderController
         return ResponseLogic::apiResult(0, 'ok', $res);
     }
 
+    public function getLinkInfo(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+        ]);
+
+        if ($validate->fails()) {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = AdvancedOrderLogic::getInstance()->getLinkInfo($params['id']);
+        // $res = ['detail' => [13412,123414]];
+        if ($res === false) {
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0, 'ok', $res);
+    }
+
+    public function link(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+
+        ]);
+
+        if ($validate->fails()) {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = AdvancedOrderLogic::getInstance()->linkOrder($params, $params['id']);
+        if ($res === false) {
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0, 'ok', $res);
+    }
+
     public function add(Request $request)
     {
         $params = $request->all();

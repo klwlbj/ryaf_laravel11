@@ -73,7 +73,7 @@ module.exports = {
                     let params = {
                         detail:JSON.stringify(that.formData.detail),
                     }
-                  this.id = 2111
+                  // this.id = 2111
                     params.id = this.id;
                     axios({
                         // 默认请求方式为get
@@ -93,12 +93,10 @@ module.exports = {
                             return false;
                         }
                         this.initForm();
-                        that.$emit('update');
+                        that.$emit('submit');
                     }).catch(error => {
                         this.$message.error('请求失败');
                     });
-
-
                 }else{
                     this.$message.error('表单验证失败');
                 }
@@ -126,6 +124,7 @@ module.exports = {
             }).then(response => {
                 this.loading = false;
                 let res = response.data;
+                console.log(res)
                 if(res.code !== 0){
                     this.$message.error(res.message);
                     return false;
@@ -134,10 +133,13 @@ module.exports = {
                     detail: [],
                 }
                 for (let item of res.data.detail){
+                  console.log(item)
                     this.formData.detail.push({
-                        orderId:item.orderId,
+                        orderId:item,
                     })
                 }
+              console.log(this.formData)
+
                 this.$forceUpdate();
             }).catch(error => {
                 this.$message.error('请求失败');
