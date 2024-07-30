@@ -14,7 +14,7 @@
             </a-form-model-item>
 
             <a-form-model-item label="联系方式" prop="phone">
-                <a-input-number v-model="formData.phone" size="large" :max="10000000000000000"/>
+                <a-input-number v-model="formData.phone" size="large" :max="10000000000000000" style="width: 200px;"/>
             </a-form-model-item>
 
             <a-form-model-item label="客户类型" prop="customer_type">

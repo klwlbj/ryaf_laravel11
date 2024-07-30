@@ -7,60 +7,31 @@ use App\Http\Logic\ResponseLogic;
 use App\Http\Logic\FinancialIncomeLogic;
 use Illuminate\Support\Facades\Validator;
 
-class FinancialIncomeController
+class FinancialIncomeController extends BaseController
 {
+    protected function commonInitialization(): void
+    {
+        $this->logicClass = FinancialIncomeLogic::getInstance();
+    }
     public function getList(Request $request)
     {
-        $params = $request->all();
-
-        $validate = Validator::make($params, []);
-
-        if ($validate->fails()) {
-            return ResponseLogic::apiErrorResult($validate->errors()->first());
-        }
-
-        $res = FinancialIncomeLogic::getInstance()->getList($params);
-        if ($res === false) {
-            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
-        }
-        return ResponseLogic::apiResult(0, 'ok', $res);
+        return $this->baseMethod($request, []);
     }
 
     public function getStageInfo(Request $request)
     {
-        $params = $request->all();
-
-        $validate = Validator::make($params, [
-            'id' => 'required',
+        return $this->baseMethod($request, [
+            'id'                 => 'required',
+            'order_project_type' => 'required',
         ]);
-
-        if ($validate->fails()) {
-            return ResponseLogic::apiErrorResult($validate->errors()->first());
-        }
-
-        $res = FinancialIncomeLogic::getInstance()->getStageInfo($params);
-        if ($res === false) {
-            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
-        }
-        return ResponseLogic::apiResult(0, 'ok', $res);
     }
 
     public function getArrearsInfo(Request $request)
     {
-        $params = $request->all();
-
-        $validate = Validator::make($params, [
-            'id' => 'required',
+        return $this->baseMethod($request, [
+            'id'                 => 'required',
+            'order_project_type' => 'required',
         ]);
-
-        if ($validate->fails()) {
-            return ResponseLogic::apiErrorResult($validate->errors()->first());
-        }
-
-        $res = FinancialIncomeLogic::getInstance()->getArrearsInfo($params);
-        if ($res === false) {
-            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
-        }
-        return ResponseLogic::apiResult(0, 'ok', $res);
     }
+
 }

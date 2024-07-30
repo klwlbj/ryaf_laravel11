@@ -6,11 +6,11 @@ use App\Models\OtherOrder;
 
 class OtherOrderLogic extends BaseLogic
 {
-    public function getInfo($id)
+    public function getInfo($params)
     {
         $data = OtherOrder::query()
             ->with(['area', 'area.parentArea', 'area.parentArea.parentArea'])
-            ->where(['order_id' => $id])
+            ->where(['order_id' => $params['id']])
             ->first();
 
         $area                 = $data->area;
@@ -35,7 +35,7 @@ class OtherOrderLogic extends BaseLogic
         return $data;
     }
 
-    public function addOrUpdate($params, $id = null)
+    public function addOrUpdate($params)
     {
         $insertData = [
             'order_area_id'              => $params['order_area_id_2'],
@@ -56,11 +56,11 @@ class OtherOrderLogic extends BaseLogic
             'order_operator_user_id'     => AuthLogic::$userId ?? 0,
         ];
 
-        if (!isset($id)) {
+        if (!isset($params['id'])) {
             $insertData['order_iid'] = date('YmdHis') . rand(1, 9);
         }
 
-        $res = isset($id) ? OtherOrder::where(['order_id' => $id])->update($insertData) : OtherOrder::insert($insertData);
+        $res = isset($params['id']) ? OtherOrder::where(['order_id' => $params['id']])->update($insertData) : OtherOrder::insert($insertData);
         if ($res === false) {
             ResponseLogic::setMsg('添加或更新失败');
             return false;

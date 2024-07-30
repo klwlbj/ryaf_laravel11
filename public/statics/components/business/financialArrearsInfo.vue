@@ -1,7 +1,6 @@
 <template>
     <div>
-      <a-table :columns="columns" :data-source="listSource" :loading="loading" :row-key="(record, index) => { return index }"
-               :pagination="pagination">
+      <a-table :columns="columns" :data-source="listSource" :loading="loading" :row-key="(record, index) => { return index }">
 
       </a-table>
     </div>
@@ -18,6 +17,11 @@ module.exports = {
                 return null
             },
         },
+      orderProjectType: {
+        default:function(){
+          return null
+        },
+      },
     },
   data () {
     return {
@@ -84,7 +88,9 @@ module.exports = {
                 url: '/api/financialIncome/getArrearsInfo',
                 // 传递参数
                 data: {
-                    id:id
+                    id:id,
+                  order_project_type:this.orderProjectType,
+
                 },
                 responseType: 'json',
                 headers:{
@@ -99,10 +105,8 @@ module.exports = {
                 this.$message.error('请求失败');
             });
         },
-
     },
     created () {
-      console.log(this.id)
         if(this.id) {
           this.getDetail(this.id);
         }

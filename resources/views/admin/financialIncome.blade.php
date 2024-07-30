@@ -102,6 +102,7 @@
                  width="800px" :footer="null">
             <financial_income_info ref="stageInfo"
                                    :id="id"
+                                   :order-project-type="listQuery.order_project_type"
                                  @submit="stageInfoQuery"
                                  @close="stageInfoFormVisible = false;"
             >
@@ -113,6 +114,7 @@
                  width="800px" :footer="null">
             <financial_arrears_info ref="arrearsInfo"
                                    :id="id"
+                                   :order-project-type="listQuery.order_project_type"
                                  @submit="arrearsInfoQuery"
                                  @close="arrearsInfoFormVisible = false;"
             >
@@ -163,7 +165,7 @@
                 },
                 {
                     title: '项目类型',
-                    dataIndex: 'project_type'
+                    dataIndex: 'order_project_type'
                 },
                 {
                     title: '数量',

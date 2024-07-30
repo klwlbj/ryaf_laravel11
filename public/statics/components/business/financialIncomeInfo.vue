@@ -1,7 +1,6 @@
 <template>
     <div>
-      <a-table :columns="columns" :data-source="listSource" :loading="loading" :row-key="(record, index) => { return index }"
-               :pagination="pagination">
+      <a-table :columns="columns" :data-source="listSource" :loading="loading" :row-key="(record, index) => { return index }">
 
       </a-table>
     </div>
@@ -14,6 +13,11 @@ module.exports = {
     },
     props: {
         id: {
+            default:function(){
+                return null
+            },
+        },
+      orderProjectType: {
             default:function(){
                 return null
             },
@@ -64,7 +68,8 @@ module.exports = {
                 url: '/api/financialIncome/getStageInfo',
                 // 传递参数
                 data: {
-                    id:id
+                    id:id,
+                    order_project_type:this.orderProjectType,
                 },
                 responseType: 'json',
                 headers:{
@@ -82,7 +87,6 @@ module.exports = {
 
     },
     created () {
-      console.log(this.id)
         if(this.id) {
           this.getDetail(this.id);
         }

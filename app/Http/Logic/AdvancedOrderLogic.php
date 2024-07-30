@@ -78,11 +78,11 @@ class AdvancedOrderLogic extends BaseLogic
         ];
     }
 
-    public function getInfo($id)
+    public function getInfo($params)
     {
         $data = AdvancedOrder::query()
             ->with(['area', 'area.parentArea', 'area.parentArea.parentArea'])
-            ->where(['ador_id' => $id])
+            ->where(['ador_id' => $$params['id']])
             ->first();
 
         $area                 = $data->area;
@@ -107,9 +107,9 @@ class AdvancedOrderLogic extends BaseLogic
         return $data;
     }
 
-    public function getLinkInfo($id)
+    public function getLinkInfo($params)
     {
-        $data = Order::query()->where('advanced_order_id', $id)->pluck('order_iid');
+        $data = Order::query()->where('advanced_order_id', $$params['id'])->pluck('order_iid');
         if (!$data) {
             ResponseLogic::setMsg('记录不存在');
             return false;
@@ -118,7 +118,7 @@ class AdvancedOrderLogic extends BaseLogic
         return ['detail' => $data];
     }
 
-    public function addOrUpdate($params, $id = null)
+    public function addOrUpdate($params)
     {
         $insertData = [
             'area_id'                  => $params['street_id_2'],
@@ -134,7 +134,7 @@ class AdvancedOrderLogic extends BaseLogic
             'operator_user_id'         => AuthLogic::$userId ?? 0,
         ];
 
-        $res = isset($id) ? AdvancedOrder::where(['ador_id' => $id])->update($insertData) : AdvancedOrder::insert($insertData);
+        $res = isset($params['id']) ? AdvancedOrder::where(['ador_id' => $params['id']])->update($insertData) : AdvancedOrder::insert($insertData);
         if ($res === false) {
             ResponseLogic::setMsg('添加或更新失败');
             return false;
@@ -143,12 +143,12 @@ class AdvancedOrderLogic extends BaseLogic
         return ['id' => $res];
     }
 
-    public function linkOrder($params, $id = null)
+    public function linkOrder($params)
     {
         $arrayData = json_decode($params['detail'], true); // 将 JSON 数据转换为 PHP 数组
         $detail = collect($arrayData); // 将数组转换为集合
         $res = Order::whereIn('order_iid', $detail->pluck('orderId'))->update([
-            'advanced_order_id' => $id,
+            'advanced_order_id' => $params['id'],
         ]);;
         if ($res === false) {
             ResponseLogic::setMsg('更新失败');

@@ -78,7 +78,7 @@
             </a-form>
 
             <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                     :pagination="false">
+                     :pagination="false" :scroll="{ x: 2000,y: 650}">
 
                 <div slot="action" slot-scope="text, record">
                     <a style="margin-right: 8px" @click="onUpdate(record)">
@@ -224,6 +224,7 @@
                 },
                 {
                     title: '操作',
+                    fixed: 'right',
                     scopedSlots: { customRender: 'action' },
                 }
             ],
