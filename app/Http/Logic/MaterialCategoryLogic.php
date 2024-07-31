@@ -46,7 +46,8 @@ class MaterialCategoryLogic extends BaseLogic
         }
 
         return $query
-            ->orderBy('maca_id','desc')
+            ->orderBy('maca_sort','desc')
+            ->orderBy('maca_id','asc')
             ->get()->toArray();
     }
 

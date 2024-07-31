@@ -14,7 +14,7 @@
             </a-form-model-item>
 
             <a-form-model-item required label="出库日期" prop="datetime">
-                <a-date-picker @change="dateChange" format="YYYY-MM-DD HH:mm:ss" :default-value="moment().format('YYYY-MM-DD HH:mm:ss')"/>
+                <a-date-picker @change="dateChange" format="YYYY-MM-DD HH:mm:ss" v-model:value="formData.datetime"/>
             </a-form-model-item>
 
             <a-form-model-item required label="用途" prop="purpose">

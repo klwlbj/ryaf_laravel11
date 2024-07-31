@@ -11,10 +11,10 @@ class MaterialPurchase extends BaseModel
 
     public static function getDataById($id)
     {
-        $data = Cache::get(self::class.'_'.$id);
-        if(!empty($data)){
-            return $data;
-        }
+//        $data = Cache::get(self::class.'_'.$id);
+//        if(!empty($data)){
+//            return $data;
+//        }
 
         $data = self::query()->where(['mapu_id' => $id])->first();
         if(!$data){

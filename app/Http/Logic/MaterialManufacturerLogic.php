@@ -42,7 +42,7 @@ class MaterialManufacturerLogic extends BaseLogic
         }
 
         return $query
-            ->orderBy('mama_id','desc')
+            ->orderBy('mama_id','asc')
             ->get()->toArray();
     }
 

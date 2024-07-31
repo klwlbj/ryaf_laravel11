@@ -192,10 +192,10 @@ class MaterialLogic extends BaseLogic
             'mate_operator_id' => 2, #操作id  默认写死
         ];
 
-        if(Material::query()->where(['mate_name' => $params['name']])->exists()){
-            ResponseLogic::setMsg('厂家名称已存在');
-            return false;
-        }
+//        if(Material::query()->where(['mate_name' => $params['name']])->exists()){
+//            ResponseLogic::setMsg('物品名称已存在');
+//            return false;
+//        }
 
         $specificationIds = explode(',',$params['specification_id']);
 
@@ -247,10 +247,10 @@ class MaterialLogic extends BaseLogic
             return false;
         }
 
-        if(Material::query()->where('mate_id','<>',$params['id'])->where(['mate_name' => $params['name']])->exists()){
-            ResponseLogic::setMsg('厂家名称已存在');
-            return false;
-        }
+//        if(Material::query()->where('mate_id','<>',$params['id'])->where(['mate_name' => $params['name']])->exists()){
+//            ResponseLogic::setMsg('物品名称已存在');
+//            return false;
+//        }
 
 
         if(Material::query()->where(['mate_id' => $params['id']])->update($insertData) === false){

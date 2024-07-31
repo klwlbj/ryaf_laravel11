@@ -350,13 +350,13 @@
                     this.id = null;
                     this.$message.success('添加成功');
                     this.dialogFormVisible = false;
-                    this.handleFilter();
+                    this.getPageList();
                 },
                 update(){
                     this.id = null;
                     this.$message.success('编辑成功');
                     this.dialogFormVisible = false;
-                    this.handleFilter();
+                    this.getPageList();
                 },
                 onInComing(row){
                     this.inComingMaterialId = row.mate_id
@@ -371,13 +371,13 @@
                     this.inComingMaterialId = null;
                     this.$message.success('入库成功');
                     this.inComingFormVisible = false;
-                    this.handleFilter();
+                    this.getPageList();
                 },
                 outComingSubmit(){
                     this.outComingMaterialId = null;
                     this.$message.success('出库成功');
                     this.outComingFormVisible = false;
-                    this.handleFilter();
+                    this.getPageList();
                 },
                 categoryChange(value){
                     this.listQuery.category_id = value;

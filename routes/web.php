@@ -15,6 +15,8 @@ Route::view('/login', 'admin.login');
 Route::middleware(['login'])->group(function () {
     Route::view('/', 'admin.index');
 
+    Route::view('/test', 'admin.test');
+
     Route::prefix('materialManufacturer')->group(function () {
         Route::view('/view', 'admin.materialManufacturer');
     });
@@ -67,6 +69,10 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('adminPermission')->group(function () {
         Route::view('/view', 'admin.adminPermission');
+    });
+
+    Route::prefix('installationSummary')->group(function () {
+        Route::view('/view', 'admin.installationSummary');
     });
 });
 

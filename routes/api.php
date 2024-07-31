@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\AdminPermissionController;
 use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\InstallationController;
+use App\Http\Controllers\Admin\NodeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AreaController;
 use App\Http\Controllers\Admin\AdminController;
@@ -34,6 +36,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/add', [AdminController::class, 'add']);
         Route::post('/update', [AdminController::class, 'update']);
         Route::post('/getInfo', [AdminController::class, 'getInfo']);
+        Route::post('/resetPassword', [AdminController::class, 'resetPassword']);
     });
 
     Route::prefix('warehouse')->group(function () {
@@ -144,5 +147,13 @@ Route::middleware(['login'])->group(function () {
         Route::post('/update', [AdminPermissionController::class, 'update']);
         Route::post('/getInfo', [AdminPermissionController::class, 'getInfo']);
         Route::post('/delete', [AdminPermissionController::class, 'delete']);
+    });
+
+    Route::prefix('installation')->group(function () {
+        Route::post('/summary', [InstallationController::class, 'summary']);
+    });
+
+    Route::prefix('node')->group(function () {
+        Route::post('/getAllList', [NodeController::class, 'getAllList']);
     });
 });

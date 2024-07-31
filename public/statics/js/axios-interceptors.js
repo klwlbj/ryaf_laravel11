@@ -19,7 +19,7 @@ axios.interceptors.response.use(
     function (response) {
         // console.log(response);
         if(response['data']['code'] && response['data']['code'] == 401){
-            window.location.href = '/login.php';
+            window.location.href = '/login';
             return false;
         }
         // 对响应数据进行操作

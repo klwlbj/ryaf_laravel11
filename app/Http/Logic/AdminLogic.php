@@ -29,6 +29,34 @@ class AdminLogic extends BaseLogic
         return ['token' => $token, 'menu' => $menu,'permission' => $permission];
     }
 
+    public function resetPassword($params)
+    {
+        $data = Admin::query()->where(['admin_id' => AuthLogic::$userId])->first();
+        if(!$data){
+            ResponseLogic::setMsg('用户不存在');
+            return false;
+        }
+
+        $data = $data->toArray();
+
+        if($data['admin_pwd'] != $params['password']){
+            ResponseLogic::setMsg('原密码不正确');
+            return false;
+        }
+
+        if($params['new_password'] != $params['confirm_password']){
+            ResponseLogic::setMsg('确认密码跟新密码不一致');
+            return false;
+        }
+
+        if(Admin::query()->where(['admin_id' => AuthLogic::$userId])->update(['admin_pwd' => $params['new_password']]) === false){
+            ResponseLogic::setMsg('修改密码失败');
+            return false;
+        }
+
+        return [];
+    }
+
     public function getList($params)
     {
         $page = $params['page'] ?? 1;

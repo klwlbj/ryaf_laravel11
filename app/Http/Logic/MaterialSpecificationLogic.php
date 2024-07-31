@@ -55,7 +55,7 @@ class MaterialSpecificationLogic extends BaseLogic
 
         return $query
             ->orderBy('masp_sort','desc')
-            ->orderBy('masp_id','desc')
+            ->orderBy('masp_id','asc')
             ->get()->toArray();
     }
 

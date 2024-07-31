@@ -123,6 +123,10 @@
                         title: '部门',
                         dataIndex: 'admin_department_name'
                     },
+                    {
+                        title: '账号',
+                        dataIndex: 'admin_mobile',
+                    },
                     // {
                     //     title: '是否负责人',
                     //     scopedSlots: { customRender: 'admin_is_leader' },

@@ -14,15 +14,15 @@
             </a-form-model-item>
 
             <a-form-model-item label="生产日期" prop="production_date">
-                <a-date-picker @change="productionDateChange" format="YYYY-MM-DD" :default-value="moment().format('YYYY-MM-DD')"/>
+                <a-date-picker @change="productionDateChange" format="YYYY-MM-DD" v-model:value="formData.production_date"/>
             </a-form-model-item>
 
             <a-form-model-item label="质保期" prop="expire_date">
-                <a-date-picker @change="expireDateChange" format="YYYY-MM-DD" :default-value="moment().format('YYYY-MM-DD')"/>
+                <a-date-picker @change="expireDateChange" format="YYYY-MM-DD" v-model:value="formData.expire_date"/>
             </a-form-model-item>
 
             <a-form-model-item label="入库时间" prop="datetime">
-                <a-date-picker @change="dateChange" show-time format="YYYY-MM-DD HH:mm:ss" :default-value="moment().format('YYYY-MM-DD HH:mm:ss')"/>
+                <a-date-picker @change="dateChange" show-time format="YYYY-MM-DD HH:mm:ss" v-model:value="formData.datetime"/>
             </a-form-model-item>
 
             <a-form-model-item label="备注" prop="remark">
@@ -35,7 +35,7 @@
 
 
             <a-form-model-item :wrapper-col="{ span: 14, offset: 4 }">
-                <a-button type="primary" @click="submitData">
+                <a-button :loading="loading" type="primary" @click="submitData">
                     确认
                 </a-button>
                 <a-button style="margin-left: 10px;" @click="$emit('close')">
@@ -100,9 +100,9 @@ module.exports = {
         submitData(){
             let that = this;
             console.log(this.formData);
-
             this.$refs.dataForm.validate((valid) => {
                 if (valid) {
+                    that.loading = true;
                     axios({
                         // 默认请求方式为get
                         method: 'post',

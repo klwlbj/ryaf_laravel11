@@ -32,6 +32,33 @@ class AdminController
         }
         return ResponseLogic::apiResult(0,'ok',$res);
     }
+
+    public function resetPassword(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'password' => 'required',
+            'new_password' => 'required',
+            'confirm_password' => 'required',
+        ],[
+            'password.required' => '原密码不得为空',
+            'new_password.required' => '新密码不得为空',
+            'confirm_password.required' => '确认密码不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = AdminLogic::getInstance()->resetPassword($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
     public function getList(Request $request)
     {
         $params = $request->all();

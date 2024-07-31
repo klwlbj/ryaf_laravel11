@@ -138,9 +138,17 @@ class MaterialFlowLogic extends BaseLogic
                 'made_datetime' => $params['datetime'],
                 'made_status' => 1,
             ];
+
+            if(count($detailInsert) >= 1000){
+                MaterialDetail::query()->insert($detailInsert);
+                $detailInsert = [];
+            }
         }
 
-        MaterialDetail::query()->insert($detailInsert);
+        if(!empty($detailInsert)){
+            MaterialDetail::query()->insert($detailInsert);
+            $detailInsert = [];
+        }
 
         DB::commit();
 
