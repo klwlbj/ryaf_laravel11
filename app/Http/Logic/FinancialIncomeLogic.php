@@ -17,6 +17,11 @@ class FinancialIncomeLogic extends BaseLogic
         $model = empty($params['order_project_type']) ? Order::class : OtherOrder::class;
         $query = $model::query();
 
+        // 是否租赁
+        if(isset($params['is_lease'])){
+            empty($params['order_project_type']) ? $query->where('order_contract_type', '以租代购') : $query->where('order_contract_type', OtherOrder::CONTRACT_TYPE_RENT);
+        }
+
         if (!empty($params['order_project_type'])) {
             $query->where('order_project_type', $params['order_project_type']);
         }
@@ -93,10 +98,11 @@ class FinancialIncomeLogic extends BaseLogic
         ];
     }
 
-    public function getStageInfo($id)
+    public function getStageInfo($params)
     {
-        $data = Order::query()
-            ->where(['order_id' => $id])
+        $model = empty($params['order_project_type']) ? Order::class : OtherOrder::class;
+        $data = $model::query()
+            ->where(['order_id' => $params['id']])
             ->first();
 
         $actualDeliveryDate = $data->order_actual_delivery_date; // 交付日期
@@ -122,9 +128,10 @@ class FinancialIncomeLogic extends BaseLogic
         return $list;
     }
 
-    public function getArrearsInfo($id)
+    public function getArrearsInfo($params)
     {
-        $data = Order::query()
+        $model = empty($params['order_project_type']) ? Order::class : OtherOrder::class;
+        $data = $model::query()
             ->selectRaw('*, IFNULL(cast( order_pay_cycle AS SIGNED ), 1) as order_pay_cycle,
             (
 	CASE
@@ -145,7 +152,7 @@ class FinancialIncomeLogic extends BaseLogic
 		END 
 		) as arrears_month,TIMESTAMPDIFF(MONTH, order_actual_delivery_date, CURDATE())  as pass_month
             ')
-            ->where(['order_id' => $id])
+            ->where(['order_id' => $params['id']])
             ->first();
 
         $orderPayCycle           = empty($data->order_pay_cycle) ? 1 : $data->order_pay_cycle;

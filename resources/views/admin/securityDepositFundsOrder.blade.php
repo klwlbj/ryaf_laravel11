@@ -36,27 +36,6 @@
                 </a-form-item>
 
                 <a-form-item>
-                    <a-space>
-                        <a-select
-                                ref="select"
-                                placeholder="欠款账龄"
-                                v-model="listQuery.arrears_duration"
-                                :allow-clear="true"
-                                style="width: 120px"
-                                @change="handleChange"
-                        >
-                            <a-select-option value="0">未逾期</a-select-option>
-                            <a-select-option value="1">1个月内</a-select-option>
-                            <a-select-option value="2">1-2个月内</a-select-option>
-                            <a-select-option value="3">2-3个月内</a-select-option>
-                            <a-select-option value="4">3-4个月</a-select-option>
-                            <a-select-option value="5">4-5个月内</a-select-option>
-                            <a-select-option value="6">5-12个月内</a-select-option>
-                        </a-select>
-                    </a-space>
-                </a-form-item>
-
-                <a-form-item>
                     <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                 </a-form-item>
             </a-form>
@@ -64,15 +43,6 @@
             <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
                      :pagination="false" :scroll="{ x: 2000,y: 650}">
 
-                <div slot="action" slot-scope="text, record">
-                    <a style="margin-right: 8px" @click="onStageInfo(record)">
-                        分期详情
-                    </a>
-
-                    <a style="margin-right: 8px" @click="onArrearsInfo(record)">
-                        欠款账龄
-                    </a>
-                </div>
             </a-table>
 
             <div style="text-align: right;margin-top: 10px">
@@ -85,41 +55,6 @@
             </div>
         </div>
 
-        <a-modal :mask-closable="false" v-model="dialogFormVisible"
-                 :title="status"
-                 width="800px" :footer="null">
-            <other-order-add ref="otherOrderAdd"
-                                :id="id"
-                                @update="update"
-                                @add="add"
-                                @close="dialogFormVisible = false;"
-            >
-            </other-order-add>
-        </a-modal>
-
-        <a-modal :mask-closable="false" v-model="stageInfoFormVisible"
-                 title="分期详情"
-                 width="800px" :footer="null">
-            <financial_income_info ref="stageInfo"
-                                   :id="id"
-                                   :order-project-type="listQuery.order_project_type"
-                                 @submit="stageInfoQuery"
-                                 @close="stageInfoFormVisible = false;"
-            >
-            </financial_income_info >
-        </a-modal>
-
-        <a-modal :mask-closable="false" v-model="arrearsInfoFormVisible"
-                 title="欠款账龄"
-                 width="800px" :footer="null">
-            <financial_arrears_info ref="arrearsInfo"
-                                   :id="id"
-                                   :order-project-type="listQuery.order_project_type"
-                                 @submit="arrearsInfoQuery"
-                                 @close="arrearsInfoFormVisible = false;"
-            >
-            </financial_arrears_info >
-        </a-modal>
 
     </a-card>
 </div>
@@ -137,6 +72,7 @@
                 address: '',
                 order_project_type: 0,
                 arrears_duration: undefined,
+                is_lease:1,
             },
             listSource: [],
             listLoading:false,
@@ -172,16 +108,12 @@
                     dataIndex: 'number'
                 },
                 {
-                    title: '分期数',
-                    dataIndex: 'order_pay_cycle'
-                },
-                {
                     title: '收款类型',
                     dataIndex: 'order_contract_type'
                 },
                 {
-                    title: '应收金额',
-                    dataIndex: 'order_account_receivable'
+                    title: '收款标准',
+                    dataIndex: 'security_deposit_funds'
                 },
                 {
                     title: '收款日期',
@@ -193,21 +125,8 @@
                 },
                 {
                     title: '实收金额',
-                    dataIndex: 'order_funds_received'
+                    dataIndex: 'security_deposit_funds'
                 },
-                {
-                    title: '未收款金额（欠款金额）',
-                    dataIndex: 'order_account_outstanding'
-                },
-                {
-                    title: '是否逾期',
-                    dataIndex: 'is_overdue'
-                },
-                {
-                    title: '操作',
-                    fixed: 'right',
-                    scopedSlots: { customRender: 'action' },
-                }
             ],
             dialogFormVisible:false,
             defaultDate:undefined,

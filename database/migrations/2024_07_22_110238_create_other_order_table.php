@@ -13,8 +13,8 @@ return new class () extends Migration {
         Schema::create('other_order', function (Blueprint $table) {
             $table->id('order_id');
             $table->string('order_iid')->comment('唯一标识');
-            $table->unsignedInteger('order_user_name')->comment('单位');
-            $table->unsignedInteger('order_phone')->comment('手机号');
+            $table->string('order_user_name')->comment('单位');
+            $table->string('order_phone')->comment('手机号');
             $table->timestamp('order_prospecter_date')->nullable()->comment('发生日期');
             $table->unsignedInteger('order_delivery_number')->comment('安装数量');
             $table->tinyInteger('order_project_type')->default(0)->comment('项目类型');
@@ -25,8 +25,9 @@ return new class () extends Migration {
             $table->string('order_remark')->default('')->comment('备注');
 
             $table->tinyInteger('order_pay_way')->comment('收款类型');
-            $table->unsignedInteger('order_account_receivable')->comment('应收金额');
-            $table->unsignedInteger('order_funds_received')->comment('实收金额');
+            $table->decimal('order_account_receivable', 10, 2)->comment('应收金额');
+            $table->decimal('security_deposit_funds', 10, 2)->comment('保证金金额');
+            $table->decimal('order_funds_received', 10, 2)->comment('实收金额');
             $table->timestamp('order_actual_delivery_date')->nullable()->comment('收款日期');
             $table->integer('order_operator_user_id')->default(0)->comment('操作人');
 

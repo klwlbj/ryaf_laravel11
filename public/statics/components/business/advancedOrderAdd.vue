@@ -14,7 +14,7 @@
             </a-form-model-item>
 
             <a-form-model-item label="联系方式" prop="phone">
-                <a-input-number v-model="formData.phone" size="large" :max="10000000000000000"/>
+                <a-input-number v-model="formData.phone" size="large" :max="10000000000000000" style="width: 200px;"/>
             </a-form-model-item>
 
             <a-form-model-item label="客户类型" prop="customer_type">
@@ -33,13 +33,19 @@
             </a-form-model-item>
 
             <a-form-model-item label="预付金额" prop="advanced_amount">
-                <a-input v-model="formData.advanced_amount" />
+              <a-input-number v-model="formData.advanced_amount"  :step="0.01"/>
             </a-form-model-item>
 
             <a-form-model-item label="付款方案" prop="payment_type">
                 <a-radio-group v-model="formData.payment_type">
                     <a-radio :value="1">
-                        预付
+                      分期
+                    </a-radio>
+                  <a-radio :value="2">
+                    一次性
+                    </a-radio>
+                  <a-radio :value="3">
+                    租赁
                     </a-radio>
                 </a-radio-group>
             </a-form-model-item>
@@ -177,7 +183,7 @@ module.exports = {
                                 return false;
                             }
                             this.initForm();
-                            that.$emit('update');
+                            that.$emit('linkOrderSubmit');
                         }).catch(error => {
                             this.$message.error('请求失败');
                         });
