@@ -11,8 +11,10 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('order', function (Blueprint $table) {
-            $table->string('advanced_order_id')->default(0)->comment('预付订单ID');
-            $table->decimal('security_deposit_funds', 10, 2)->comment('保证金金额');
+            $table->integer('advanced_order_id')->default(0)->comment('预付订单ID');
+            $table->decimal('security_deposit_funds', 10, 2)->default(0)->comment('保证金金额');
+            $table->decimal('order_device_funds', 10, 2)->default(0)->comment('设备费用');
+            $table->unsignedInteger('order_amount_given')->default(0)->comment('赠送数量');
         });
     }
 

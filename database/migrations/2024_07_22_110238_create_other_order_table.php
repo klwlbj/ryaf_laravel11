@@ -26,7 +26,9 @@ return new class () extends Migration {
 
             $table->tinyInteger('order_pay_way')->comment('收款类型');
             $table->decimal('order_account_receivable', 10, 2)->comment('应收金额');
-            $table->decimal('security_deposit_funds', 10, 2)->comment('保证金金额');
+            $table->decimal('order_device_funds', 10, 2)->default(0)->comment('设备费用');
+
+            $table->decimal('security_deposit_funds', 10, 2)->default(0)->comment('保证金金额');
             $table->decimal('order_funds_received', 10, 2)->comment('实收金额');
             $table->timestamp('order_actual_delivery_date')->nullable()->comment('收款日期');
             $table->integer('order_operator_user_id')->default(0)->comment('操作人');
