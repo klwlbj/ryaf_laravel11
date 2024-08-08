@@ -14,7 +14,7 @@
             </a-form-model-item>
 
             <a-form-model-item required label="出库日期" prop="datetime">
-                <a-date-picker @change="dateChange" format="YYYY-MM-DD HH:mm:ss" v-model:value="formData.datetime"/>
+                <a-date-picker show-time @change="dateChange" format="YYYY-MM-DD HH:mm:ss" v-model:value="formData.datetime"/>
             </a-form-model-item>
 
             <a-form-model-item required label="用途" prop="purpose">
@@ -30,7 +30,7 @@
             </a-form-model-item>
 
             <a-form-model-item required label="申请人" prop="apply_user_id">
-                <apply_user-select ref="applyUserSelect" @change="applyUserChange" :default-data="applyUserId"></apply_user-select>
+                <apply-user-select ref="applyUserSelect" @change="applyUserChange" :default-data="applyUserId"></apply-user-select>
             </a-form-model-item>
 
             <a-form-model-item required label="领用人" prop="receive_user_id">
@@ -81,7 +81,7 @@ module.exports = {
         "warehouse-select":  httpVueLoader('/statics/components/material/warehouseSelect.vue'),
         "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
         "admin-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
-        "apply_user-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
+        "apply-user-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
     },
     props: {
         id: {
@@ -130,6 +130,7 @@ module.exports = {
 
             this.receiveUserId = undefined;
             this.applyUserId = undefined;
+            this.fileList = [];
 
             if(this.$refs['applyUserSelect']){
                 this.$refs['applyUserSelect'].clearData();

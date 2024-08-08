@@ -82,6 +82,8 @@ Route::middleware(['login'])->group(function () {
         Route::post('/update', [MaterialController::class, 'update']);
         Route::post('/delete', [MaterialController::class, 'delete']);
         Route::post('/getDetailList', [MaterialController::class, 'getDetailList']);
+        Route::post('/getDetail', [MaterialController::class, 'getDetail']);
+        Route::post('/reportExport', [MaterialController::class, 'reportExport']);
     });
 
     Route::prefix('materialFlow')->group(function () {
@@ -96,6 +98,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/getInfo', [MaterialPurchaseController::class, 'getInfo']);
         Route::post('/update', [MaterialPurchaseController::class, 'update']);
         Route::post('/delete', [MaterialPurchaseController::class, 'delete']);
+        Route::post('/approve', [MaterialPurchaseController::class, 'approve']);
         Route::post('/complete', [MaterialPurchaseController::class, 'complete']);
     });
 

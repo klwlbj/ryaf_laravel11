@@ -5,6 +5,7 @@ namespace App\Http\Logic;
 use App\Http\Logic\Excel\ExportLogic;
 use App\Models\Material;
 use App\Models\MaterialDetail;
+use App\Models\MaterialFlow;
 use App\Models\MaterialSpecificationRelation;
 use Illuminate\Support\Facades\DB;
 
@@ -39,6 +40,25 @@ class MaterialLogic extends BaseLogic
 
         if(isset($params['specification_id']) && $params['specification_id']){
             $query->where(['material.mate_specification_id' => $params['specification_id']]);
+        }
+
+        #过期列表
+        $expireList = Material::query()
+            ->leftJoin('material_detail','material_detail.made_material_id','=','material.mate_id')
+            ->where(['material.mate_status' => 1,'material_detail.made_status' => 1])
+            ->whereRaw("DATEDIFF(material_detail.made_expire_date,NOW()) <= 30")
+            ->select([
+                'material.mate_id',
+                'material.mate_name',
+                DB::raw("GROUP_CONCAT(distinct material_detail.made_expire_date) as mate_expire_date"),
+                DB::raw('count(material_detail.made_id) as expire_count')
+            ])->groupBy(['material.mate_id'])->get()->toArray();
+
+        if(!empty($params['is_expire'])){
+            if(!empty($expireList)){
+                $ids = array_column($expireList,'mate_id');
+                $query->whereIn('material.mate_id',$ids);
+            }
         }
 
         $total = $query->count();
@@ -111,6 +131,7 @@ class MaterialLogic extends BaseLogic
         return [
             'total' => $total,
             'list' => $list,
+            'expire_list' => $expireList,
         ];
     }
 
@@ -152,6 +173,10 @@ class MaterialLogic extends BaseLogic
             $query->where('mate_id_name','like','%'.$params['keyword'].'%');
         }
 
+        if(!empty($params['category_id'])){
+            $query->where(['material.mate_category_id' => $params['category_id']]);
+        }
+
         return $query
             ->orderBy('mate_sort','desc')
             ->orderBy('mate_id','desc')
@@ -171,6 +196,83 @@ class MaterialLogic extends BaseLogic
             ->where(['masp_material_id' => $params['id']])
             ->select(['masp_specification_id'])
             ->pluck('masp_specification_id')->toArray();
+
+        return $data;
+    }
+
+    public function getDetail($params)
+    {
+        $data = Material::query()
+            ->leftJoin('material_manufacturer','material_manufacturer.mama_id','=','material.mate_manufacturer_id')
+            ->leftJoin('material_category','material_category.maca_id','=','material.mate_category_id')
+            ->where(['mate_id' => $params['id']])
+            ->select([
+                'mate_id',
+                'mate_name',
+                'mama_name as mate_manufacturer_name',
+                'maca_name as mate_category_name',
+                'mate_number',
+                'mate_unit',
+                'mate_warning',
+                'mate_image'
+            ])
+            ->first();
+
+        if(!$data){
+            ResponseLogic::setMsg('记录不存在');
+            return false;
+        }
+
+        $data = $data->toArray();
+
+        $data['mate_specification_name'] = MaterialSpecificationRelation::query()
+            ->leftJoin('material_specification','material_specification.masp_id','=','material_specification_relation.masp_specification_id')
+            ->where(['masp_material_id' => $params['id']])
+            ->select(['masp_name'])
+            ->pluck('masp_name')->toArray();
+
+        #最后一次入库
+        $lastInFlow = MaterialFlow::query()
+            ->where(['mafl_material_id' => $params['id'],'mafl_type' => 1])
+            ->select([
+                'mafl_datetime',
+                'mafl_number',
+                'mafl_production_date',
+                'mafl_expire_date'
+            ])
+            ->orderBy('mafl_datetime','desc')->first();
+
+        $data['last_in_flow'] = ($lastInFlow) ? $lastInFlow->toArray() : null;
+
+        #最后一次出库
+        $lastOutFlow = MaterialFlow::query()
+            ->leftJoin('admin as a1','material_flow.mafl_apply_user_id','=','a1.admin_id')
+            ->leftJoin('admin as a2','material_flow.mafl_receive_user_id','=','a2.admin_id')
+            ->where(['mafl_material_id' => $params['id'],'mafl_type' => 2])
+            ->select([
+                'a1.admin_name as mafl_apply_name',
+                'a2.admin_name as mafl_receive_name',
+                'mafl_datetime',
+                'mafl_number',
+                'mafl_purpose'
+            ])
+            ->orderBy('mafl_datetime','desc')->first();
+
+        $data['last_out_flow'] = ($lastOutFlow) ? $lastOutFlow->toArray() : null;
+
+        #获取临期和过期数据
+        $data['expire_list'] = MaterialFlow::query()
+            ->leftJoin('material_detail','material_detail.made_in_id','=','material_flow.mafl_id')
+            ->where(['mafl_material_id' => $params['id'],'mafl_type' => 1,'material_detail.made_status' => 1])
+            ->whereRaw("DATEDIFF(material_flow.mafl_expire_date,NOW()) <= 30")
+            ->select([
+                'material_flow.mafl_id',
+                'material_flow.mafl_datetime',
+                'material_flow.mafl_number',
+                'material_flow.mafl_expire_date',
+                DB::raw('count(material_detail.made_id) as expire_count')
+            ])->groupBy(['material_flow.mafl_id'])->get()->toArray();
+
 
         return $data;
     }
@@ -322,5 +424,105 @@ class MaterialLogic extends BaseLogic
             'total' => $total,
             'list' => $list,
         ];
+    }
+
+    public function reportExport($params)
+    {
+        $startStr = date('Y.m.d',strtotime($params['start_date']));
+        $endStr = date('Y.m.d',strtotime($params['end_date']));
+
+        $title = ['序号','材料名称','规格型号','品牌','用量单位','单价(元)',"期初数量\n({$startStr})","初始金额(元)","初期金额(不含税)","本期入库数\n(" . $startStr . '-' . $endStr . ')',"本期入库成本(元)\n(" . $startStr . '-' . $endStr . ')',"本期入库成本(不含税)","本期出库数\n(" . $startStr . '-' . $endStr . ')',"本期出库金额(元)","本期出库金额(不含税)","期末数量\n({$endStr})","期末金额(元)","期末金额(不含税)"];
+
+        $exportData = [];
+
+        $materialList = Material::query()
+            ->leftJoin('material_manufacturer','material_manufacturer.mama_id','=','material.mate_manufacturer_id')
+            ->where(['mate_status' => 1])
+            ->select([
+                'mate_id',
+                'mate_name',
+                'mama_name as mate_manufacturer_name',
+                'mate_unit'
+            ])->get()->toArray();
+
+        $ids = array_column($materialList,'mate_id');
+
+        $specificationArr = MaterialSpecificationRelation::query()
+            ->leftJoin('material_specification','material_specification.masp_id','=','material_specification_relation.masp_specification_id')
+            ->whereIn('masp_material_id',$ids)
+            ->orderBy('material_specification.masp_sort','desc')
+            ->orderBy('material_specification.masp_id','desc')
+            ->select([
+                'masp_material_id',
+                'material_specification.masp_name'
+            ])->get()->groupBy('masp_material_id')->toArray();
+
+        #起始库存
+        $startCountArr = MaterialFlow::query()
+            ->whereIn('mafl_material_id',$ids)
+            ->where('mafl_datetime','<',$params['start_date'])
+            ->select([
+                'mafl_material_id',
+                DB::raw(Db::raw("(COALESCE(sum(IF(mafl_type=1,mafl_number,NULL)),0) - COALESCE(sum(IF(mafl_type=2,mafl_number,NULL)),0)) as count")),
+            ])->groupBy(['mafl_material_id'])->get()->keyBy('mafl_material_id')->toArray();
+
+        #本期入库数
+        $currentCountArr = MaterialFlow::query()
+            ->whereIn('mafl_material_id',$ids)
+            ->where('mafl_datetime','>=',$params['start_date'])
+            ->where('mafl_datetime','<=',$params['end_date'])
+            ->select([
+                'mafl_material_id',
+                DB::raw(Db::raw("COALESCE(sum(IF(mafl_type=1,mafl_number,NULL)),0) as in_count")),
+                DB::raw(Db::raw("COALESCE(sum(IF(mafl_type=2,mafl_number,NULL)),0) as out_count")),
+            ])->groupBy(['mafl_material_id'])->get()->keyBy('mafl_material_id')->toArray();
+
+        $row = 2;
+        foreach ($materialList as $key => $value){
+//            print_r($specificationArr[$value['mate_id']]);die;
+            $exportData[] = [
+                $key+1,
+                $value['mate_name'],
+                implode("\n",array_column($specificationArr[$value['mate_id']] ?? [],'masp_name')),
+                $value['mate_manufacturer_name'],
+                $value['mate_unit'],
+                '',
+                $startCountArr[$value['mate_id']]['count'] ?? 0,
+                '',
+                '',
+                $currentCountArr[$value['mate_id']]['in_count'] ?? 0,
+                '',
+                '',
+                $currentCountArr[$value['mate_id']]['out_count'] ?? 0,
+                '',
+                '',
+                ($startCountArr[$value['mate_id']]['count'] ?? 0) + (($currentCountArr[$value['mate_id']]['in_count'] ?? 0) - ($currentCountArr[$value['mate_id']]['out_count'] ?? 0)),
+                '',
+                ''
+            ];
+
+            $row++;
+        }
+
+        $width = [];
+        foreach ($title as $key => $value){
+            if(in_array($value,['材料名称'])){
+                $width[ExportLogic::getColumnName($key+1)] = 50;
+            }elseif(in_array($value,['序号','规格类型','品牌','用量单位'])){
+                $width[ExportLogic::getColumnName($key+1)] = 15;
+            }else{
+                $width[ExportLogic::getColumnName($key+1)] = 30;
+            }
+
+        }
+
+        $config = [
+            'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . '1' => true],
+            'width' => $width,
+            'horizontal_center' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true],
+            'wrap_text' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true],
+        ];
+
+        return ExportLogic::getInstance()->export($title,$exportData,'进销存报表',$config);
     }
 }

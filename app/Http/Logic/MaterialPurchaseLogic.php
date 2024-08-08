@@ -35,6 +35,13 @@ class MaterialPurchaseLogic extends BaseLogic
         $total = $query->count();
 
         $list = $query
+            ->leftJoin('material_category','material_category.maca_id','=','material_purchase.mapu_category_id')
+            ->leftJoin('admin','admin.admin_id','=','material_purchase.mapu_apply_user_id')
+            ->select([
+                'material_purchase.*',
+                'material_category.maca_name as mapu_category_name',
+                'admin.admin_name as mapu_apply_username'
+            ])
             ->orderBy('mapu_id', 'desc')
             ->offset($point)->limit($pageSize)->get()->toArray();
 
@@ -59,8 +66,6 @@ class MaterialPurchaseLogic extends BaseLogic
             } else {
                 $value['detail'] = [];
             }
-
-            $value['complete_auth'] = ($value['mapu_status'] == 1) ? true : false;
         }
 
         unset($value);
@@ -97,9 +102,14 @@ class MaterialPurchaseLogic extends BaseLogic
 
         $insertData = [
             'mapu_status' => 1,
+            'mapu_sn' => MaterialPurchase::getSn($params['category_id']),
+            'mapu_category_id' => $params['category_id'],
+            'mapu_apply_user_id' => $params['apply_user_id'],
             'mapu_remark' => $params['remark'] ?? '',
             'mapu_operator_id' => AuthLogic::$userId
         ];
+
+//        print_r($insertData);die;
 
         $id = MaterialPurchase::query()->insertGetId($insertData);
 
@@ -193,7 +203,28 @@ class MaterialPurchaseLogic extends BaseLogic
         return [];
     }
 
-    /**驳回
+    public function approve($params)
+    {
+        $data = MaterialPurchase::getDataById($params['id']);
+        if(!$data){
+            ResponseLogic::setMsg('数据不存在');
+            return false;
+        }
+
+        if($data['mapu_status'] != 1){
+            ResponseLogic::setMsg('申购记录不为发起中状态，不能完成');
+            return false;
+        }
+
+        MaterialPurchase::query()->where(['mapu_id' => $params['id']])->update([
+            'mapu_approve_id' => AuthLogic::$userId,
+            'mapu_status' => ($params['status'] == 1) ? 2 : 4,
+        ]);
+        MaterialPurchase::delCacheById($params['id']);
+        return [];
+    }
+
+    /**完成
      * @param $params
      * @return false|array
      */
@@ -205,14 +236,14 @@ class MaterialPurchaseLogic extends BaseLogic
             return false;
         }
 
-        if($data['mapu_status'] != 1){
-            ResponseLogic::setMsg('申购记录不为申购中状态，不能完成');
+        if($data['mapu_status'] != 2){
+            ResponseLogic::setMsg('申购记录不为采购中状态，不能完成');
             return false;
         }
 
         MaterialPurchase::query()->where(['mapu_id' => $params['id']])->update([
-            'mapu_operator_id' => AuthLogic::$userId,
-            'mapu_status' => 2,
+//            'mapu_operator_id' => AuthLogic::$userId,
+            'mapu_status' => 3,
         ]);
         MaterialPurchase::delCacheById($params['id']);
         return [];

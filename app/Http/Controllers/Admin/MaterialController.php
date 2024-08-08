@@ -75,6 +75,28 @@ class MaterialController
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
+    public function getDetail(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+        ],[
+            'id.required' => 'ID 不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialLogic::getInstance()->getDetail($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
     public function add(Request $request)
     {
         $params = $request->all();
@@ -173,6 +195,30 @@ class MaterialController
         }
 
         $res = MaterialLogic::getInstance()->getDetailList($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function reportExport(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'start_date' => 'required',
+            'end_date' => 'required',
+        ],[
+            'start_date.required' => '物品名称不得为空',
+            'end_date.required' => '分类不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialLogic::getInstance()->reportExport($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }

@@ -2,6 +2,11 @@
 
 @section('content')
     <div id="app">
+        <a-alert
+            v-if="expireList.length > 0"
+            message="物品临期警告"
+            :description="expireStr"
+            banner closable></a-alert>
         <a-card>
             <div>
                 <a-form layout="inline" >
@@ -15,11 +20,27 @@
                         <category-select @change="categoryChange"></category-select>
                     </a-form-item>
                     <a-form-item>
+                        <a-select v-model="listQuery.is_expire" show-search placeholder="是否临期" :max-tag-count="1"
+                                  style="width: 200px;" allow-clear>
+                            <a-select-option :value="1">
+                                是
+                            </a-select-option>
+                            <a-select-option :value="0">
+                                否
+                            </a-select-option>
+                        </a-select>
+                    </a-form-item>
+                    <a-form-item>
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
                     <a-form-item>
-                        <a-button v-if="$checkPermission('/api/material/getList')" icon="search" @click="exportList">导出</a-button>
+                        <a-button v-if="$checkPermission('/api/material/getList')" :loading="exportLoading" icon="download" @click="exportList">导出</a-button>
                     </a-form-item>
+
+                    <a-form-item>
+                        <a-button v-if="$checkPermission('/api/material/reportExport')" type="primary" icon="bar-chart" @click="onReport">进销存报表</a-button>
+                    </a-form-item>
+
                     <a-form-item>
                         <a-button v-if="$checkPermission('/api/material/add')" @click="onCreate" type="primary" icon="edit">添加物品</a-button>
                     </a-form-item>
@@ -32,6 +53,14 @@
                         <a-tag v-if="record.mate_is_deliver == 0"  color="red">否</a-tag>
                         <a-tag v-else color="green">是</a-tag>
                     </div>
+
+                    <div slot="mate_name" slot-scope="text, record">
+                        <div style="cursor: pointer" @click="getDetail(record)">
+                            @{{ record.mate_name }}
+                        </div>
+                    </div>
+
+
 
                     <div slot="mate_specification_name" slot-scope="text, record">
                         <a-tag v-for="(item,i) in record.mate_specification_name" :key="i" color="green">@{{ item }}</a-tag>
@@ -135,11 +164,41 @@
                     style="height: 600px;overflow: auto"
                     ref="materialDetailList"
                     :id="detailId"
-                    @close="dialogFormVisible = false;"
                 >
                 </material-detail-list>
             </a-modal>
 
+            <a-modal :mask-closable="false" v-model="infoFormVisible"
+                     :title="infoStatus"
+                     width="1000px" :footer="null">
+                <material-detail
+                    style="height: 600px;overflow: auto"
+                    ref="materialDetail"
+                    :id="infoId"
+                >
+                </material-detail>
+            </a-modal>
+
+
+            <a-modal :mask-closable="false" v-model="reportFormVisible"
+                     title="进销存报表"
+                     width="800px" :footer="null">
+                <a-form-model :model="reportForm" :label-col="labelCol" :wrapper-col="wrapperCol">
+                    <a-form-model-item label="开始日期">
+                        <a-date-picker format="YYYY-MM-DD" v-model:value="reportForm.start_date"/>
+                    </a-form-model-item>
+
+                    <a-form-model-item label="出库日期" prop="datetime">
+                        <a-date-picker format="YYYY-MM-DD" v-model:value="reportForm.end_date"/>
+                    </a-form-model-item>
+                </a-form-model>
+
+                <a-form-model-item :wrapper-col="{ span: 14, offset: 4 }">
+                    <a-button type="primary" :loading="reportLoading" @click="submitReport">
+                        生成报表
+                    </a-button>
+                </a-form-model-item>
+            </a-modal>
         </a-card>
     </div>
 
@@ -156,9 +215,12 @@
                     keyword: "",
                     manufacturer_id:'',
                     category_id:'',
+                    is_expire:undefined
                 },
                 listSource: [],
+                expireList: [],
                 listLoading:false,
+                exportLoading:false,
                 dialogStatus:'新增',
                 pagination: {
                     pageSize: 10,
@@ -175,6 +237,7 @@
                     },
                     {
                         title: '名称',
+                        scopedSlots: { customRender: 'mate_name' },
                         dataIndex: 'mate_name',
                         width: 100
                     },
@@ -233,19 +296,41 @@
                 inComingFormVisible:false,
                 outComingFormVisible:false,
                 detailFormVisible:false,
+                infoFormVisible:false,
                 id:null,
                 inComingMaterialId:null,
                 outComingMaterialId:null,
                 detailId:null,
                 detailStatus:'',
+                infoId:null,
+                infoStatus:'',
+                reportLoading:false,
+                reportFormVisible:false,
+                labelCol: { span: 4 },
+                wrapperCol: { span: 14 },
+                reportForm:{
+                    start_date : moment().startOf('months').format("YYYY-MM-DD"),
+                    end_date: moment().endOf('month').subtract(1, 'days').format("YYYY-MM-DD"),
+                }
             },
             created () {
                 this.listQuery.page_size = this.pagination.pageSize;
                 this.handleFilter()
             },
+            computed: {
+                expireStr(){
+                    let str = '';
+                    for(let item of this.expireList){
+                        str += (item['mate_name'] + ' 即将过期数：' +  item['expire_count'] + '， 过期时间：' + item['mate_expire_date'] + ';');
+                    }
+
+                    return str;
+                }
+            },
             components: {
                 "material-add":  httpVueLoader('/statics/components/material/materialAdd.vue'),
                 "material-detail-list":  httpVueLoader('/statics/components/material/materialDetailList.vue'),
+                "material-detail":  httpVueLoader('/statics/components/material/materialDetail.vue'),
                 "manufacturer-select":  httpVueLoader('/statics/components/material/manufacturerSelect.vue'),
                 "category-select":  httpVueLoader('/statics/components/material/categorySelect.vue'),
                 "material-in-coming":  httpVueLoader('/statics/components/material/materialInComing.vue'),
@@ -267,6 +352,7 @@
                 exportList(){
                     let formData = JSON.parse(JSON.stringify(this.listQuery));
                     formData.export = 1;
+                    this.exportLoading = true;
                     axios({
                         // 默认请求方式为get
                         method: 'post',
@@ -278,7 +364,12 @@
                             'Content-Type': 'multipart/form-data'
                         }
                     }).then(response => {
+                        this.exportLoading = false;
                         let res = response.data;
+                        if(res.code !== 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
                         window.location.href = res.data.url
                     }).catch(error => {
                         this.$message.error('请求失败');
@@ -298,10 +389,15 @@
                             'Content-Type': 'multipart/form-data'
                         }
                     }).then(response => {
+                        this.listLoading = false;
                         let res = response.data;
+                        if(res.code !== 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
                         this.listSource = res.data.list
+                        this.expireList = res.data.expire_list
                         this.pagination.total = res.data.total
-                        this.listLoading = false
                     }).catch(error => {
                         this.$message.error('请求失败');
                     });
@@ -319,6 +415,11 @@
                     this.detailId = row.mate_id;
                     this.detailStatus = row.mate_name;
                     this.detailFormVisible = true;
+                },
+                getDetail(row){
+                    this.infoId = row.mate_id;
+                    this.infoStatus = row.mate_name;
+                    this.infoFormVisible = true;
                 },
                 onDel(row){
                     axios({
@@ -384,6 +485,33 @@
                 },
                 manufacturerChange(value){
                     this.listQuery.manufacturer_id = value;
+                },
+                onReport(){
+                    this.reportFormVisible = true;
+                },
+                submitReport(){
+                    this.reportLoading = true;
+                    axios({
+                        // 默认请求方式为get
+                        method: 'post',
+                        url: '/api/material/reportExport',
+                        // 传递参数
+                        data: this.reportForm,
+                        responseType: 'json',
+                        headers:{
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }).then(response => {
+                        this.reportLoading = false;
+                        let res = response.data;
+                        if(res.code !== 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
+                        window.location.href = res.data.url
+                    }).catch(error => {
+                        this.$message.error('请求失败');
+                    });
                 }
             },
 

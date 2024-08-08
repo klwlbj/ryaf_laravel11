@@ -92,7 +92,7 @@ module.exports = {
                 warehouse_id:2,
                 number:0,
                 production_date:moment().format("YYYY-MM-DD"),
-                expire_date:moment().format("YYYY-MM-DD"),
+                expire_date:moment().add(10, 'years').format("YYYY-MM-DD"),
                 datetime:moment().format("YYYY-MM-DD HH:mm:ss"),
                 remark:'',
             };

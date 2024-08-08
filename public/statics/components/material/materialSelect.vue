@@ -1,6 +1,6 @@
 <template>
     <a-select v-model="id" show-search placeholder="请选择物品" :max-tag-count="1"
-              :mode="mode" style="width: 200px;" allow-clear @change="handleChange" option-filter-prop="label">
+              :mode="mode" :style="'width:' + width + 'px'" allow-clear @change="handleChange" option-filter-prop="label">
         <a-select-option v-for="(item, key) in list" :key="key" :value="item.mate_id" :label="item.mate_name">
             {{ item.mate_name }}
         </a-select-option>
@@ -12,9 +12,19 @@ module.exports = {
     name: 'materialSelect',
     components: {},
     props: {
+        width: {
+            default:function(){
+                return 200
+            },
+        },
         mode: {
             default:function(){
                 return 'default'
+            },
+        },
+        categoryId: {
+            default:function(){
+                return undefined
             },
         },
         defaultData: {
@@ -31,13 +41,16 @@ module.exports = {
     },
     methods: {
         getList () {
+            let formData = {};
+            if(this.categoryId){
+                formData.category_id = this.categoryId;
+            }
             axios({
                 // 默认请求方式为get
                 method: 'post',
                 url: '/api/material/getAllList',
                 // 传递参数
-                data: {
-                },
+                data: formData,
                 responseType: 'json',
                 headers:{
                     'Content-Type': 'multipart/form-data'
@@ -81,7 +94,14 @@ module.exports = {
 
             this.id = newData;
             this.$emit('change',newData);
-        }
+        },
+        categoryId (newData,oldData) {
+            if(newData === oldData){
+                return false
+            }
+
+            this.getList();
+        },
     },
     computed: {
 

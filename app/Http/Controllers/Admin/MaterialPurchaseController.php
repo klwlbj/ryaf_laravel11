@@ -58,8 +58,12 @@ class MaterialPurchaseController
         $params = $request->all();
 
         $validate = Validator::make($params, [
+            'category_id' => 'required',
+            'apply_user_id' => 'required',
             'detail' => 'required',
         ],[
+            'category_id.required' => '分类不得为空',
+            'apply_user_id.required' => '申购人不得为空',
             'detail.required' => '申购详情不得为空',
         ]);
 
@@ -81,9 +85,13 @@ class MaterialPurchaseController
 
         $validate = Validator::make($params, [
             'id' => 'required',
+            'category_id' => 'required',
+            'apply_user_id' => 'required',
             'detail' => 'required',
         ],[
             'id.required' => 'id不得为空',
+            'category_id.required' => '分类不得为空',
+            'apply_user_id.required' => '申购人不得为空',
             'detail.required' => '申购详情不得为空',
         ]);
 
@@ -115,6 +123,30 @@ class MaterialPurchaseController
         }
 
         $res = MaterialPurchaseLogic::getInstance()->delete($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function approve(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+            'status' => 'required',
+        ],[
+            'id.required' => 'id不得为空',
+            'status.required' => '审批状态不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialPurchaseLogic::getInstance()->approve($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }

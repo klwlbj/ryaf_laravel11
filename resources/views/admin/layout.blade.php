@@ -5,16 +5,17 @@
     <title>如约安防</title>
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <link rel="icon" href="{{asset('statics/image/icon.jpg')}}" type="image/x-icon"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <link rel="stylesheet" type="text/css"  href="{{asset('statics/css/antd.min.css')}}">
     @section('link')
     @show
 </head>
-<script src="{{asset('statics/js/vue.js')}}"></script>
 <script src="{{asset('statics/js/moment.js')}}"></script>
 <script src="{{asset('statics/js/moment-zh-cn.js')}}"></script>
-<script src="{{asset('statics/js/httpVueLoader.js')}}"></script>
+<script src="{{asset('statics/js/vue.js')}}"></script>
 <script src="{{asset('statics/js/antd.min.js')}}"></script>
+<script src="{{asset('statics/js/httpVueLoader.js')}}"></script>
 <script src="{{asset('statics/js/axios.min.js')}}"></script>
 <script src="{{asset('statics/js/cookie.js')}}"></script>
 <style>
@@ -82,7 +83,13 @@
     </div>
 </div>
 <script src="{{asset('statics/js/axios-interceptors.js')}}"></script>
+
+
 <script>
+    Vue.prototype.$checkPermission = function(key){
+        let permission = JSON.parse(localStorage.getItem("permission"));
+        return (permission[key] !== 0);
+    }
     moment.locale('zh-cn');
     function logout(){
         deleteCookie('X-Token');
@@ -93,12 +100,7 @@
 
 </script>
 
-
 <script>
-    Vue.prototype.$checkPermission = function(key){
-        let permission = JSON.parse(localStorage.getItem("permission"));
-        return (permission[key] !== 0);
-    }
     Vue.use(httpVueLoader)
     new Vue({
         el: '#sidebar',
@@ -116,7 +118,19 @@
         },
 
     })
+    // setInterval(function (){
+    //     var date = new Date();
+    //     var year = date.getFullYear();
+    //     var month = String(date.getMonth()+1).padStart(2,'0');
+    //     var day = String(date.getDay()).padStart(2,'0');
+    //     document.getElementById('time').innerHTML = year + '-' + month + '-' + day + ' ' +date.toLocaleTimeString();
+    // }, 1000)
+</script>
 
+@section('script')
+@show
+
+<script>
     new Vue({
         el: '#header',
         data: {
@@ -176,21 +190,7 @@
         },
 
     })
-
-    setInterval(function (){
-        var date = new Date();
-        var year = date.getFullYear();
-        var month = String(date.getMonth()+1).padStart(2,'0');
-        var day = String(date.getDay()).padStart(2,'0');
-        document.getElementById('time').innerHTML = year + '-' + month + '-' + day + ' ' +date.toLocaleTimeString();
-    }, 1000)
-
-
 </script>
-
-@section('script')
-@show
-
 
 </body>
 </html>

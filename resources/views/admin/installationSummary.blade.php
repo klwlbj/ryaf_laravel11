@@ -5,6 +5,18 @@
         <a-card>
             <div>
                 <a-form layout="inline" >
+                    <a-form-item label="区域">
+                        <node-select type="区县消防救援大队" @change="areaChange"></node-select>
+                    </a-form-item>
+
+                    <a-form-item label="街道">
+                        <node-select type="街道办" @change="streetChange"></node-select>
+                    </a-form-item>
+
+                    <a-form-item label="村委">
+                        <node-select type="村委" @change="villageChange"></node-select>
+                    </a-form-item>
+
                     <a-form-item label="地址">
                         <a-input v-model="listQuery.address" placeholder="地址" style="width: 200px;" />
                     </a-form-item>
@@ -22,19 +34,19 @@
 
                         </a-range-picker>
                     </a-form-item>
-                    <a-form-item label="街道">
-                        <node-select type="街道办"></node-select>
-                    </a-form-item>
-
-                    <a-form-item label="村委">
-                        <node-select type="村委"></node-select>
-                    </a-form-item>
 
                     <a-form-item>
                         <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                     </a-form-item>
+
+                    <a-form-item>
+                        <a-button type="primary" icon="download" :loading="exportLoading" @click="exportList">导出</a-button>
+                    </a-form-item>
                 </a-form>
 
+                <div>
+                    安装台数 :<span style="color: red">@{{summary.count}}</span> 已付金额 :<span style="color: red">@{{summary.order_account_receivable}}</span>  未付金额 :<span  style="color: red">@{{summary.order_account_receivable - summary.order_funds_received}}</span>
+                </div>
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
                          :pagination="false"  :scroll="{ x: 2800,y: 650}">
 
@@ -77,6 +89,7 @@
                         :page-size="pagination.pageSize"
                         :total="pagination.total"
                         @change="paginationChange"
+                        :show-total="total => `共 ${total} 条`"
                     ></a-pagination>
                 </div>
 
@@ -99,9 +112,18 @@
                     user_keyword:'',
                     start_date:null,
                     end_date:null,
+                    village:undefined,
+                    street:undefined,
+                    area:undefined,
                 },
                 listSource: [],
+                summary:{
+                    count : 0,
+                    order_account_receivable : 0,
+                    order_funds_received : 0
+                },
                 listLoading:false,
+                exportLoading:false,
                 status:'新增回款流水',
                 pagination: {
                     pageSize: 10,
@@ -189,9 +211,8 @@
                     },
                     {
                         title: '收款路径',
-                        scopedSlots: { customRender: 'order_pay_way' },
                         align:'center',
-                        dataIndex: 'order_pay_cycle'
+                        dataIndex: 'order_pay_way'
                     },
                     {
                         title: '回款时间',
@@ -242,10 +263,43 @@
                             'Content-Type': 'multipart/form-data'
                         }
                     }).then(response => {
+                        this.listLoading = false
                         let res = response.data;
+                        if(res.code != 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
                         this.listSource = res.data.list
                         this.pagination.total = res.data.total
-                        this.listLoading = false
+                        this.summary = res.data.summary;
+                    }).catch(error => {
+                        this.$message.error('请求失败');
+                    });
+                },
+                exportList(){
+                    let formData = JSON.parse(JSON.stringify(this.listQuery));
+                    formData.export = 1;
+                    this.exportLoading = true;
+                    axios({
+                        // 默认请求方式为get
+                        method: 'post',
+                        url: '/api/installation/summary',
+                        // 传递参数
+                        data: formData,
+                        responseType: 'json',
+                        headers:{
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }).then(response => {
+                        this.exportLoading = false
+                        let res = response.data;
+                        if(res.code != 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
+                        window.open(res.data.url, '_blank');
+
+                        // window.location.href = res.data.url
                     }).catch(error => {
                         this.$message.error('请求失败');
                     });
@@ -253,6 +307,15 @@
                 dateChange(value,arr){
                     this.listQuery.start_date = arr[0];
                     this.listQuery.end_date = arr[1];
+                },
+                streetChange(value){
+                    this.listQuery.street = value;
+                },
+                villageChange(value){
+                    this.listQuery.village = value;
+                },
+                areaChange(value){
+                    this.listQuery.area = value;
                 }
             },
 

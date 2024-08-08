@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class MaterialPurchase extends BaseModel
 {
@@ -30,5 +31,20 @@ class MaterialPurchase extends BaseModel
     public static function delCacheById($id)
     {
         Cache::delete(self::class.'_'.$id);
+    }
+
+    public static function getSn($categoryId)
+    {
+        if($categoryId == 1){
+            $typeStr = '01';
+        }else{
+            $typeStr = '02';
+        }
+
+        $number = self::query()->whereRaw("YEAR(mapu_crt_time) = YEAR(CURDATE()) AND MONTH(mapu_crt_time) = MONTH(CURDATE())")->count() ?: 0;
+
+        $number = str_pad(($number + 1), 2, '0', STR_PAD_LEFT);
+
+        return date('Ym') . $typeStr . '-' . $number;
     }
 }

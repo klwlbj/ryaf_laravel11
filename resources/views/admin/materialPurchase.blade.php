@@ -12,10 +12,16 @@
                         <a-select v-model="listQuery.status" show-search placeholder="请选择状态" :max-tag-count="1"
                                   style="width: 200px;" allow-clear>
                             <a-select-option :value="1">
-                                申购中
+                                发起中
                             </a-select-option>
                             <a-select-option :value="2">
+                                采购中
+                            </a-select-option>
+                            <a-select-option :value="3">
                                 已完成
+                            </a-select-option>
+                            <a-select-option :value="4">
+                                已驳回
                             </a-select-option>
                         </a-select>
                     </a-form-item>
@@ -37,8 +43,10 @@
                     </div>
 
                     <div slot="status" slot-scope="text, record">
-                        <a-tag v-if="record.mapu_status == 1">申购中</a-tag>
-                        <a-tag color="green" v-else-if="record.mapu_status == 2">已完成</a-tag>
+                        <a-tag v-if="record.mapu_status == 1">发起中</a-tag>
+                        <a-tag color="#f50" v-else-if="record.mapu_status == 2">采购中</a-tag>
+                        <a-tag color="green" v-else-if="record.mapu_status == 3">已完成</a-tag>
+                        <a-tag color="red" v-else-if="record.mapu_status == 4">已驳回</a-tag>
                     </div>
 
                     <div slot="action" slot-scope="text, record">
@@ -60,7 +68,31 @@
 
                         <div>
                             <a-popconfirm
-                                v-if="record.complete_auth && $checkPermission('/api/materialPurchase/complete')"
+                                v-if="(record.mapu_status == 1) && $checkPermission('/api/materialPurchase/approve')"
+                                title="是否确定同意申购?"
+                                ok-text="确认"
+                                cancel-text="取消"
+                                @confirm="onApprove(record,1)"
+                            >
+                                <a style="margin-right: 8px">
+                                    同意
+                                </a>
+                            </a-popconfirm>
+
+                            <a-popconfirm
+                                v-if="(record.mapu_status == 1) && $checkPermission('/api/materialPurchase/approve')"
+                                title="是否确定驳回申购?"
+                                ok-text="确认"
+                                cancel-text="取消"
+                                @confirm="onApprove(record,2)"
+                            >
+                                <a style="margin-right: 8px">
+                                    驳回
+                                </a>
+                            </a-popconfirm>
+
+                            <a-popconfirm
+                                v-if="(record.mapu_status == 2) && $checkPermission('/api/materialPurchase/complete')"
                                 title="是否确定完成申购?"
                                 ok-text="确认"
                                 cancel-text="取消"
@@ -86,7 +118,7 @@
 
             <a-modal :mask-closable="false" v-model="dialogFormVisible"
                      :title="dialogStatus"
-                     width="800px" :footer="null">
+                     width="1000px" :footer="null">
                 <purchase-add
                     style="max-height: 600px;overflow: auto"
                             ref="purchaseAdd"
@@ -133,9 +165,21 @@
                         width: 80
                     },
                     {
+                        title: '编号',
+                        dataIndex: 'mapu_sn',
+                    },
+                    {
+                        title: '分类',
+                        dataIndex: 'mapu_category_name',
+                    },
+                    {
                         title: '详情',
                         scopedSlots: { customRender: 'detail' },
                         dataIndex: 'detail'
+                    },
+                    {
+                        title: '申请人',
+                        dataIndex: 'mapu_apply_username'
                     },
                     {
                         title: '状态',
@@ -167,6 +211,7 @@
                 "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
             },
             methods: {
+                moment,
                 paginationChange (current, pageSize) {
                     this.listQuery.page = current;
                     this.pagination.current = current;
@@ -223,6 +268,7 @@
                     this.handleFilter();
                 },
                 onDel(row){
+                    this.listLoading = true
                     axios({
                         // 默认请求方式为get
                         method: 'post',
@@ -236,19 +282,48 @@
                             'Content-Type': 'multipart/form-data'
                         }
                     }).then(response => {
-                        this.loading = false;
+                        this.listLoading = false;
                         let res = response.data;
                         if(res.code !== 0){
                             this.$message.error(res.message);
                             return false;
                         }
                         this.$message.success('删除成功');
+                        this.getPageList();
+                    }).catch(error => {
+                        this.$message.error('请求失败');
+                    });
+                },
+                onApprove(row,status){
+                    this.listLoading = true
+                    axios({
+                        // 默认请求方式为get
+                        method: 'post',
+                        url: '/api/materialPurchase/approve',
+                        // 传递参数
+                        data: {
+                            id:row.mapu_id,
+                            status:status
+                        },
+                        responseType: 'json',
+                        headers:{
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }).then(response => {
+                        this.listLoading = false;
+                        let res = response.data;
+                        if(res.code !== 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
+                        this.$message.success('操作成功');
                         this.handleFilter();
                     }).catch(error => {
                         this.$message.error('请求失败');
                     });
                 },
                 onComplete(row){
+                    this.listLoading = true
                     axios({
                         // 默认请求方式为get
                         method: 'post',
@@ -262,7 +337,7 @@
                             'Content-Type': 'multipart/form-data'
                         }
                     }).then(response => {
-                        this.loading = false;
+                        this.listLoading = false;
                         let res = response.data;
                         if(res.code !== 0){
                             this.$message.error(res.message);
