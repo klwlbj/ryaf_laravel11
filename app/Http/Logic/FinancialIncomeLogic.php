@@ -2,9 +2,12 @@
 
 namespace App\Http\Logic;
 
+use DateTime;
+use App\Models\Node;
 use App\Models\Order;
 use App\Models\Place;
 use App\Models\OtherOrder;
+use Illuminate\Support\Facades\DB;
 
 class FinancialIncomeLogic extends BaseLogic
 {
@@ -18,7 +21,7 @@ class FinancialIncomeLogic extends BaseLogic
         $query = $model::query();
 
         // 是否租赁
-        if(isset($params['is_lease'])){
+        if (isset($params['is_lease'])) {
             empty($params['order_project_type']) ? $query->where('order_contract_type', '以租代购') : $query->where('order_contract_type', OtherOrder::CONTRACT_TYPE_RENT);
         }
 
@@ -61,8 +64,8 @@ class FinancialIncomeLogic extends BaseLogic
             $orderIds = Place::where('plac_name', 'like', '%' . $params['address'] . '%')->distinct()->pluck('plac_order_id');
             $query->whereIn('order_id', $orderIds);
         }
-
-        $total = $query->count();
+        $otherTotal = [];
+        $total      = $query->count();
 
         $list = $query->selectRaw(
             '*,
@@ -72,36 +75,146 @@ class FinancialIncomeLogic extends BaseLogic
 			( TIMESTAMPDIFF( MONTH, order_actual_delivery_date, CURDATE() ) / cast( order_pay_cycle AS SIGNED ) * order_account_receivable ) > order_funds_received 
 			ELSE order_account_receivable > order_funds_received 
 	END 
-	) as is_overdue'
+	) as overdue,
+	FLOOR( order_funds_received / (order_account_receivable / cast( order_pay_cycle AS SIGNED ))) as returned_month
+	'
         )
             ->when(empty($params['order_project_type']), function ($query) {
-                return $query->withCount('smokeDetectors');
+                return $query->withCount('smokeDetectors')->with('places');
             })
-            // ->withCount('smokeDetectors')
             ->orderBy('order_id', 'desc')
             ->offset($point)->limit($pageSize)
-            ->get()
-            ->map(function ($item) use ($params, $model) {
-                $item->is_overdue                = $item->is_overdue ? '是' : '否';
-                $item->order_pay_cycle           = is_numeric($item->order_pay_cycle) ? $item->order_pay_cycle : 1;
-                $item->income_type               = empty($params['order_project_type']) ? '对公转账' : $model::$formatPayWayMaps[$item->order_pay_way] ?? '无';
-                $item->order_contract_type       = empty($params['order_project_type']) ? $item->order_contract_type : $model::$formatContractTypeMaps[$item->order_contract_type] ?? '无';
-                $item->order_project_type              = empty($params['order_project_type']) ? '烟感' : $model::$formatProductTypeMaps[$item->order_project_type] ?? '无';;
-                $item->number                    = empty($params['order_project_type']) ? $item->smoke_detectors_count : $item->order_delivery_number;
-                $item->order_account_outstanding = $item->order_account_receivable - $item->order_funds_received;
-                return $item;
-            });
+            ->get();
+        $districtNodes = $streetNodes = $villageNodes = $districtNodeIds = $villageNodeIds = $streetNodeIds = [];
+        if (isset($params['receivableFunds'])) {
+            $nodeIds         = $list->pluck('order_node_ids')->toArray();
+            $nodeIdsStr      = implode(',', $nodeIds);
+            $nodeArr         = array_unique(explode(',', $nodeIdsStr));
+            $districtNodes   = Node::whereIn('node_id', $nodeArr)->whereIn('node_type', ['区县消防救援大队'])->get()->keyBy('node_id');
+            $districtNodeIds = $districtNodes->keys();
+            $streetNodes     = Node::whereIn('node_id', $nodeArr)->whereIn('node_type', ['街道办'])->get()->keyBy('node_id');
+            $streetNodeIds   = $streetNodes->keys();
+            $villageNodes    = Node::whereIn('node_id', $nodeArr)->whereIn('node_type', ['村委'])->get()->keyBy('node_id');
+            $villageNodeIds  = $villageNodes->keys();
+        }
+
+        $a = 1;
+        $list->map(function ($item) use ($params, $model, $districtNodes , $streetNodes , $villageNodes , $districtNodeIds , $villageNodeIds , $streetNodeIds) {
+            $item->is_overdue                = $item->overdue ? '是' : '否';
+            $item->order_pay_cycle           = is_numeric($item->order_pay_cycle) ? $item->order_pay_cycle : 1;
+            $item->income_type               = empty($params['order_project_type']) ? '对公转账' : $model::$formatPayWayMaps[$item->order_pay_way] ?? '无';
+            $item->order_contract_type       = empty($params['order_project_type']) ? $item->order_contract_type : $model::$formatContractTypeMaps[$item->order_contract_type] ?? '无';
+            $item->order_project_type        = empty($params['order_project_type']) ? '烟感' : $model::$formatProductTypeMaps[$item->order_project_type] ?? '无';
+            $item->number                    = empty($params['order_project_type']) ? $item->smoke_detectors_count : $item->order_delivery_number;
+            $item->order_account_outstanding = $item->order_account_receivable - $item->order_funds_received;
+            if (isset($params['receivableFunds'])) {
+                // 处理区域及地址信息
+                $nodes = collect(explode(',', $item->order_node_ids));
+
+                // 求两个集合的交集
+                $districtIntersection = $districtNodeIds->intersect($nodes);
+                $streetIntersection = $streetNodeIds->intersect($nodes);
+                $villageIntersection = $villageNodeIds->intersect($nodes);
+                if(!$districtIntersection->isEmpty()){
+                    $item->district_name = $districtNodes[$districtIntersection->first()]['node_name'];
+                }
+                if(!$streetIntersection->isEmpty()){
+                    $item->street_name = $streetNodes[$streetIntersection->first()]['node_name'];
+                }
+                if(!$villageIntersection->isEmpty()){
+                    $item->village_name = $villageNodes[$villageIntersection->first()]['node_name'];
+                }
+
+                $item->address = $item->places->pluck('plac_name');
+
+                $item->is_pay                    = $item->order_funds_received ? '是' : '否';
+                $item->returning_month           = $item->order_pay_cycle - $item->returned_month;
+                $item->return_funds_time         = $item->overdue;
+                $item->intra_day_remaining_funds = 0;
+                if ($item->returning_month > 0) {
+                    if ($item->order_pay_cycle == 1) {
+                        $item->next_return_time = date('Y-m-d', strtotime($item->order_actual_delivery_date));
+                    } else {
+                        // 当前日期
+                        $startDate = new DateTime($item->order_actual_delivery_date);
+                        // n个月后
+                        $startDate->modify('+' . $item->returned_month + 1 . ' months');
+                        // 获取计算后的日期
+                        $item->next_return_time = $startDate->format('Y-m-d');
+
+                        $startDate = new DateTime($item->order_actual_delivery_date);
+
+                        // 当前时间
+                        $currentDate = new DateTime('now');
+
+                        // 计算时间间隔
+                        $interval = $currentDate->diff($startDate);
+
+                        // 获取月份间隔
+                        $months = $interval->format('%m');
+
+                        $item->months = $months;
+
+                        $payCycle             = empty($item->order_pay_cycle) ? 1 : $item->order_pay_cycle;  // 分期数
+                        $amountPerInstallment = bcdiv($item->order_account_receivable, $payCycle, 2);  // 每期应收款
+
+                        $totalShouldReturn = bcmul($amountPerInstallment, $months, 2); // 当前期限应还款
+
+                        $balance = bcsub($totalShouldReturn, $item->order_funds_received, 2); // 差额
+
+                        $item->intra_day_remaining_funds = max($balance, 0);
+                    }
+                }
+            }
+            return $item;
+        });
+        if (isset($params['receivableFunds'])) {
+            $otherTotal = DB::selectOne('
+                SELECT
+                    sum( count_smde_id ) as sum_smoke_detector,
+                    sum( order_funds_received ) AS sum_order_funds_received,
+                    sum( order_account_receivable )- sum( order_funds_received ) AS sum_balance_funds,
+                    sum( order_amount_given ) AS sum_order_amount_given,
+                    sum( intra_day_remaining_funds ) AS sum_intra_day_remaining_funds 
+                FROM
+                    (
+                    SELECT
+                        `order`.order_iid,
+                        order_pay_cycle,
+                        count( smoke_detector.smde_id ) AS count_smde_id,
+                        `order`.order_account_receivable,
+                        `order`.order_funds_received,
+                        order_amount_given,
+                        order_actual_delivery_date,
+                    IF
+                        (
+                            order_pay_cycle > 1,
+                            GREATEST( round( TIMESTAMPDIFF( MONTH, order_actual_delivery_date, CURDATE()) * order_account_receivable / cast( order_pay_cycle AS SIGNED ) - order_funds_received, 2 ), 0 ),
+                            0 
+                        ) AS intra_day_remaining_funds 
+                    FROM
+                        `order`
+                        LEFT JOIN smoke_detector ON smoke_detector.smde_order_id = `order`.order_id
+                        
+                    GROUP BY
+                        `order`.order_id 
+                    ORDER BY
+                    `order`.order_id DESC 
+                    ) AS b;
+');
+        }
 
         return [
-            'total' => $total,
-            'list'  => $list,
+            'total'       => $total,
+            'list'        => $list,
+            'other_total' => $otherTotal,
         ];
     }
 
     public function getStageInfo($params)
     {
         $model = empty($params['order_project_type']) ? Order::class : OtherOrder::class;
-        $data = $model::query()
+        $data  = $model::query()
             ->where(['order_id' => $params['id']])
             ->first();
 
@@ -113,6 +226,7 @@ class FinancialIncomeLogic extends BaseLogic
         $amountPerInstallment = bcdiv($totalReceivable, $payCycle, 2);  // 每期应收款
 
         $paymentDate = $actualDeliveryDate;
+        $list        = [];
         for ($i = 0; $i < $payCycle; $i++) {
             // 添加一个月的时间间隔
             $paymentDate = date('Y-m-d', strtotime("+1 month", strtotime($paymentDate)));
@@ -131,7 +245,7 @@ class FinancialIncomeLogic extends BaseLogic
     public function getArrearsInfo($params)
     {
         $model = empty($params['order_project_type']) ? Order::class : OtherOrder::class;
-        $data = $model::query()
+        $data  = $model::query()
             ->selectRaw('*, IFNULL(cast( order_pay_cycle AS SIGNED ), 1) as order_pay_cycle,
             (
 	CASE

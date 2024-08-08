@@ -62,10 +62,13 @@ Route::middleware(['login'])->group(function () {
         Route::view('/view', 'admin.securityDepositFundsOrder');
     });
 
+    Route::prefix('receivableFundsOrder')->group(function () {
+        Route::view('/view', 'admin.receivableFundsOrder');
+    });
+
     Route::prefix('department')->group(function () {
         Route::view('/view', 'admin.department');
     });
-
     Route::prefix('admin')->group(function () {
         Route::view('/view', 'admin.admin');
     });

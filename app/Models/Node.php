@@ -8,7 +8,7 @@ class Node extends BaseModel
 {
     protected $table   = 'node';
     public $timestamps = null;
-
+    public $primaryKey = 'node_id';
 
     public static function getNodeChild($id)
     {
@@ -28,4 +28,5 @@ class Node extends BaseModel
 
         return $arr;
     }
+
 }
