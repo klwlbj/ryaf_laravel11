@@ -36,6 +36,8 @@ class BaseModel extends Model
         self::STATUS_BAN    => '禁用',
     ];
 
+    public static int $limit = 1000;
+
     protected static function boot()
     {
         parent::boot();
@@ -85,6 +87,70 @@ class BaseModel extends Model
             static::insert($data);
 
             $offset += $limit;
+        }
+    }
+
+    /**
+     * 按id排序流式获取
+     *
+     * @param $baseQuery
+     * @param integer $lastId
+     * @param integer $limit
+     * @return \Generator
+     */
+    public static function getCursorSortById($baseQuery, int $lastId = 0, int $limit = 1000): \Generator
+    {
+        $table   = $baseQuery->getModel()->getTable();
+        $keyName = $baseQuery->getModel()->getKeyName();
+
+        while (true) {
+            $models = (clone $baseQuery)
+                ->where("{$table}.{$keyName}", '>', $lastId)
+                ->orderBy("{$table}.{$keyName}", 'asc')
+                ->limit($limit)
+                ->get();
+
+            if ($models->isEmpty()) {
+                break;
+            }
+
+            foreach ($models as $model) {
+                yield $model;
+            }
+
+            $lastId = $models->last()->{$keyName};
+        }
+    }
+
+    /**
+     * 自定义排序流式获取
+     *
+     * @param $baseQuery
+     * @param integer $lastId
+     * @param integer $limit
+     * @return \Generator
+     */
+    public static function getCursor($baseQuery, $keyName): \Generator
+    {
+        $offset = 0;
+        $table   = $baseQuery->getModel()->getTable();
+
+        while (true) {
+            $models = (clone $baseQuery)
+                ->orderBy("{$table}.{$keyName}", 'asc')
+                ->offset($offset)
+                ->limit(self::$limit)
+                ->get();
+
+            if ($models->isEmpty()) {
+                break;
+            }
+
+            foreach ($models as $model) {
+                yield $model;
+            }
+
+            $offset += self::$limit;
         }
     }
 

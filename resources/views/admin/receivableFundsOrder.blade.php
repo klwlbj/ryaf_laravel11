@@ -4,27 +4,6 @@
     <a-card>
         <div>
             <a-form layout="inline" >
-
-                <a-form-item>
-                    <a-space>
-                        <a-select
-                                ref="select"
-                                placeholder="项目类型"
-                                v-model="listQuery.order_project_type"
-                                style="width: 120px"
-                                @change="handleChange"
-                        >
-                            <a-select-option :value="0">烟感</a-select-option>
-                            <a-select-option :value="1">智慧用电</a-select-option>
-                            <a-select-option :value="2">智慧燃气</a-select-option>
-                            <a-select-option :value="3">用传装置</a-select-option>
-                            <a-select-option :value="4">消防维保</a-select-option>
-                            <a-select-option :value="5">消防工程</a-select-option>
-                            <a-select-option :value="6">消防站建设</a-select-option>
-                            <a-select-option :value="7">其他</a-select-option>
-                        </a-select>
-                    </a-space>
-                </a-form-item>
                 <a-form-item>
                     <a-range-picker
                             :placeholder="['开始时间', '结束时间']"
@@ -32,11 +11,23 @@
                             :default-value="[defaultDate,defaultDate]"></a-range-picker>
                 </a-form-item>
                 <a-form-item>
+                    <a-cascader v-model="listQuery.street_id" :options="areaList" placeholder="区域"   :show-search="{}" change-on-select />
+                </a-form-item>
+                <a-form-item>
+                    <a-input v-model="listQuery.order_user_name" placeholder="用户/单位名称" style="width: 120px;" />
+                </a-form-item>
+                <a-form-item>
                     <a-input v-model="listQuery.address" placeholder="地址" style="width: 120px;" />
                 </a-form-item>
 
+
+
                 <a-form-item>
                     <a-button icon="search" v-on:click="handleFilter">查询</a-button>
+                </a-form-item>
+
+                <a-form-item>
+                    <a-button icon="search" @click="exportList">导出</a-button>
                 </a-form-item>
             </a-form>
 
@@ -48,24 +39,29 @@
                         @{{ item }}
                     </div>
                 </div>
+                <div slot="return_funds_time" slot-scope="text, record">
+                    <div v-for="item in record.return_funds_time">
+                        @{{ item }}
+                    </div>
+                </div>
 
             </a-table>
             <template>
                 <a-row>
                     <a-col :span="12">
-                        <a-statistic title="合计安装总数" :value="otherTotal.sum_smoke_detector" style="margin-right: 50px" />
+                        <a-statistic title="合计安装总数" :value="otherTotal.install_number" style="margin-right: 50px" />
                     </a-col>
                     <a-col :span="12">
-                        <a-statistic title="合计赠送台数" :value="otherTotal.sum_order_amount_given" />
+                        <a-statistic title="合计赠送台数" :value="otherTotal.order_amount_given" />
                     </a-col>
                     <a-col :span="12">
-                        <a-statistic title="合计已付金额" :precision="2" :value="otherTotal.sum_order_funds_received" />
+                        <a-statistic title="合计已付金额" :precision="2" :value="otherTotal.order_funds_received" />
                     </a-col>
                     <a-col :span="12">
-                        <a-statistic title="合计未付金额" :precision="2" :value="otherTotal.sum_balance_funds" />
+                        <a-statistic title="合计未付金额" :precision="2" :value="otherTotal.order_account_outstanding" />
                     </a-col>
                     <a-col :span="12">
-                        <a-statistic title="合计当天剩余付款" :precision="2" :value="otherTotal.sum_intra_day_remaining_funds" />
+                        <a-statistic title="合计当天剩余付款" :precision="2" :value="otherTotal.intra_day_remaining_funds" />
                     </a-col>
                 </a-row>
             </template>
@@ -90,14 +86,16 @@
     new Vue({
         el: '#app',
         data: {
+            areaList:[],
             listQuery: {
+                street_id:[],
                 receivableFunds:true,// 加上页面标识
                 start_date:null,
                 end_date:null,
                 address: '',
+                order_user_name: '',
                 order_project_type: 0,
                 arrears_duration: undefined,
-                // is_lease:1,
             },
             listSource: [],
             otherTotal: [],
@@ -150,75 +148,91 @@
                 {
                     title: '客户类型',
                     dataIndex: 'x',
+                    width: 100
                 },
                 {
                     title: '安装日期',
                     dataIndex: 'order_actual_delivery_date',
+                    width: 100
                 },
                 {
                     title: '安装总数',
-                    dataIndex: 'number',
+                    dataIndex: 'install_number',
+                    width: 100
                 },
                 {
                     title: '赠送台数',
                     dataIndex: 'order_amount_given',
+                    width: 100
                 },
                 {
                     title: '设备费',
                     dataIndex: 'order_device_funds',
+                    width: 100
                 },
                 {
                     title: '合计应收款',
                     dataIndex: 'order_account_receivable',
+                    width: 100
                 },
                 {
                     title: '是否付款',
                     dataIndex: 'is_pay',
+                    width: 100
                 },
                 {
                     title: '付款方案',
                     dataIndex: 'order_contract_type',
+                    width: 100
                 },
                 {
                     title: '已付金额（元）',
                     dataIndex: 'order_funds_received',
+                    width: 100
                 },
                 {
                     title: '收款方式',
-                    dataIndex: 'income_type'
+                    dataIndex: 'income_type',
+                    width: 100
                 },
                 {
                     title: '回款时间',
-                    dataIndex: 'return_funds_time'
+                    scopedSlots: { customRender: 'return_funds_time' },
+                    dataIndex: 'return_funds_time',
+                    width: 220
                 },
                 {
                     title: '未付金额（元）',
-                    dataIndex: 'order_account_outstanding'
+                    dataIndex: 'order_account_outstanding',
+                    width: 120
                 },
                 {
                     title: '分期数',
-                    dataIndex: 'order_pay_cycle'
+                    dataIndex: 'order_pay_cycle',
+                    width: 50
+
                 },
                 {
                     title: '累计已付期数',
-                    dataIndex: 'returned_month'
+                    dataIndex: 'returned_month',
+                    width: 100
+
                 },
                 {
                     title: '未付期数',
-                    dataIndex: 'returning_month'
+                    dataIndex: 'returning_month',
+                    width: 100
                 },
                 {
                     title: '下一期应付款时间',
-                    dataIndex: 'next_return_time'
+                    dataIndex: 'next_return_time',
+                    width: 150
                 },
-                // {
-                //     title: '加了几个月',
-                //     dataIndex: 'months'
-                // }, // 测试用
                 {
                     title: '截止当天剩余应付款',
                     dataIndex: 'intra_day_remaining_funds',
-                    defaultValue:0
+                    defaultValue:0,
+                    width: 190
                 },
             ],
             dialogFormVisible:false,
@@ -229,7 +243,7 @@
         },
         created () {
             // 获取区域和街道等
-            // this.getEnumList()
+            this.getEnumList()
             this.listQuery.page_size = this.pagination.pageSize;
             this.handleFilter()
         },
@@ -237,6 +251,7 @@
           "other-order-add":  httpVueLoader('/statics/components/business/otherOrderAdd.vue'),
           "financial_income_info":  httpVueLoader('/statics/components/business/financialIncomeInfo.vue'),
           "financial_arrears_info":  httpVueLoader('/statics/components/business/financialArrearsInfo.vue'),
+            "node-select":  httpVueLoader('/statics/components/node/nodeSelect.vue'),
         },
         methods: {
             paginationChange (current, pageSize) {
@@ -251,6 +266,49 @@
                 this.listQuery.page = 1
                 this.pagination.current = 1;
                 this.getPageList()
+            },
+            // 获取枚举列表
+            getEnumList () {
+                axios({
+                    // 默认请求方式为get
+                    method: 'post',
+                    url: '/api/area/getList2',
+                    // 传递参数
+                    responseType: 'json',
+                    headers:{
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }).then(response => {
+                    let res = response.data;
+                    this.areaList = res.data.areaList
+                }).catch(error => {
+                    this.$message.error('请求失败');
+                });
+            },
+            exportList(){
+                let formData = JSON.parse(JSON.stringify(this.listQuery));
+                formData.export = 1;
+                axios({
+                    // 默认请求方式为get
+                    method: 'post',
+                    url: '/api/financialIncome/getList',
+                    // 传递参数
+                    data: formData,
+                    responseType: 'json',
+                    headers:{
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }).then(response => {
+                    let res = response.data;
+                    if(res.code !== 0){
+                        this.$message.error(res.message);
+                        return false;
+                    }else{
+                        window.location.href = res.data.url
+                    }
+                }).catch(error => {
+                    this.$message.error(error);
+                });
             },
             // 获取列表
             getPageList () {

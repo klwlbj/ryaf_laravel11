@@ -2,6 +2,8 @@
 
 namespace App\Http\Logic;
 
+use Illuminate\Http\JsonResponse;
+
 class ResponseLogic
 {
     protected static $code = 0;
@@ -17,7 +19,7 @@ class ResponseLogic
         return self::$message;
     }
 
-    public static function apiResult($code = 0,$message = '',$data = []): \Illuminate\Http\JsonResponse
+    public static function apiResult($code = 0,$message = '',$data = []): JsonResponse
     {
         $result = [
             'code' => $code,
@@ -27,7 +29,7 @@ class ResponseLogic
         return response()->json($result, 200);
     }
 
-    public static function apiErrorResult($message = ''): \Illuminate\Http\JsonResponse
+    public static function apiErrorResult($message = ''): JsonResponse
     {
         $result = [
             'code' => -1,
@@ -37,7 +39,7 @@ class ResponseLogic
         return response()->json($result, 200);
     }
 
-    public static function apiNoLoginResult(): \Illuminate\Http\JsonResponse
+    public static function apiNoLoginResult(): JsonResponse
     {
         $result = [
             'code' => 401,
