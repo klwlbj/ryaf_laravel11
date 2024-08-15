@@ -3,7 +3,7 @@
         <a-descriptions layout="vertical" :title="detail.mate_name" bordered>
             <a-descriptions-item label="厂家"> {{detail.mate_manufacturer_name}}</a-descriptions-item>
             <a-descriptions-item label="分类">{{detail.mate_category_name}}</a-descriptions-item>
-            <a-descriptions-item label="规格">{{detail.mate_specification_name.join(',')}}</a-descriptions-item>
+            <a-descriptions-item label="规格">{{detail.mate_specification_name}}</a-descriptions-item>
             <a-descriptions-item label="库存">{{detail.mate_number}}</a-descriptions-item>
             <a-descriptions-item label="单位">{{detail.mate_unit}}</a-descriptions-item>
             <a-descriptions-item label="预警值">{{detail.mate_warning}}</a-descriptions-item>
@@ -87,7 +87,12 @@ module.exports = {
             }).then(response => {
                 this.listLoading = false
                 let res = response.data;
+                if(res.code != 0){
+                    this.$message.error(res.message);
+                    return false;
+                }
                 this.detail = res.data
+                this.detail.mate_specification_name = this.detail.mate_specification_name.join(',')
             }).catch(error => {
                 this.$message.error('请求失败');
             });

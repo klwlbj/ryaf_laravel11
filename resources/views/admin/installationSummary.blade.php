@@ -10,11 +10,11 @@
                     </a-form-item>
 
                     <a-form-item label="街道">
-                        <node-select type="街道办" @change="streetChange"></node-select>
+                        <node-select type="街道办" :parent-id="listQuery.area" @change="streetChange"></node-select>
                     </a-form-item>
 
                     <a-form-item label="村委">
-                        <node-select type="村委" @change="villageChange"></node-select>
+                        <node-select type="村委" :parent-id="listQuery.street" @change="villageChange"></node-select>
                     </a-form-item>
 
                     <a-form-item label="地址">

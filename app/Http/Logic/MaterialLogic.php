@@ -52,7 +52,10 @@ class MaterialLogic extends BaseLogic
                 'material.mate_name',
                 DB::raw("GROUP_CONCAT(distinct material_detail.made_expire_date) as mate_expire_date"),
                 DB::raw('count(material_detail.made_id) as expire_count')
-            ])->groupBy(['material.mate_id'])->get()->toArray();
+            ])->groupBy(['material.mate_id'])
+            ->get()
+            ->keyBy('mate_id')
+            ->toArray();
 
         if(!empty($params['is_expire'])){
             if(!empty($expireList)){
@@ -88,15 +91,39 @@ class MaterialLogic extends BaseLogic
 
         $ids = array_column($list,'mate_id');
 
-        $expireArr = MaterialDetail::query()
-            ->whereIn('made_material_id',$ids)
-            ->where(['made_status' => 1])
-            ->whereRaw("DATEDIFF(made_expire_date,NOW()) <= 30")
-            ->select([
-                'made_material_id',
-                DB::raw('count(made_material_id) as count')
-            ])->groupBy(['made_material_id'])->get()->pluck('count','made_material_id')->toArray();
+//        $expireArr = MaterialDetail::query()
+//            ->whereIn('made_material_id',$ids)
+//            ->where(['made_status' => 1])
+//            ->whereRaw("DATEDIFF(made_expire_date,NOW()) <= 30")
+//            ->select([
+//                'made_material_id',
+//                DB::raw('count(made_material_id) as count')
+//            ])->groupBy(['made_material_id'])->get()->pluck('count','made_material_id')->toArray();
 
+        #最后一次入库记录
+        $lastInFlowQuery = MaterialFlow::query()
+            ->whereIn('mafl_material_id',$ids)
+            ->where(['mafl_type' => 1])
+            ->select([
+                'mafl_material_id',
+                DB::raw("substring_index( group_concat( mafl_id ORDER BY mafl_id DESC ), ',', 1 ) AS mafl_id")
+            ])
+            ->groupBy(['mafl_material_id']);
+
+        #最后一次入库记录
+        $lastInFlowArr = MaterialFlow::query()
+            ->joinSub($lastInFlowQuery,'sub','material_flow.mafl_id','=','sub.mafl_id')
+            ->select([
+                'material_flow.mafl_id',
+                'material_flow.mafl_material_id',
+                'material_flow.mafl_datetime',
+                'material_flow.mafl_number',
+                'material_flow.mafl_production_date',
+                'material_flow.mafl_expire_date',
+            ])
+            ->get()->keyBy('mafl_material_id')->toArray();
+
+        #规格列表
         $specificationArr = MaterialSpecificationRelation::query()
             ->leftJoin('material_specification','material_specification.masp_id','=','material_specification_relation.masp_specification_id')
             ->whereIn('masp_material_id',$ids)
@@ -109,10 +136,12 @@ class MaterialLogic extends BaseLogic
 
 
         foreach ($list as $key => &$value){
-            if(isset($expireArr[$value['mate_id']])){
-                $value['expire_count'] = $expireArr[$value['mate_id']];
+            if(isset($expireList[$value['mate_id']])){
+                $value['expire_count'] = $expireList[$value['mate_id']]['expire_count'];
+                $value['expire_date'] = $expireList[$value['mate_id']]['mate_expire_date'];
             }else{
                 $value['expire_count'] = 0;
+                $value['expire_date'] = '';
             }
 
             if(isset($specificationArr[$value['mate_id']])){
@@ -120,6 +149,8 @@ class MaterialLogic extends BaseLogic
             }else{
                 $value['mate_specification_name'] = [];
             }
+
+            $value['last_in_flow'] = $lastInFlowArr[$value['mate_id']] ?? [];
         }
 
         unset($value);
@@ -131,7 +162,7 @@ class MaterialLogic extends BaseLogic
         return [
             'total' => $total,
             'list' => $list,
-            'expire_list' => $expireList,
+            'expire_list' => array_values($expireList),
         ];
     }
 
@@ -441,9 +472,10 @@ class MaterialLogic extends BaseLogic
             ->select([
                 'mate_id',
                 'mate_name',
+                'mate_is_account',
                 'mama_name as mate_manufacturer_name',
                 'mate_unit'
-            ])->get()->toArray();
+            ])->orderBy('mate_is_account','desc')->get()->toArray();
 
         $ids = array_column($materialList,'mate_id');
 
@@ -478,28 +510,54 @@ class MaterialLogic extends BaseLogic
             ])->groupBy(['mafl_material_id'])->get()->keyBy('mafl_material_id')->toArray();
 
         $row = 2;
+        $firstList = [];
+        $secondList = [];
         foreach ($materialList as $key => $value){
+            if($value['mate_is_account'] == 1){
+                $firstList[] = [
+                    $key+1,
+                    $value['mate_name'],
+                    implode("\n",array_column($specificationArr[$value['mate_id']] ?? [],'masp_name')),
+                    $value['mate_manufacturer_name'],
+                    $value['mate_unit'],
+                    '',
+                    $startCountArr[$value['mate_id']]['count'] ?? 0,
+                    '',
+                    '',
+                    $currentCountArr[$value['mate_id']]['in_count'] ?? 0,
+                    '',
+                    '',
+                    $currentCountArr[$value['mate_id']]['out_count'] ?? 0,
+                    '',
+                    '',
+                    ($startCountArr[$value['mate_id']]['count'] ?? 0) + (($currentCountArr[$value['mate_id']]['in_count'] ?? 0) - ($currentCountArr[$value['mate_id']]['out_count'] ?? 0)),
+                    '',
+                    ''
+                ];
+            }else{
+                $secondList[] = [
+                    $key+1,
+                    $value['mate_name'],
+                    implode("\n",array_column($specificationArr[$value['mate_id']] ?? [],'masp_name')),
+                    $value['mate_manufacturer_name'],
+                    $value['mate_unit'],
+                    '',
+                    $startCountArr[$value['mate_id']]['count'] ?? 0,
+                    '',
+                    '',
+                    $currentCountArr[$value['mate_id']]['in_count'] ?? 0,
+                    '',
+                    '',
+                    $currentCountArr[$value['mate_id']]['out_count'] ?? 0,
+                    '',
+                    '',
+                    ($startCountArr[$value['mate_id']]['count'] ?? 0) + (($currentCountArr[$value['mate_id']]['in_count'] ?? 0) - ($currentCountArr[$value['mate_id']]['out_count'] ?? 0)),
+                    '',
+                    ''
+                ];
+            }
 //            print_r($specificationArr[$value['mate_id']]);die;
-            $exportData[] = [
-                $key+1,
-                $value['mate_name'],
-                implode("\n",array_column($specificationArr[$value['mate_id']] ?? [],'masp_name')),
-                $value['mate_manufacturer_name'],
-                $value['mate_unit'],
-                '',
-                $startCountArr[$value['mate_id']]['count'] ?? 0,
-                '',
-                '',
-                $currentCountArr[$value['mate_id']]['in_count'] ?? 0,
-                '',
-                '',
-                $currentCountArr[$value['mate_id']]['out_count'] ?? 0,
-                '',
-                '',
-                ($startCountArr[$value['mate_id']]['count'] ?? 0) + (($currentCountArr[$value['mate_id']]['in_count'] ?? 0) - ($currentCountArr[$value['mate_id']]['out_count'] ?? 0)),
-                '',
-                ''
-            ];
+
 
             $row++;
         }
@@ -515,6 +573,9 @@ class MaterialLogic extends BaseLogic
             }
 
         }
+        $firstList[] = ['','','','','','','','','','','','','','','','','',''];
+        $row++;
+        $exportData = array_merge($firstList,$secondList);
 
         $config = [
             'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . '1' => true],

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Library\StandardAddress;
 use App\Http\Logic\ToolsLogic;
 use App\Models\Place;
 use GuzzleHttp\Client;
@@ -12,6 +13,8 @@ class ScriptController
 {
     public function pushUnits(Request $request)
     {
+        (new StandardAddress())->getStandardAddress('黄边');
+        die;
         ini_set( 'max_execution_time', 7200 );
 
 

@@ -49,14 +49,23 @@
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
                          :pagination="false">
 
-                    <div slot="is_deliver" slot-scope="text, record">
-                        <a-tag v-if="record.mate_is_deliver == 0"  color="red">否</a-tag>
-                        <a-tag v-else color="green">是</a-tag>
-                    </div>
-
                     <div slot="mate_name" slot-scope="text, record">
                         <div style="cursor: pointer" @click="getDetail(record)">
-                            @{{ record.mate_name }}
+                            <a-tooltip placement="right">
+                                <template #title>
+                                    <div>厂家：@{{record.mate_manufacturer_name}}</div>
+                                    <div>分类：@{{record.mate_category_name}}</div>
+                                    <div>规格：@{{record.mate_specification_name.join(',')}}</div>
+                                    <div>库存：@{{record.mate_number}}</div>
+                                    <div>单位：@{{record.mate_unit}}</div>
+                                    <div>预警值：@{{record.mate_warning}}</div>
+                                    <div>最后入库数：@{{record.last_in_flow.mafl_number}}</div>
+                                    <div>最后入库时间：@{{record.last_in_flow.mafl_datetime}}</div>
+                                    <div v-if="record.expire_count > 0">临期数：@{{record.expire_count}}</div>
+                                    <div v-if="record.expire_count > 0">临期时间：@{{record.expire_date}}</div>
+                                </template>
+                                @{{ record.mate_name }}
+                            </a-tooltip>
                         </div>
                     </div>
 
@@ -240,11 +249,6 @@
                         scopedSlots: { customRender: 'mate_name' },
                         dataIndex: 'mate_name',
                         width: 100
-                    },
-                    {
-                        title: '是否出库',
-                        scopedSlots: { customRender: 'is_deliver' },
-                        dataIndex: 'mate_is_deliver'
                     },
                     {
                         title: '厂家',

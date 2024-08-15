@@ -1,33 +1,38 @@
 <template>
-    <a-select v-model="id" show-search placeholder="请选择" :max-tag-count="1"
-              :mode="mode" style="width: 200px;" allow-clear @change="handleChange" option-filter-prop="label">
-        <a-select-option v-for="(item, key) in list" :key="key" :value="item.node_id" :label="item.node_name">
-            {{ item.node_name }}
+    <a-select
+        v-model="id"
+        show-search
+        placeholder="输入关键字"
+        style="width: 400px"
+        :default-active-first-option="false"
+        :show-arrow="false"
+        :filter-option="false"
+        :not-found-content="null"
+        @search="getList"
+        @change="handleChange"
+    >
+        <a-select-option v-for="(item, key) in list" :key="key" :value="item.MPDM" :label="item.MPDZMC">
+            {{ item.MPDZMC }}
         </a-select-option>
     </a-select>
 </template>
 
 <script>
 module.exports = {
-    name: 'adminSelect',
+    name: 'standardAddressSelect',
     components: {},
     props: {
+        index: {
+            default:function(){
+                return 0
+            },
+        },
         mode: {
             default:function(){
                 return 'default'
             },
         },
         defaultData: {
-            default:function(){
-                return undefined
-            },
-        },
-        type: {
-            default:function(){
-                return undefined
-            },
-        },
-        parentId: {
             default:function(){
                 return undefined
             },
@@ -40,15 +45,17 @@ module.exports = {
         }
     },
     methods: {
-        getList () {
+        getList (keyword) {
+            if(!keyword){
+                return keyword;
+            }
             axios({
                 // 默认请求方式为get
                 method: 'post',
-                url: '/api/node/getAllList',
+                url: '/api/address/getStandardAddress',
                 // 传递参数
                 data: {
-                    type:this.type,
-                    parent_id:this.parentId,
+                    keyword:keyword
                 },
                 responseType: 'json',
                 headers:{
@@ -67,7 +74,17 @@ module.exports = {
             });
         },
         handleChange(value){
-            this.$emit('change',value);
+            let selectData = this.list.filter(item => item.MPDM === value);
+
+            let res = {
+                code : selectData.MPDM,
+                standard_address : selectData.MPDZMC,
+                addr_generic_name : '',
+                addr_room:'',
+                install_location:''
+            }
+
+            this.$emit('change',res,this.index);
         },
         clearData(){
             this.id = undefined;
@@ -92,13 +109,6 @@ module.exports = {
             }
 
             this.id = newData;
-        },
-        parentId (newData,oldData) {
-            if(newData === oldData){
-                return false
-            }
-
-            this.getList();
         }
     },
     computed: {

@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\AddressController;
 use App\Http\Controllers\Admin\AdminPermissionController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\InstallationController;
+use App\Http\Controllers\Admin\InstallationRegisterController;
 use App\Http\Controllers\Admin\NodeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AreaController;
@@ -29,6 +31,8 @@ Route::any('/login', [AdminController::class, 'login']);
 //Route::any('/importAdmin', [\App\Http\Controllers\Admin\ImportController::class, 'importAdmin']);
 
 Route::middleware(['login'])->group(function () {
+    //标准地址
+    Route::any('address/getStandardAddress', [AddressController::class, 'getStandardAddress']);
     //管理员
     Route::prefix('admin')->group(function () {
         Route::post('/getList', [AdminController::class, 'getList']);
@@ -156,6 +160,10 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('installation')->group(function () {
         Route::post('/summary', [InstallationController::class, 'summary']);
+    });
+
+    Route::prefix('installationRegister')->group(function () {
+        Route::post('/getList', [InstallationRegisterController::class, 'getList']);
     });
 
     Route::prefix('node')->group(function () {

@@ -80,5 +80,9 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('installationSummary')->group(function () {
         Route::view('/view', 'admin.installationSummary');
     });
+
+    Route::prefix('installationRegister')->group(function () {
+        Route::view('/view', 'admin.installationRegister');
+    });
 });
 

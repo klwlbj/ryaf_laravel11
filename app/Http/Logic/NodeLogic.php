@@ -14,6 +14,11 @@ class NodeLogic extends BaseLogic
             $query->where(['node_type' => $params['type']]);
         }
 
+        if(!empty($params['parent_id'])){
+            $ids = Node::getNodeChild($params['parent_id'],false);
+            $query->whereIn('node_id',$ids);
+        }
+
         return $query->select(['node_id','node_name'])->get()->toArray();
     }
 }
