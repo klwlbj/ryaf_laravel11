@@ -133,7 +133,9 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('area')->group(function () {
         Route::post('/getList', [AreaController::class, 'getList']);
+        Route::post('/getList2', [AreaController::class, 'getList2']);
         Route::get('/generateJson', [AreaController::class, 'generateJson']);
+        Route::get('/generateJson2', [AreaController::class, 'generateJson2']);
     });
 
     Route::prefix('financialIncome')->group(function () {

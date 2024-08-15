@@ -4,3 +4,4 @@
 bootstrap/
 .env
 .zip
+public/storage/excel/

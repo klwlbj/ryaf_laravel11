@@ -17,13 +17,4 @@ class Area extends BaseModel
     {
         return $this->hasMany(self::class, 'parent_id')->orderBy('id');
     }
-
-    public function loadChildren()
-    {
-        $this->load('children');
-
-        $this->children->each(function ($child) {
-            $child->loadChildren();
-        });
-    }
 }

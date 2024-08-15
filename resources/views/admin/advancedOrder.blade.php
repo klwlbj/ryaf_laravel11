@@ -8,7 +8,7 @@
                     <a-input v-model="listQuery.name" placeholder="单位/用户名称" style="width: 200px;" />
                 </a-form-item>
                 <a-form-item>
-                    <a-cascader v-model="listQuery.street_id" :options="areaList" placeholder="区域" />
+                    <a-cascader v-model="listQuery.street_id" :options="areaList" placeholder="区域"   :show-search="{}" change-on-select />
                 </a-form-item>
                 <a-form-item>
                     <a-input v-model="listQuery.address" placeholder="地址" style="width: 200px;" />

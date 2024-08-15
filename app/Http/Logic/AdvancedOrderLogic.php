@@ -2,8 +2,8 @@
 
 namespace App\Http\Logic;
 
-use App\Models\AdvancedOrder;
 use App\Models\Order;
+use App\Models\AdvancedOrder;
 
 class AdvancedOrderLogic extends BaseLogic
 {
@@ -11,7 +11,7 @@ class AdvancedOrderLogic extends BaseLogic
     {
         $page     = $params['page'] ?? 1;
         $pageSize = $params['page_size'] ?? 10;
-        $point    = ($page - 1) * $pageSize;
+        $offset   = ($page - 1) * $pageSize;
 
         $query = AdvancedOrder::query();
 
@@ -28,6 +28,12 @@ class AdvancedOrderLogic extends BaseLogic
                     }
                     break;
                 case 'street_id':
+                    if (!empty($params['street_id_0'])) {
+                        $query->where('area_id', 'like', $params['street_id_0'].'%');
+                    }
+                    if (!empty($params['street_id_1'])) {
+                        $query->where('area_id', 'like', $params['street_id_1'].'%');
+                    }
                     if (!empty($params['street_id_2'])) {
                         $query->where('area_id', $params['street_id_2']);
                     }
@@ -54,7 +60,7 @@ class AdvancedOrderLogic extends BaseLogic
 
         $list = $query->with(['area', 'area.parentArea', 'area.parentArea.parentArea'])
             ->orderBy('created_at', 'desc')
-            ->offset($point)->limit($pageSize)
+            ->offset($offset)->limit($pageSize)
             ->get()
             ->map(function ($item) {
                 $item->pay_way_name       = AdvancedOrder::$formatPayWayMaps[$item->pay_way] ?? '';
@@ -82,7 +88,7 @@ class AdvancedOrderLogic extends BaseLogic
     {
         $data = AdvancedOrder::query()
             ->with(['area', 'area.parentArea', 'area.parentArea.parentArea'])
-            ->where(['ador_id' => $$params['id']])
+            ->where(['ador_id' => ${$params}['id']])
             ->first();
 
         $area                 = $data->area;
@@ -109,7 +115,7 @@ class AdvancedOrderLogic extends BaseLogic
 
     public function getLinkInfo($params)
     {
-        $data = Order::query()->where('advanced_order_id', $$params['id'])->pluck('order_iid');
+        $data = Order::query()->where('advanced_order_id', ${$params}['id'])->pluck('order_iid');
         if (!$data) {
             ResponseLogic::setMsg('记录不存在');
             return false;
@@ -146,10 +152,10 @@ class AdvancedOrderLogic extends BaseLogic
     public function linkOrder($params)
     {
         $arrayData = json_decode($params['detail'], true); // 将 JSON 数据转换为 PHP 数组
-        $detail = collect($arrayData); // 将数组转换为集合
-        $res = Order::whereIn('order_iid', $detail->pluck('orderId'))->update([
+        $detail    = collect($arrayData); // 将数组转换为集合
+        $res       = Order::whereIn('order_iid', $detail->pluck('orderId'))->update([
             'advanced_order_id' => $params['id'],
-        ]);;
+        ]);
         if ($res === false) {
             ResponseLogic::setMsg('更新失败');
             return false;

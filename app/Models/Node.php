@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Facades\Cache;
-
 class Node extends BaseModel
 {
     protected $table   = 'node';
@@ -33,4 +31,9 @@ class Node extends BaseModel
         return $arr;
     }
 
+
+    public function children()
+    {
+        return $this->hasMany(self::class, 'node_parent_id')->orderBy('node_id');
+    }
 }
