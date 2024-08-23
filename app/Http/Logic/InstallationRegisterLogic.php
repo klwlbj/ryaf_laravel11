@@ -4,6 +4,7 @@ namespace App\Http\Logic;
 
 use App\Models\InstallationRegister;
 use App\Models\InstallationRegisterAddress;
+use App\Models\Node;
 use Illuminate\Support\Facades\DB;
 
 class InstallationRegisterLogic extends BaseLogic
@@ -14,11 +15,40 @@ class InstallationRegisterLogic extends BaseLogic
         $pageSize = $params['page_size'] ?? 10;
         $point = ($page - 1) * $pageSize;
 
-        $query = InstallationRegister::query();
+        $query = InstallationRegister::query()
+        ->leftJoin('node','node.node_id','=','installation_register.inre_node_id');
+
+        if(!empty($params['node_id'])){
+            $childIds = Node::getNodeChild($params['node_id']);
+            $query->whereIn('inre_node_id',$childIds);
+        }
 
         $total = $query->count();
-        $list = $query->orderBy('inre_id','desc')
+        $list = $query
+            ->select([
+                'installation_register.*',
+                'node.node_name as inre_node_name',
+            ])
+            ->orderBy('inre_id','desc')
             ->offset($point)->limit($pageSize)->get()->toArray();
+
+        $ids = array_column($list,'inre_id');
+
+        $addressGroup = InstallationRegisterAddress::query()->whereIn('inre_register_id',$ids)->select([
+            'inre_register_id',
+            'inre_code as code',
+            'inre_standard_address as standard_address',
+            'inre_addr_generic_name as addr_generic_name',
+            'inre_addr_room as addr_room',
+            'inre_install_location as install_location',
+        ])->get()->groupBy('inre_register_id')->toArray();
+
+        foreach ($list as $key => &$value){
+            $value['address_list'] = $addressGroup[$value['inre_id']] ?? [];
+            $value['inre_pay_way_msg'] =  InstallationRegister::$payWayArr[$value['inre_pay_way']] ?? '';
+        }
+
+        unset($value);
 
         return ['list' => $list,'total' => $total];
     }

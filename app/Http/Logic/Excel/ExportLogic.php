@@ -109,6 +109,16 @@ class ExportLogic extends BaseLogic
                             ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
                     }
                     break;
+                case 'color':
+                    foreach ($item as $k => $v){
+                        $sheet->getStyle($k)->getFont()->getColor()->setARGB($v);
+                    }
+                    break;
+                case 'freeze_pane':
+                    foreach ($item as $k => $v){
+                        $sheet->freezePane($k);
+                    }
+                    break;
             }
         }
 

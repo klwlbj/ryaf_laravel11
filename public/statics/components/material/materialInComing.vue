@@ -25,6 +25,10 @@
                 <a-date-picker @change="dateChange" show-time format="YYYY-MM-DD HH:mm:ss" v-model:value="formData.datetime"/>
             </a-form-model-item>
 
+            <a-form-model-item label="最终确认人" prop="verify_user_id">
+                <verify-user-select ref="verifyUserSelect" @change="verifyUserChange" :default-data="verifyUserId"></verify-user-select>
+            </a-form-model-item>
+
             <a-form-model-item label="备注" prop="remark">
                 <a-textarea
                     v-model="formData.remark"
@@ -53,6 +57,7 @@ module.exports = {
     components: {
         "warehouse-select":  httpVueLoader('/statics/components/material/warehouseSelect.vue'),
         "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
+        "verify-user-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
     },
     props: {
         id: {
@@ -81,7 +86,9 @@ module.exports = {
             },
             loading :false,
             materialId:undefined,
-            warehouseId:2
+            warehouseId:2,
+            verifyUserId:undefined,
+            admin:{}
         }
     },
     methods: {
@@ -95,7 +102,14 @@ module.exports = {
                 expire_date:moment().add(10, 'years').format("YYYY-MM-DD"),
                 datetime:moment().format("YYYY-MM-DD HH:mm:ss"),
                 remark:'',
+                verify_user_id:this.admin['department']['depa_leader_id'],
             };
+
+            this.verifyUserId = this.admin['department']['depa_leader_id'];
+
+            if(this.$refs['verifyUserSelect']){
+                this.$refs['verifyUserSelect'].clearData();
+            }
         },
         submitData(){
             let that = this;
@@ -144,9 +158,13 @@ module.exports = {
         },
         warehouseChange(value){
             this.formData.warehouse_id = value;
+        },
+        verifyUserChange(value){
+            this.formData.verify_user_id = value;
         }
     },
     created () {
+        this.admin = JSON.parse(localStorage.getItem("admin"));
         this.initForm();
         if(this.defaultMaterialId){
             this.materialId = this.defaultMaterialId;

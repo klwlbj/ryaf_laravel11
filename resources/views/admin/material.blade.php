@@ -512,15 +512,28 @@
                             this.$message.error(res.message);
                             return false;
                         }
-                        window.location.href = res.data.url
+                        const today = new Date();
+                        const year = today.getFullYear();
+                        const month = today.getMonth() + 1;  // 月份从0开始，所以要加1
+                        const day = today.getDate();
+                        this.downloadFile(res.data.url,'进销存报表'+ year + '-' + month + '-' + day);
+                        // window.location.href = res.data.url
                     }).catch(error => {
                         this.$message.error('请求失败');
                     });
+                },
+                downloadFile(url,name) {
+                    const link = document.createElement('a');
+                    link.style.display = 'none';
+                    // 设置下载地址
+                    link.setAttribute('href', url);
+                    // 设置文件名
+                    link.setAttribute('download', name);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                 }
             },
-
         })
-
-
     </script>
 @endsection

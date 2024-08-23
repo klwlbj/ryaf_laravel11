@@ -6,8 +6,12 @@
             <div>
                 <a-form layout="inline" >
                     <a-form-item>
-                        <a-input v-model="listQuery.keyword" placeholder="厂家名称" style="width: 200px;" />
+                        <a-input v-model="listQuery.keyword" placeholder="单位/用户名" style="width: 200px;" />
                     </a-form-item>
+                    <a-form-item>
+                        <node-cascader @change="nodeChange"></node-cascader>
+                    </a-form-item>
+
                     <a-form-item>
                         <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                     </a-form-item>
@@ -22,6 +26,17 @@
                     <div slot="status" slot-scope="text, record">
                         <a-tag v-if="record.mama_status == 0"  color="red">禁用</a-tag>
                         <a-tag v-else color="green">启用</a-tag>
+                    </div>
+
+                    <div slot="inre_user_type" slot-scope="text, record">
+                        <a-tag v-if="record.inre_user_type == 1" color="green">2B</a-tag>
+                        <a-tag v-else color="green">2C</a-tag>
+                    </div>
+
+                    <div slot="address_list" slot-scope="text, record">
+                        <div v-for="(item,index) in record.address_list" :key="index">
+                            @{{item.standard_address}}
+                        </div>
                     </div>
 
                     <div slot="action" slot-scope="text, record">
@@ -79,6 +94,7 @@
             data: {
                 listQuery: {
                     keyword: "",
+                    node_id: undefined,
                 },
                 listSource: [],
                 listLoading:false,
@@ -101,17 +117,50 @@
                         dataIndex: 'inre_crt_time',
                     },
                     {
-                        title: '备注',
-                        dataIndex: 'mama_remark'
+                        title: '所属区域',
+                        dataIndex: 'inre_node_name'
                     },
                     {
-                        title: '状态',
-                        scopedSlots: { customRender: 'status' },
-                        dataIndex: 'mama_status'
+                        title: '详细地址',
+                        scopedSlots: { customRender: 'address_list' },
+                        dataIndex: 'address_list'
                     },
                     {
-                        title: '更新时间',
-                        dataIndex: 'mama_upd_time'
+                        title: '单位/用户名称',
+                        dataIndex: 'inre_user_name'
+                    },
+                    {
+                        title: '联系电话',
+                        dataIndex: 'inre_user_phone'
+                    },
+                    {
+                        title: '客户类型',
+                        scopedSlots: { customRender: 'inre_user_type' },
+                        dataIndex: 'inre_user_type'
+                    },
+                    {
+                        title: '产品单价',
+                        dataIndex: 'inre_price'
+                    },
+                    {
+                        title: '安装台数',
+                        dataIndex: 'inre_install_count'
+                    },
+                    {
+                        title: '赠送台数',
+                        dataIndex: 'inre_given_count'
+                    },
+                    {
+                        title: '付款方式',
+                        dataIndex: 'inre_pay_way_msg'
+                    },
+                    {
+                        title: '总金额',
+                        dataIndex: 'inre_total_price'
+                    },
+                    {
+                        title: '预约安装日期',
+                        dataIndex: 'inre_datetime'
                     },
                     {
                         title: '操作',
@@ -126,7 +175,8 @@
                 this.handleFilter()
             },
             components: {
-                "register-add":  httpVueLoader('/statics/components/installation/registerAdd.vue')
+                "register-add":  httpVueLoader('/statics/components/installation/registerAdd.vue'),
+                "node-cascader":  httpVueLoader('/statics/components/node/nodeCascader.vue')
             },
             methods: {
                 paginationChange (current, pageSize) {
@@ -172,7 +222,7 @@
                     this.dialogFormVisible = true;
                 },
                 onUpdate(row){
-                    this.id = row.mama_id
+                    this.id = row.inre_id
                     this.status = '更新';
                     this.dialogFormVisible = true;
                 },
@@ -183,7 +233,7 @@
                         url: '/api/installationRegister/delete',
                         // 传递参数
                         data: {
-                            id:row.mama_id
+                            id:row.inre_id
                         },
                         responseType: 'json',
                         headers:{
@@ -213,6 +263,9 @@
                     this.$message.success('编辑成功');
                     this.dialogFormVisible = false;
                     this.handleFilter();
+                },
+                nodeChange(value){
+                    this.listQuery.node_id = value;
                 }
             },
 

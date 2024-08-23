@@ -7,6 +7,7 @@ use App\Models\Material;
 use App\Models\MaterialDetail;
 use App\Models\MaterialFlow;
 use App\Models\MaterialInventory;
+use App\Models\MaterialSpecificationRelation;
 use Illuminate\Support\Facades\DB;
 
 class MaterialFlowLogic extends BaseLogic
@@ -21,6 +22,7 @@ class MaterialFlowLogic extends BaseLogic
             ->leftJoin('material','material_flow.mafl_material_id','=','material.mate_id')
             ->leftJoin('admin as receive_user','material_flow.mafl_receive_user_id','=','receive_user.admin_id')
             ->leftJoin('admin as apply_user','material_flow.mafl_apply_user_id','=','apply_user.admin_id')
+            ->leftJoin('admin as verify_user','material_flow.mafl_verify_user_id','=','verify_user.admin_id')
             ->leftJoin('warehouse','warehouse.waho_id','=','material_flow.mafl_warehouse_id')
         ;
 
@@ -32,6 +34,10 @@ class MaterialFlowLogic extends BaseLogic
             $query->where(['material_flow.mafl_type' => $params['type']]);
         }
 
+        if(isset($params['status']) && $params['status']){
+            $query->where(['material_flow.mafl_status' => $params['status']]);
+        }
+
         $total = $query->count();
 
         $list = $query
@@ -41,19 +47,38 @@ class MaterialFlowLogic extends BaseLogic
 //                'node_account.noac_name as mafl_created_user',
                 'receive_user.admin_name as mafl_receive_user',
                 'apply_user.admin_name as mafl_apply_user',
+                'verify_user.admin_name as mafl_verify_user',
                 'warehouse.waho_name as mafl_warehouse_name',
             ])
             ->orderBy('material_flow.mafl_id','desc')
             ->offset($point)->limit($pageSize)->get()->toArray();
 
         $ids = array_column($list, 'mafl_id');
+        $materialId = array_values(array_unique(array_column($list, 'mafl_material_id')));
 
         $fileList = File::query()
             ->whereIn('file_relation_id', $ids)->where(['file_type' => 'material_flow'])
             ->select(['file_relation_id','file_name','file_path'])->get()->groupBy('file_relation_id')->toArray();
 
+        $specificationArr = MaterialSpecificationRelation::query()
+            ->leftJoin('material_specification','material_specification.masp_id','=','material_specification_relation.masp_specification_id')
+            ->whereIn('masp_material_id',$materialId)
+            ->orderBy('material_specification.masp_sort','desc')
+            ->orderBy('material_specification.masp_id','desc')
+            ->select([
+                'masp_material_id',
+                'material_specification.masp_name'
+            ])->get()->groupBy('masp_material_id')->toArray();
+
         foreach ($list as $key => &$value) {
             $value['file_list'] = $fileList[$value['mafl_id']] ?? '';
+            $value['mafl_price'] = bcdiv($value['mafl_price_tax'],1 + $value['mafl_tax']/100,2);
+            $value['mafl_invoice_type_msg'] = MaterialFlow::$invoiceTypeArr[$value['mafl_invoice_type']] ?? '未确认';
+            if(isset($specificationArr[$value['mafl_material_id']])){
+                $value['mafl_specification_name'] = array_column($specificationArr[$value['mafl_material_id']],'masp_name');
+            }else{
+                $value['mafl_specification_name'] = [];
+            }
         }
 
         unset($value);
@@ -78,11 +103,15 @@ class MaterialFlowLogic extends BaseLogic
             'mafl_warehouse_id'  => $params['warehouse_id'],
             'mafl_type' => 1,
             'mafl_number' => $params['number'],
+            'mafl_price' => 0,
+            'mafl_price_tax' => 0,
+            'mafl_verify_user_id' => $params['verify_user_id'],
             'mafl_production_date' => $params['production_date'],
             'mafl_expire_date' => $params['expire_date'],
             'mafl_datetime' => $params['datetime'],
             'mafl_remark' => $params['remark'] ?? '',
-            'mafl_operator_id' => AuthLogic::$userId #操作人 默认写死2
+            'mafl_status' => 1,
+            'mafl_operator_id' => AuthLogic::$userId
         ];
 
         #查看是否有该仓库
@@ -191,6 +220,9 @@ class MaterialFlowLogic extends BaseLogic
             'mafl_type' => 2,
             'mafl_number' => $params['number'],
             'mafl_purpose' => $params['purpose'],
+            'mafl_price' => 0,
+            'mafl_price_tax' => 0,
+            'mafl_verify_user_id' => $params['verify_user_id'],
             'mafl_apply_user_id' => $params['apply_user_id'],
             'mafl_receive_user_id' => $params['receive_user_id'],
             'mafl_datetime' => $params['datetime'],
@@ -259,6 +291,68 @@ class MaterialFlowLogic extends BaseLogic
         DB::commit();
 
         Material::delCacheById($params['material_id']);
+
+        return [];
+    }
+
+    public function getInfo($params)
+    {
+        $data = MaterialFlow::query()->where(['mafl_id' => $params['id']])->first();
+
+        if(!$data){
+            ResponseLogic::setMsg('记录不存在');
+            return false;
+        }
+
+        return $data->toArray();
+    }
+
+    public function verify($params)
+    {
+        $data = MaterialFlow::query()->where(['mafl_id' => $params['id']])->first();
+
+        if(!$data){
+            ResponseLogic::setMsg('记录不存在');
+            return false;
+        }
+
+        $data = $data->toArray();
+
+        if($data['mafl_status'] != 1){
+            ResponseLogic::setMsg('记录不为待确认状态');
+            return false;
+        }
+
+        if($data['mafl_verify_user_id'] != AuthLogic::$userId){
+            ResponseLogic::setMsg('没有权限操作');
+            return false;
+        }
+
+        if(MaterialFlow::query()->where(['mafl_id' => $params['id']])->update(['mafl_status' => 2]) === false){
+            ResponseLogic::setMsg('确认失败');
+            return false;
+        }
+
+        return [];
+    }
+
+    public function setPrice($params)
+    {
+        $data = MaterialFlow::query()->where(['mafl_id' => $params['id']])->first();
+
+        if(!$data){
+            ResponseLogic::setMsg('记录不存在');
+            return false;
+        }
+
+        if(MaterialFlow::query()->where(['mafl_id' => $params['id']])->update([
+                'mafl_price_tax' => $params['price_tax'],
+                'mafl_tax' => $params['tax'],
+                'mafl_invoice_type' => $params['invoice_type']
+            ]) === false){
+            ResponseLogic::setMsg('设置价格失败');
+            return false;
+        }
 
         return [];
     }

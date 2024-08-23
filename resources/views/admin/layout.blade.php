@@ -95,6 +95,7 @@
         deleteCookie('X-Token');
         localStorage.removeItem("menu");
         localStorage.removeItem("permission");
+        localStorage.removeItem("admin");
         window.location.href='/login';
     }
 

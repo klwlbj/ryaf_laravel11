@@ -1,25 +1,10 @@
 <template>
-    <a-select
-        v-model="id"
-        show-search
-        placeholder="输入关键字"
-        style="width: 400px"
-        :default-active-first-option="false"
-        :show-arrow="false"
-        :filter-option="false"
-        :not-found-content="null"
-        @search="getList"
-        @change="handleChange"
-    >
-        <a-select-option v-for="(item, key) in list" :key="key" :value="item.MPDM" :label="item.MPDZMC">
-            {{ item.MPDZMC }}
-        </a-select-option>
-    </a-select>
+    <a-cascader v-model="id" :options="list" :field-names="fieldNames" change-on-select placeholder="请选择所属区域" @change="handleChange"/>
 </template>
 
 <script>
 module.exports = {
-    name: 'standardAddressSelect',
+    name: 'nodeCascaderSelect',
     components: {},
     props: {
         mode: {
@@ -32,25 +17,38 @@ module.exports = {
                 return undefined
             },
         },
+        type: {
+            default:function(){
+                return undefined
+            },
+        },
+        parentId: {
+            default:function(){
+                return undefined
+            },
+        },
     },
     data () {
         return {
             list:[],
             id:undefined,
+            fieldNames:{
+                label:'node_name',
+                value:'node_id',
+                children:'children',
+            }
         }
     },
     methods: {
-        getList (keyword) {
-            if(!keyword){
-                return keyword;
-            }
+        getList () {
             axios({
                 // 默认请求方式为get
                 method: 'post',
-                url: '/api/address/getStandardAddress',
+                url: '/api/node/getTreeList',
                 // 传递参数
                 data: {
-                    keyword:keyword
+                    type:this.type,
+                    parent_id:this.parentId,
                 },
                 responseType: 'json',
                 headers:{
@@ -69,18 +67,7 @@ module.exports = {
             });
         },
         handleChange(value){
-            let selectList = this.list.filter(item => item.MPDM === value);
-            let selectData = selectList[0] ? selectList[0] : {}
-
-            let res = {
-                code : selectData.MPDM,
-                standard_address : selectData.MPDZMC,
-                addr_generic_name : '',
-                addr_room:'',
-                install_location:''
-            }
-
-            this.$emit('change',res);
+            this.$emit('change',value[value.length - 1]);
         },
         clearData(){
             this.id = undefined;
@@ -105,6 +92,13 @@ module.exports = {
             }
 
             this.id = newData;
+        },
+        parentId (newData,oldData) {
+            if(newData === oldData){
+                return false
+            }
+
+            this.getList();
         }
     },
     computed: {

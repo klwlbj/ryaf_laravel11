@@ -5,15 +5,17 @@
                 <a-date-picker show-time format="YYYY-MM-DD HH:mm:ss" v-model:value="formData.datetime"/>
             </a-form-model-item>
 
+            <a-form-model-item label="监控中心" prop="node_id">
+                <node-cascader @change="nodeChange"></node-cascader>
+            </a-form-model-item>
+
             <a-form-model-item label="详细地址" prop="address">
                     <div v-for="(item,index) in formData.address_list" :key="index">
                         <div style="color:red;font-weight: bold">地址{{ index+1 }}：</div>
-                        <standard-address-select :id="item.code" :index="index">
+                        <standard-address-select :id="item.code" @change="(value) => {addressChange(value,index)}">
 
                         </standard-address-select>
                     </div>
-
-
                 <a-button type="link" @click="addressAdd" block>新增地址</a-button>
             </a-form-model-item>
 
@@ -37,11 +39,11 @@
             </a-form-model-item>
 
             <a-form-model-item label="单价" prop="price">
-                <a-input-number v-model="formData.price" :step="0.01"/>
+                <a-input-number v-model="formData.price" :step="0.01" @change="totalPriceChange(formData.price,formData.install_count)"/>
             </a-form-model-item>
 
             <a-form-model-item label="安装台数" prop="install_count">
-                <a-input-number v-model="formData.install_count"/>
+                <a-input-number v-model="formData.install_count" @change="totalPriceChange(formData.price,formData.install_count)"/>
             </a-form-model-item>
 
             <a-form-model-item label="赠送台数" prop="given_count">
@@ -86,17 +88,6 @@
             </a-form-model-item>
 
 
-            <a-form-model-item label="状态" prop="status">
-                <a-radio-group v-model="formData.status">
-                    <a-radio :value="0">
-                        禁用
-                    </a-radio>
-                    <a-radio :value="1">
-                        启用
-                    </a-radio>
-                </a-radio-group>
-            </a-form-model-item>
-
             <a-form-model-item :wrapper-col="{ span: 14, offset: 4 }">
                 <a-button type="primary" @click="submitData">
                     确认
@@ -112,9 +103,10 @@
 
 <script>
 module.exports = {
-    name: 'manufacturerAdd',
+    name: 'installationRegisterAdd',
     components: {
-        "standard-address-select":  httpVueLoader('/statics/components/installation/standardAddressSelect.vue')
+        "standard-address-select":  httpVueLoader('/statics/components/installation/standardAddressSelect.vue'),
+        "node-cascader":  httpVueLoader('/statics/components/node/nodeCascader.vue')
     },
     props: {
         id: {
@@ -133,7 +125,7 @@ module.exports = {
             dialogFormLabelCol: { span: 4 },
             dialogFormWrapperCol: { span: 14 },
             formRules: {
-                user_name: [{ required: true, message: '请输入单位/用户名', trigger: 'blur' }],
+                    user_name: [{ required: true, message: '请输入单位/用户名', trigger: 'blur' }],
                 user_phone: [{ required: true, message: '请输入联系方式', trigger: 'blur' }],
             },
             loading :false,
@@ -161,7 +153,7 @@ module.exports = {
                 price : 0,
                 install_count:0,
                 given_count:0,
-                pay_way:0,
+                pay_way:3,
                 total_price:0,
                 remark:'',
                 delivery_count:0,
@@ -203,7 +195,7 @@ module.exports = {
                             method: 'post',
                             url: '/api/installationRegister/add',
                             // 传递参数
-                            data: that.formData,
+                            data: form,
                             responseType: 'json',
                             headers:{
                                 'Content-Type': 'multipart/form-data'
@@ -278,6 +270,16 @@ module.exports = {
                 addr_room:'',
                 install_location:''
             });
+        },
+        totalPriceChange(price,count){
+            this.formData.total_price = price * count;
+        },
+        nodeChange(value){
+            // console.log(value);
+            this.formData.node_id = value;
+        },
+        addressChange(value,index){
+            this.formData.address_list[index] = value;
         }
     },
     created () {

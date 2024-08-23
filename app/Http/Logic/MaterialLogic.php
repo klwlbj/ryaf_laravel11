@@ -475,7 +475,7 @@ class MaterialLogic extends BaseLogic
                 'mate_is_account',
                 'mama_name as mate_manufacturer_name',
                 'mate_unit'
-            ])->orderBy('mate_is_account','desc')->get()->toArray();
+            ])->orderBy('mate_is_account','desc')->orderBy('mate_sort','desc')->get()->toArray();
 
         $ids = array_column($materialList,'mate_id');
 
@@ -495,8 +495,11 @@ class MaterialLogic extends BaseLogic
             ->where('mafl_datetime','<',$params['start_date'])
             ->select([
                 'mafl_material_id',
+                DB::raw("COALESCE(sum(IF(mafl_type=2,mafl_number,NULL)),0) as out_count"),
                 DB::raw(Db::raw("(COALESCE(sum(IF(mafl_type=1,mafl_number,NULL)),0) - COALESCE(sum(IF(mafl_type=2,mafl_number,NULL)),0)) as count")),
             ])->groupBy(['mafl_material_id'])->get()->keyBy('mafl_material_id')->toArray();
+
+//        print_r($startCountArr);die;
 
         #本期入库数
         $currentCountArr = MaterialFlow::query()
@@ -504,84 +507,183 @@ class MaterialLogic extends BaseLogic
             ->where('mafl_datetime','>=',$params['start_date'])
             ->where('mafl_datetime','<=',$params['end_date'])
             ->select([
+                'mafl_id',
                 'mafl_material_id',
-                DB::raw(Db::raw("COALESCE(sum(IF(mafl_type=1,mafl_number,NULL)),0) as in_count")),
-                DB::raw(Db::raw("COALESCE(sum(IF(mafl_type=2,mafl_number,NULL)),0) as out_count")),
-            ])->groupBy(['mafl_material_id'])->get()->keyBy('mafl_material_id')->toArray();
+                'mafl_type',
+                'mafl_number',
+                'mafl_price_tax',
+                'mafl_tax',
+                'mafl_invoice_type'
+            ])->get()->groupBy('mafl_material_id')->toArray();
 
         $row = 2;
+        $index = 1;
         $firstList = [];
         $secondList = [];
         foreach ($materialList as $key => $value){
-            if($value['mate_is_account'] == 1){
-                $firstList[] = [
-                    $key+1,
-                    $value['mate_name'],
-                    implode("\n",array_column($specificationArr[$value['mate_id']] ?? [],'masp_name')),
-                    $value['mate_manufacturer_name'],
-                    $value['mate_unit'],
-                    '',
-                    $startCountArr[$value['mate_id']]['count'] ?? 0,
-                    '',
-                    '',
-                    $currentCountArr[$value['mate_id']]['in_count'] ?? 0,
-                    '',
-                    '',
-                    $currentCountArr[$value['mate_id']]['out_count'] ?? 0,
-                    '',
-                    '',
-                    ($startCountArr[$value['mate_id']]['count'] ?? 0) + (($currentCountArr[$value['mate_id']]['in_count'] ?? 0) - ($currentCountArr[$value['mate_id']]['out_count'] ?? 0)),
-                    '',
-                    ''
-                ];
-            }else{
-                $secondList[] = [
-                    $key+1,
-                    $value['mate_name'],
-                    implode("\n",array_column($specificationArr[$value['mate_id']] ?? [],'masp_name')),
-                    $value['mate_manufacturer_name'],
-                    $value['mate_unit'],
-                    '',
-                    $startCountArr[$value['mate_id']]['count'] ?? 0,
-                    '',
-                    '',
-                    $currentCountArr[$value['mate_id']]['in_count'] ?? 0,
-                    '',
-                    '',
-                    $currentCountArr[$value['mate_id']]['out_count'] ?? 0,
-                    '',
-                    '',
-                    ($startCountArr[$value['mate_id']]['count'] ?? 0) + (($currentCountArr[$value['mate_id']]['in_count'] ?? 0) - ($currentCountArr[$value['mate_id']]['out_count'] ?? 0)),
-                    '',
-                    ''
-                ];
+            #获取初始入库记录
+            $inFlowList = MaterialFlow::query()
+            ->joinSub(MaterialDetail::query()
+                ->where(['made_material_id' => $value['mate_id']])
+                ->select([
+                    'made_id',
+                    'made_in_id',
+                ])
+                ->offset($currentCountArr[$value['mate_id']]['out_count'] ?? 0)
+                ->limit($startCountArr[$value['mate_id']]['count'] ?? 0),'sub','sub.made_in_id','=','material_flow.mafl_id')
+            ->select([
+                'mafl_id',
+                'mafl_price_tax',
+                'mafl_tax',
+                'mafl_invoice_type',
+                DB::raw("count(sub.made_id) as count")
+            ])->groupBy(['sub.made_in_id'])->get()->toArray();
+
+            $inFlowArr = [];
+            foreach ($inFlowList as $flowItem){
+                $flowKey = $flowItem['mafl_price_tax'] . '_' . $flowItem['mafl_tax'] . '_' . $flowItem['mafl_invoice_type'];
+                if(!isset($inFlowArr[$flowKey])){
+                    $inFlowArr[$flowKey] = [
+                        'count' => 0,
+                        'in_count' => 0,
+                        'out_count' => 0,
+                        'price' => bcdiv($flowItem['mafl_price_tax'],1 + $flowItem['mafl_tax']/100,2),
+                        'price_tax' => $flowItem['mafl_price_tax'],
+                        'invoice_type' => $flowItem['mafl_invoice_type'],
+                    ];
+                }
+
+                $inFlowArr[$flowKey]['count'] += $flowItem['count'];
             }
-//            print_r($specificationArr[$value['mate_id']]);die;
+
+            #获取该物品本期出入库
+            $currentFlowList = $currentCountArr[$value['mate_id']] ?? [];
+            foreach ($currentFlowList as $flowItem){
+                #如果是入库
+                if($flowItem['mafl_type'] == 1){
+                    $flowKey = $flowItem['mafl_price_tax'] . '_' . $flowItem['mafl_tax'] . '_' . $flowItem['mafl_invoice_type'];
+                    if(!isset($inFlowArr[$flowKey])){
+                        $inFlowArr[$flowKey] = [
+                            'count' => 0,
+                            'in_count' => 0,
+                            'out_count' => 0,
+                            'price' => bcdiv($flowItem['mafl_price_tax'],1 + $flowItem['mafl_tax']/100,2),
+                            'price_tax' => $flowItem['mafl_price_tax'],
+                            'invoice_type' => $flowItem['mafl_invoice_type'],
+                        ];
+                    }
+
+                    $inFlowArr[$flowKey]['in_count'] += $flowItem['mafl_number'];
+                }else{
+                    #如果是出库 先获取涉及到哪几个入库记录
+                    $relationInFlowList = MaterialDetail::query()
+                        ->leftJoin('material_flow','material_flow.mafl_id','=','material_detail.made_in_id')
+                        ->where(['made_out_id' => $flowItem['mafl_id']])
+                        ->select([
+                            'mafl_id',
+                            'mafl_price_tax',
+                            'mafl_tax',
+                            'mafl_invoice_type',
+                            DB::raw("count(material_detail.made_id) as count")
+                        ])->groupBy(['material_detail.made_in_id'])->get()->toArray();
 
 
-            $row++;
+
+                    foreach ($relationInFlowList as $item){
+                        $flowKey = $item['mafl_price_tax'] . '_' . $item['mafl_tax'] . '_' . $item['mafl_invoice_type'];
+
+                        if(!isset($inFlowArr[$flowKey])){
+                            $inFlowArr[$flowKey] = [
+                                'count' => 0,
+                                'in_count' => 0,
+                                'out_count' => 0,
+                                'price' => bcdiv($item['mafl_price_tax'],1 + $value['mafl_tax']/100,2),
+                                'price_tax' => $item['mafl_price_tax'],
+                                'invoice_type' => $item['mafl_invoice_type'],
+                            ];
+                        }
+
+                        $inFlowArr[$flowKey]['out_count'] += $item['count'];
+                    }
+                }
+
+
+            }
+
+//            print_r($inFlowArr);die;
+
+            foreach ($inFlowArr as $k => $flowItem){
+                $priceInfoArr = explode('_',$k);
+                $tag = floatval($priceInfoArr[0]) . '-' . floatval($priceInfoArr[1]) . '%-' . (MaterialFlow::$invoiceTypeArr[$priceInfoArr[2]] ?? '');
+                if($value['mate_is_account'] == 1){
+                    $firstList[] = [
+                        $index,
+                        $value['mate_name'] . '(' . $tag . ')',
+                        implode("\n",array_column($specificationArr[$value['mate_id']] ?? [],'masp_name')),
+                        $value['mate_manufacturer_name'],
+                        $value['mate_unit'],
+                        $flowItem['price_tax'],
+                        $flowItem['count'] ?? 0,
+                        bcmul($flowItem['price_tax'],$flowItem['count'],2),
+                        bcmul($flowItem['price'],$flowItem['count'],2),
+                        $flowItem['in_count'] ?? 0,
+                        bcmul($flowItem['price_tax'],$flowItem['in_count'],2),
+                        bcmul($flowItem['price'],$flowItem['in_count'],2),
+                        $flowItem['out_count'] ?? 0,
+                        bcmul($flowItem['price_tax'],$flowItem['out_count'],2),
+                        bcmul($flowItem['price'],$flowItem['out_count'],2),
+                        ($flowItem['count'] ?? 0) + (($flowItem['in_count'] ?? 0) - ($flowItem['out_count'] ?? 0)),
+                        bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),
+                        bcmul($flowItem['price'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),
+                    ];
+                }else{
+                    $secondList[] = [
+                        $index,
+                        $value['mate_name'] . '(' . $tag . ')',
+                        implode("\n",array_column($specificationArr[$value['mate_id']] ?? [],'masp_name')),
+                        $value['mate_manufacturer_name'],
+                        $value['mate_unit'],
+                        $flowItem['price_tax'],
+                        $flowItem['count'] ?? 0,
+                        bcmul($flowItem['price_tax'],$flowItem['count'],2),
+                        bcmul($flowItem['price'],$flowItem['count'],2),
+                        $flowItem['in_count'] ?? 0,
+                        bcmul($flowItem['price_tax'],$flowItem['in_count'],2),
+                        bcmul($flowItem['price'],$flowItem['in_count'],2),
+                        $flowItem['out_count'] ?? 0,
+                        bcmul($flowItem['price_tax'],$flowItem['out_count'],2),
+                        bcmul($flowItem['price'],$flowItem['out_count'],2),
+                        ($flowItem['count'] ?? 0) + (($flowItem['in_count'] ?? 0) - ($flowItem['out_count'] ?? 0)),
+                        bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),
+                        bcmul($flowItem['price'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),
+                    ];
+                }
+                $index++;
+                $row++;
+            }
         }
-
+//        print_r($secondList);die;
         $width = [];
         foreach ($title as $key => $value){
             if(in_array($value,['材料名称'])){
-                $width[ExportLogic::getColumnName($key+1)] = 50;
+                $width[ExportLogic::getColumnName($key+1)] = 70;
             }elseif(in_array($value,['序号','规格类型','品牌','用量单位'])){
                 $width[ExportLogic::getColumnName($key+1)] = 15;
             }else{
                 $width[ExportLogic::getColumnName($key+1)] = 30;
             }
-
         }
         $firstList[] = ['','','','','','','','','','','','','','','','','',''];
         $row++;
         $exportData = array_merge($firstList,$secondList);
 
         $config = [
+            'color' => [ExportLogic::getColumnName(2) . '2:' . ExportLogic::getColumnName(2) . $row => 'FFFF0000'],
             'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . '1' => true],
             'width' => $width,
             'horizontal_center' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true],
             'wrap_text' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true],
+            'freeze_pane' => ['C2' => true]
         ];
 
         return ExportLogic::getInstance()->export($title,$exportData,'进销存报表',$config);

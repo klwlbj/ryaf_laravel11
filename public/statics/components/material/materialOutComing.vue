@@ -52,6 +52,10 @@
                 </a-upload>
             </a-form-model-item>
 
+            <a-form-model-item label="最终确认人" prop="verify_user_id">
+                <verify-user-select ref="verifyUserSelect" @change="verifyUserChange" :default-data="verifyUserId"></verify-user-select>
+            </a-form-model-item>
+
             <a-form-model-item label="备注" prop="remark">
                 <a-textarea
                     v-model="formData.remark"
@@ -82,6 +86,7 @@ module.exports = {
         "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
         "admin-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
         "apply-user-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
+        "verify-user-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
     },
     props: {
         id: {
@@ -110,6 +115,7 @@ module.exports = {
             materialId:undefined,
             receiveUserId:undefined,
             applyUserId:undefined,
+            verifyUserId:undefined,
             warehouseId:2
         }
     },
@@ -125,11 +131,13 @@ module.exports = {
                 apply_user_id:null,
                 purpose:undefined,
                 approve_image:'',
+                verify_user_id:this.admin['department']['depa_leader_id'],
                 remark:'',
             };
 
             this.receiveUserId = undefined;
             this.applyUserId = undefined;
+            this.verifyUserId = this.admin['department']['depa_leader_id'];
             this.fileList = [];
 
             if(this.$refs['applyUserSelect']){
@@ -138,6 +146,10 @@ module.exports = {
 
             if(this.$refs['adminSelect']){
                 this.$refs['adminSelect'].clearData();
+            }
+
+            if(this.$refs['verifyUserSelect']){
+                this.$refs['verifyUserSelect'].clearData();
             }
         },
         submitData(){
@@ -250,9 +262,13 @@ module.exports = {
         },
         warehouseChange(value){
             this.formData.warehouse_id = value;
+        },
+        verifyUserChange(value){
+            this.formData.verify_user_id = value;
         }
     },
     created () {
+        this.admin = JSON.parse(localStorage.getItem("admin"));
         this.initForm();
         if(this.defaultMaterialId){
             this.materialId = this.defaultMaterialId;

@@ -107,6 +107,7 @@
                     setCookie('X-Token',res.data.token,1);
                     localStorage.setItem("menu",JSON.stringify(res.data.menu));
                     localStorage.setItem("permission",JSON.stringify(res.data.permission));
+                    localStorage.setItem("admin",JSON.stringify(res.data.admin));
                     window.location.href = '/'
                 }).catch(error => {
                     this.$message.error('请求失败');

@@ -26,7 +26,14 @@ class AdminLogic extends BaseLogic
         $menu = AdminPermissionRelation::getMenu($data['admin_id']);
         $permission = AdminPermissionRelation::getPermissionArr($data['admin_id']);
 
-        return ['token' => $token, 'menu' => $menu,'permission' => $permission];
+        $data['department'] = Department::query()
+            ->where(['depa_id' => $data['admin_department_id']])
+            ->select([
+                'depa_name','depa_id','depa_leader_id'
+            ])
+            ->first();
+
+        return ['token' => $token, 'menu' => $menu,'permission' => $permission,'admin' => $data];
     }
 
     public function resetPassword($params)
