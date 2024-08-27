@@ -9,6 +9,12 @@ class Material extends BaseModel
     protected $table   = 'material';
     public $timestamps = null;
 
+    public static $invoiceTypeArr = [
+        '0' => '未确认',
+        '1' => '专票',
+        '2' => '普票',
+    ];
+
     public static function getDataById($id)
     {
 //        $data = Cache::get(self::class.'_'.$id);

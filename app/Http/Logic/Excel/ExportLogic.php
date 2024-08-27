@@ -119,6 +119,11 @@ class ExportLogic extends BaseLogic
                         $sheet->freezePane($k);
                     }
                     break;
+                case 'sum_func':
+                    foreach ($item as $k => $v){
+                        $sheet->setCellValue($k,$v);
+                    }
+                    break;
             }
         }
 

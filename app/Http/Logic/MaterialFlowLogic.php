@@ -40,18 +40,34 @@ class MaterialFlowLogic extends BaseLogic
 
         $total = $query->count();
 
-        $list = $query
-            ->select([
-                'material_flow.*',
-                'material.mate_name as mafl_material_name',
+        if(!empty($params['is_all'])){
+            $list = $query
+                ->select([
+                    'material_flow.*',
+                    'material.mate_name as mafl_material_name',
 //                'node_account.noac_name as mafl_created_user',
-                'receive_user.admin_name as mafl_receive_user',
-                'apply_user.admin_name as mafl_apply_user',
-                'verify_user.admin_name as mafl_verify_user',
-                'warehouse.waho_name as mafl_warehouse_name',
-            ])
-            ->orderBy('material_flow.mafl_id','desc')
-            ->offset($point)->limit($pageSize)->get()->toArray();
+                    'receive_user.admin_name as mafl_receive_user',
+                    'apply_user.admin_name as mafl_apply_user',
+                    'verify_user.admin_name as mafl_verify_user',
+                    'warehouse.waho_name as mafl_warehouse_name',
+                ])
+                ->orderBy('material_flow.mafl_id','desc')
+                ->get()->toArray();
+        }else{
+            $list = $query
+                ->select([
+                    'material_flow.*',
+                    'material.mate_name as mafl_material_name',
+//                'node_account.noac_name as mafl_created_user',
+                    'receive_user.admin_name as mafl_receive_user',
+                    'apply_user.admin_name as mafl_apply_user',
+                    'verify_user.admin_name as mafl_verify_user',
+                    'warehouse.waho_name as mafl_warehouse_name',
+                ])
+                ->orderBy('material_flow.mafl_id','desc')
+                ->offset($point)->limit($pageSize)->get()->toArray();
+        }
+
 
         $ids = array_column($list, 'mafl_id');
         $materialId = array_values(array_unique(array_column($list, 'mafl_material_id')));
@@ -98,13 +114,19 @@ class MaterialFlowLogic extends BaseLogic
             return false;
         }
 
+        # 获取默认单价
+        $defaultPriceTax = $materialData['mate_price_tax'] ?? 0;
+        $defaultTax = $materialData['mate_tax'] ?? 0;
+        $defaultInvoiceType = $materialData['mate_invoice_type'] ?? 0;
+
         $incomingData = [
             'mafl_material_id'  => $params['material_id'],
             'mafl_warehouse_id'  => $params['warehouse_id'],
             'mafl_type' => 1,
             'mafl_number' => $params['number'],
-            'mafl_price' => 0,
-            'mafl_price_tax' => 0,
+            'mafl_tax' => $defaultTax,
+            'mafl_price_tax' => $defaultPriceTax,
+            'mafl_invoice_type' => $defaultInvoiceType,
             'mafl_verify_user_id' => $params['verify_user_id'],
             'mafl_production_date' => $params['production_date'],
             'mafl_expire_date' => $params['expire_date'],
@@ -220,8 +242,9 @@ class MaterialFlowLogic extends BaseLogic
             'mafl_type' => 2,
             'mafl_number' => $params['number'],
             'mafl_purpose' => $params['purpose'],
-            'mafl_price' => 0,
             'mafl_price_tax' => 0,
+            'mafl_tax' => 0,
+            'mafl_invoice_type' => 0,
             'mafl_verify_user_id' => $params['verify_user_id'],
             'mafl_apply_user_id' => $params['apply_user_id'],
             'mafl_receive_user_id' => $params['receive_user_id'],

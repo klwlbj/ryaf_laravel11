@@ -106,10 +106,6 @@ module.exports = {
             };
 
             this.verifyUserId = this.admin['department']['depa_leader_id'];
-
-            if(this.$refs['verifyUserSelect']){
-                this.$refs['verifyUserSelect'].clearData();
-            }
         },
         submitData(){
             let that = this;

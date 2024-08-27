@@ -61,7 +61,7 @@
                     <div slot="price" slot-scope="text, record">
                         <div v-if="record.mafl_type == 1">
                             <div>单价（含税）：<span style="color:red">@{{record.mafl_price_tax}}</span></div>
-                            <div>税率：<span style="color:red">@{{record.mafl_tax}}</span></div>
+                            <div>税率：<span style="color:red">@{{record.mafl_tax}}%</span></div>
                             <div>单价（不含税）：<span style="color:red">@{{record.mafl_price}}</span></div>
                             <div>发票类型：<span style="color:red">@{{record.mafl_invoice_type_msg}}</span></div>
                         </div>
@@ -152,11 +152,6 @@
                 >
                 </set-flow-price>
             </a-modal>
-
-
-
-
-
         </a-card>
     </div>
 @endsection

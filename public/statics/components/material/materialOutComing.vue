@@ -148,9 +148,6 @@ module.exports = {
                 this.$refs['adminSelect'].clearData();
             }
 
-            if(this.$refs['verifyUserSelect']){
-                this.$refs['verifyUserSelect'].clearData();
-            }
         },
         submitData(){
             let that = this;

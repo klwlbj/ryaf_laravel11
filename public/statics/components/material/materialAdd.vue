@@ -36,6 +36,28 @@
                 <a-input-number v-model="formData.warning" :min="0"/>
             </a-form-model-item>
 
+            <a-form-model-item label="默认价格(含税)" prop="warning">
+                <a-input-number v-model="formData.price_tax" :min="0"/>
+            </a-form-model-item>
+
+            <a-form-model-item label="默认税率" prop="tax">
+                <a-input-number v-model="formData.tax" :min="0"/>
+            </a-form-model-item>
+
+            <a-form-model-item label="默认发票类型" prop="invoice_type">
+                <a-radio-group v-model="formData.invoice_type">
+                    <a-radio :value="0">
+                        未确认
+                    </a-radio>
+                    <a-radio :value="1">
+                        专票
+                    </a-radio>
+                    <a-radio :value="2">
+                        普票
+                    </a-radio>
+                </a-radio-group>
+            </a-form-model-item>
+
             <a-form-model-item label="物品图" prop="image">
                 <a-upload list-type="picture-card"
                           :file-list="imageList"
@@ -138,6 +160,9 @@ module.exports = {
                 unit:'',
                 image:'',
                 remark:'',
+                price_tax:0,
+                tax:1.13,
+                invoice_type:1,
                 sort:0,
                 status : 1,
             };
@@ -317,6 +342,9 @@ module.exports = {
                     specification_id: res.data.mate_specification_id,
                     warning: res.data.mate_warning,
                     unit: res.data.mate_unit,
+                    price_tax: res.data.mate_price_tax,
+                    tax: res.data.mate_tax,
+                    invoice_type: res.data.mate_invoice_type,
                     remark: res.data.mate_remark,
                     image: res.data.mate_image,
                     sort: res.data.mate_sort,

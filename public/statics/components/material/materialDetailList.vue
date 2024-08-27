@@ -3,20 +3,11 @@
         <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
                  :pagination="false">
 
-            <div slot="made_expire_date" slot-scope="text, record">
-                <span v-if="record.is_expire == 1"  style="color:red">{{ record.made_expire_date }}</span>
-                <span v-else style="color:green">{{ record.made_expire_date }}</span>
+            <div slot="expire_date" slot-scope="text, record">
+                <span v-if="record.is_expire == 1"  style="color:red">{{ record.expire_date }}</span>
+                <span v-else style="color:green">{{ record.expire_date }}</span>
             </div>
         </a-table>
-
-        <div style="text-align: right;margin-top: 10px">
-            <a-pagination
-                :current="pagination.current"
-                :page-size="pagination.pageSize"
-                :total="pagination.total"
-                @change="paginationChange"
-            ></a-pagination>
-        </div>
     </div>
 </template>
 
@@ -37,35 +28,41 @@ module.exports = {
                 id: "",
             },
             listSource: [],
-            pagination: {
-                pageSize: 10,
-                total: 0,
-                current: 1,
-                onChange: this.paginationChange,
-                onShowSizeChange: this.paginationChange,
-            },
+            listLoading: false,
             columns:[
-                {
-                    title: 'Id',
-                    dataIndex: 'made_id',
-                    width: 80
-                },
-                {
-                    title: '仓库',
-                    dataIndex: 'made_warehouse_name',
-                },
+                // {
+                //     title: 'Id',
+                //     dataIndex: 'made_id',
+                //     width: 80
+                // },
+                // {
+                //     title: '仓库',
+                //     dataIndex: 'made_warehouse_name',
+                // },
                 {
                     title: '入库时间',
-                    dataIndex: 'made_datetime',
+                    dataIndex: 'datetime',
+                },
+                {
+                    title: '入库数量',
+                    dataIndex: 'number',
+                },
+                {
+                    title: '入库数量',
+                    dataIndex: 'number',
+                },
+                {
+                    title: '剩余数量',
+                    dataIndex: 'number',
                 },
                 {
                     title: '生产日期',
-                    dataIndex: 'made_production_date',
+                    dataIndex: 'production_date',
                 },
                 {
                     title: '质保期',
-                    scopedSlots: { customRender: 'made_expire_date' },
-                    dataIndex: 'made_expire_date',
+                    scopedSlots: { customRender: 'expire_date' },
+                    dataIndex: 'expire_date',
                 },
             ],
         }
@@ -98,10 +95,9 @@ module.exports = {
                     'Content-Type': 'multipart/form-data'
                 }
             }).then(response => {
+                this.listLoading = false
                 let res = response.data;
                 this.listSource = res.data.list
-                this.pagination.total = res.data.total
-                this.listLoading = false
             }).catch(error => {
                 this.$message.error('请求失败');
             });

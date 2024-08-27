@@ -134,6 +134,14 @@ class MaterialLogic extends BaseLogic
                 'material_specification.masp_name'
             ])->get()->groupBy('masp_material_id')->toArray();
 
+        #获取未确认的出入库记录
+        $flowArr = MaterialFlow::query()
+            ->whereIn('mafl_material_id',$ids)
+            ->where(['mafl_status' => 1])
+            ->select([
+                'mafl_material_id',
+                DB::raw('count(mafl_id) as count')
+            ])->groupBy(['mafl_material_id'])->get()->keyBy('mafl_material_id')->toArray();
 
         foreach ($list as $key => &$value){
             if(isset($expireList[$value['mate_id']])){
@@ -151,6 +159,9 @@ class MaterialLogic extends BaseLogic
             }
 
             $value['last_in_flow'] = $lastInFlowArr[$value['mate_id']] ?? [];
+            $value['mate_price'] = bcdiv($value['mate_price_tax'],1 + $value['mate_tax']/100,2);
+            $value['mate_invoice_type_msg'] = Material::$invoiceTypeArr[$value['mate_invoice_type']] ?? '未确认';
+            $value['flow_count'] = $flowArr[$value['mate_id']]['count'] ?? 0;
         }
 
         unset($value);
@@ -321,6 +332,9 @@ class MaterialLogic extends BaseLogic
             'mate_image' => $params['image'] ?? '',
             'mate_remark' => $params['remark'] ?? '',
             'mate_sort' => $params['sort'] ?? 0,
+            'mate_price_tax' => $params['price_tax'] ?? 0,
+            'mate_tax' => $params['tax'] ?? 1.13,
+            'mate_invoice_type' => $params['invoice_type'] ?? 1,
             'mate_status' => $params['status'] ?? 1,
             'mate_operator_id' => 2, #操作id  默认写死
         ];
@@ -369,6 +383,9 @@ class MaterialLogic extends BaseLogic
             'mate_image' => $params['image'] ?? '',
             'mate_remark' => $params['remark'] ?? '',
             'mate_sort' => $params['sort'] ?? 0,
+            'mate_price_tax' => $params['price_tax'] ?? 0,
+            'mate_tax' => $params['tax'] ?? 1.13,
+            'mate_invoice_type' => $params['invoice_type'] ?? 1,
             'mate_status' => $params['status'] ?? 1,
             'mate_operator_id' => 2, #操作id  默认写死
         ];
@@ -423,36 +440,42 @@ class MaterialLogic extends BaseLogic
 
     public function getDetailList($params)
     {
-        $page = $params['page'] ?? 1;
-        $pageSize = $params['page_size'] ?? 10;
-        $point = ($page - 1) * $pageSize;
+//        $page = $params['page'] ?? 1;
+//        $pageSize = $params['page_size'] ?? 10;
+//        $point = ($page - 1) * $pageSize;
 
         $query = MaterialDetail::query()
-            ->leftJoin('warehouse','waho_id','=','material_detail.made_warehouse_id')
+//            ->leftJoin('warehouse','waho_id','=','material_detail.made_warehouse_id')
+            ->leftJoin('material_flow','material_detail.made_in_id','=','material_flow.mafl_id')
             ->where(['made_status' => 1]);
 
         if(isset($params['material_id']) && $params['material_id']){
             $query->where(['made_material_id' => $params['material_id']]);
         }
 
-        $total = $query->count();
+//        $total = $query->count();
 
         $list = $query
             ->select([
-                'material_detail.*',
-                'warehouse.waho_name as made_warehouse_name',
+                'material_flow.mafl_datetime as datetime',
+                'material_flow.mafl_expire_date as expire_date',
+                'material_flow.mafl_production_date as production_date',
+                'material_flow.mafl_number as number',
+                DB::raw("count(material_detail.made_id) as count"),
+//                'warehouse.waho_name as made_warehouse_name',
             ])
-            ->orderBy('made_id','desc')
-            ->offset($point)->limit($pageSize)->get()->toArray();
+            ->orderBy('mafl_id','desc')
+            ->groupBy(['material_flow.mafl_id'])
+            ->get()->toArray();
 
         foreach ($list as $key => &$value){
-            $value['is_expire'] = ((strtotime($value['made_expire_date']) - time()) <= 60*60*24*30) ? 1 : 0;
+            $value['is_expire'] = ((strtotime($value['expire_date']) - time()) <= 60*60*24*30) ? 1 : 0;
         }
 
         unset($value);
 
         return [
-            'total' => $total,
+//            'total' => $total,
             'list' => $list,
         ];
     }
@@ -474,7 +497,10 @@ class MaterialLogic extends BaseLogic
                 'mate_name',
                 'mate_is_account',
                 'mama_name as mate_manufacturer_name',
-                'mate_unit'
+                'mate_unit',
+                'mate_price_tax',
+                'mate_tax',
+                'mate_invoice_type'
             ])->orderBy('mate_is_account','desc')->orderBy('mate_sort','desc')->get()->toArray();
 
         $ids = array_column($materialList,'mate_id');
@@ -547,7 +573,8 @@ class MaterialLogic extends BaseLogic
                         'count' => 0,
                         'in_count' => 0,
                         'out_count' => 0,
-                        'price' => bcdiv($flowItem['mafl_price_tax'],1 + $flowItem['mafl_tax']/100,2),
+                        'tax' => $flowItem['mafl_tax'],
+                        'price' => bcdiv($flowItem['mafl_price_tax'],1 + $flowItem['mafl_tax']/100),
                         'price_tax' => $flowItem['mafl_price_tax'],
                         'invoice_type' => $flowItem['mafl_invoice_type'],
                     ];
@@ -567,7 +594,8 @@ class MaterialLogic extends BaseLogic
                             'count' => 0,
                             'in_count' => 0,
                             'out_count' => 0,
-                            'price' => bcdiv($flowItem['mafl_price_tax'],1 + $flowItem['mafl_tax']/100,2),
+                            'tax' => $flowItem['mafl_tax'],
+                            'price' => bcdiv($flowItem['mafl_price_tax'],1 + $flowItem['mafl_tax']/100),
                             'price_tax' => $flowItem['mafl_price_tax'],
                             'invoice_type' => $flowItem['mafl_invoice_type'],
                         ];
@@ -597,7 +625,8 @@ class MaterialLogic extends BaseLogic
                                 'count' => 0,
                                 'in_count' => 0,
                                 'out_count' => 0,
-                                'price' => bcdiv($item['mafl_price_tax'],1 + $value['mafl_tax']/100,2),
+                                'tax' => $item['mafl_tax'],
+                                'price' => bcdiv($item['mafl_price_tax'],1 + $item['mafl_tax']/100),
                                 'price_tax' => $item['mafl_price_tax'],
                                 'invoice_type' => $item['mafl_invoice_type'],
                             ];
@@ -610,11 +639,27 @@ class MaterialLogic extends BaseLogic
 
             }
 
+            if(empty($inFlowArr)){
+                $flowKey = $value['mate_price_tax'] . '_' . $value['mate_tax'] . '_' . $value['mate_invoice_type'];
+
+                $inFlowArr[$flowKey] = [
+                    'count' => 0,
+                    'in_count' => 0,
+                    'out_count' => 0,
+                    'tax' => $value['mate_tax'],
+                    'price' => bcdiv($value['mate_price_tax'],1 + $value['mate_tax']/100),
+                    'price_tax' => $value['mate_price_tax'],
+                    'invoice_type' => $value['mate_invoice_type'],
+                ];
+
+//                print_r($value);die;
+            }
+
 //            print_r($inFlowArr);die;
 
             foreach ($inFlowArr as $k => $flowItem){
                 $priceInfoArr = explode('_',$k);
-                $tag = floatval($priceInfoArr[0]) . '-' . floatval($priceInfoArr[1]) . '%-' . (MaterialFlow::$invoiceTypeArr[$priceInfoArr[2]] ?? '');
+                $tag = floatval($priceInfoArr[0]) . '-' . floatval($priceInfoArr[1]) . '%';
                 if($value['mate_is_account'] == 1){
                     $firstList[] = [
                         $index,
@@ -625,16 +670,16 @@ class MaterialLogic extends BaseLogic
                         $flowItem['price_tax'],
                         $flowItem['count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['count'],2),
-                        bcmul($flowItem['price'],$flowItem['count'],2),
+                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'],2),1 + $flowItem['tax']/100,2),
                         $flowItem['in_count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['in_count'],2),
-                        bcmul($flowItem['price'],$flowItem['in_count'],2),
+                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['in_count'],2),1 + $flowItem['tax']/100,2),
                         $flowItem['out_count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['out_count'],2),
-                        bcmul($flowItem['price'],$flowItem['out_count'],2),
+                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['out_count'],2),1 + $flowItem['tax']/100,2),
                         ($flowItem['count'] ?? 0) + (($flowItem['in_count'] ?? 0) - ($flowItem['out_count'] ?? 0)),
                         bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),
-                        bcmul($flowItem['price'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),
+                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),1 + $flowItem['tax']/100,2),
                     ];
                 }else{
                     $secondList[] = [
@@ -646,16 +691,16 @@ class MaterialLogic extends BaseLogic
                         $flowItem['price_tax'],
                         $flowItem['count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['count'],2),
-                        bcmul($flowItem['price'],$flowItem['count'],2),
+                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'],2),1 + $flowItem['tax']/100,2),
                         $flowItem['in_count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['in_count'],2),
-                        bcmul($flowItem['price'],$flowItem['in_count'],2),
+                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['in_count'],2),1 + $flowItem['tax']/100,2),
                         $flowItem['out_count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['out_count'],2),
-                        bcmul($flowItem['price'],$flowItem['out_count'],2),
+                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['out_count'],2),1 + $flowItem['tax']/100,2),
                         ($flowItem['count'] ?? 0) + (($flowItem['in_count'] ?? 0) - ($flowItem['out_count'] ?? 0)),
                         bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),
-                        bcmul($flowItem['price'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),
+                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),1 + $flowItem['tax']/100,2),
                     ];
                 }
                 $index++;
@@ -669,21 +714,39 @@ class MaterialLogic extends BaseLogic
                 $width[ExportLogic::getColumnName($key+1)] = 70;
             }elseif(in_array($value,['序号','规格类型','品牌','用量单位'])){
                 $width[ExportLogic::getColumnName($key+1)] = 15;
+            }elseif(in_array($value,['期末金额(不含税)'])){
+                $width[ExportLogic::getColumnName($key+1)] = 40;
             }else{
                 $width[ExportLogic::getColumnName($key+1)] = 30;
             }
         }
-        $firstList[] = ['','','','','','','','','','','','','','','','','',''];
+
+        $firstCount = count($firstList);
+        $secondCount = count($secondList);
+        $firstList[] = ['','','','','','小计','','','','','','','','','','','',''];
+        $sumIndex = ['G','H','I','J','K','L','M','N','O','P','Q','R'];
+
+        $sum = [];
+        foreach ($sumIndex as $index){
+            $sum[$index . ($firstCount + 2)] =  '=SUM(' . $index . '2:' . $index . ($firstCount + 1) . ')';
+            $sum[$index . ($firstCount + 2 + $secondCount + 1)] =  '=SUM(' . $index . ($firstCount + 2 + 1) . ':'  . $index . ($firstCount + 2 + $secondCount) . ')';
+        }
+
+
+        $row++;
+
+        $secondList[] = ['','','','','','小计','','','','','','','','','','','',''];
         $row++;
         $exportData = array_merge($firstList,$secondList);
 
         $config = [
-            'color' => [ExportLogic::getColumnName(2) . '2:' . ExportLogic::getColumnName(2) . $row => 'FFFF0000'],
+            'color' => [ExportLogic::getColumnName(2) . '2:' . ExportLogic::getColumnName(2) . $row => 'FFFF0000','F'.($firstCount + 2).':R'. ($firstCount + 2) => 'FFFF0000','F'.($firstCount + 2 + $secondCount + 1).':R'. ($firstCount + 2 + $secondCount + 1) => 'FFFF0000'],
             'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . '1' => true],
             'width' => $width,
             'horizontal_center' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true],
             'wrap_text' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true],
-            'freeze_pane' => ['C2' => true]
+            'freeze_pane' => ['F2' => true],
+            'sum_func' => $sum,
         ];
 
         return ExportLogic::getInstance()->export($title,$exportData,'进销存报表',$config);

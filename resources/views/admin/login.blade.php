@@ -40,6 +40,7 @@
                     <a-input
                         v-model="form.mobile"
                         placeholder="账号"
+                        @keyup.enter="handleSubmit"
                     >
                         <a-icon slot="prefix" type="user" style="color: rgba(0,0,0,.25)"/>
                     </a-input>
@@ -49,6 +50,7 @@
                         v-model="form.password"
                         type="password"
                         placeholder="密码"
+                        @keyup.enter="handleSubmit"
                     >
                         <a-icon slot="prefix" type="lock" style="color: rgba(0,0,0,.25)"/>
                     </a-input>

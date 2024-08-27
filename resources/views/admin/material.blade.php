@@ -11,7 +11,7 @@
             <div>
                 <a-form layout="inline" >
                     <a-form-item>
-                        <a-input v-model="listQuery.keyword" placeholder="物品名称" style="width: 200px;" />
+                        <a-input v-model="listQuery.keyword" placeholder="物品名称" style="width: 200px;"  @keyup.enter="handleFilter"/>
                     </a-form-item>
                     <a-form-item>
                         <manufacturer-select @change="manufacturerChange"></manufacturer-select>
@@ -47,7 +47,7 @@
 
                 </a-form>
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                         :pagination="false">
+                         :pagination="false" :scroll="{ x: 1500,y: 650 }">
 
                     <div slot="mate_name" slot-scope="text, record">
                         <div style="cursor: pointer" @click="getDetail(record)">
@@ -66,6 +66,9 @@
                                 </template>
                                 @{{ record.mate_name }}
                             </a-tooltip>
+                        </div>
+                        <div style="color:red;cursor: pointer" @click="getUnconfirmedFlow(record)">
+                            (待确认出入库：@{{ record.flow_count }})
                         </div>
                     </div>
 
@@ -89,6 +92,13 @@
                     <div slot="status" slot-scope="text, record">
                         <a-tag v-if="record.mate_status == 0"  color="red">禁用</a-tag>
                         <a-tag v-else color="green">启用</a-tag>
+                    </div>
+
+                    <div slot="price" slot-scope="text, record">
+                        <div>单价（含税）：<span style="color:red">@{{record.mate_price_tax}}</span></div>
+                        <div>税率：<span style="color:red">@{{record.mate_tax}}%</span></div>
+                        <div>单价（不含税）：<span style="color:red">@{{record.mate_price}}</span></div>
+                        <div>发票类型：<span style="color:red">@{{record.mate_invoice_type_msg}}</span></div>
                     </div>
 
                     <div slot="action" slot-scope="text, record">
@@ -188,17 +198,30 @@
                 </material-detail>
             </a-modal>
 
+            <a-modal :mask-closable="false" v-model="unconfirmedFlowFormVisible"
+                     :title="unconfirmedFlowStatus"
+                     width="1200px" :footer="null">
+                <unconfirmed-flow-list
+                    style="height: 600px;overflow: auto"
+                    ref="unconfirmedFlowList"
+                    :id="unconfirmedFlowId"
+                >
+                </unconfirmed-flow-list>
+            </a-modal>
+
+
+
 
             <a-modal :mask-closable="false" v-model="reportFormVisible"
                      title="进销存报表"
                      width="800px" :footer="null">
                 <a-form-model :model="reportForm" :label-col="labelCol" :wrapper-col="wrapperCol">
                     <a-form-model-item label="开始日期">
-                        <a-date-picker format="YYYY-MM-DD" v-model:value="reportForm.start_date"/>
+                        <a-date-picker format="YYYY-MM-DD" value-format="YYYY-MM-DD" v-model:value="reportForm.start_date"/>
                     </a-form-model-item>
 
-                    <a-form-model-item label="出库日期" prop="datetime">
-                        <a-date-picker format="YYYY-MM-DD" v-model:value="reportForm.end_date"/>
+                    <a-form-model-item label="出库日期">
+                        <a-date-picker format="YYYY-MM-DD" value-format="YYYY-MM-DD" v-model:value="reportForm.end_date"/>
                     </a-form-model-item>
                 </a-form-model>
 
@@ -248,17 +271,15 @@
                         title: '名称',
                         scopedSlots: { customRender: 'mate_name' },
                         dataIndex: 'mate_name',
-                        width: 100
+                        width: 200
                     },
                     {
                         title: '厂家',
                         dataIndex: 'mate_manufacturer_name',
-                        width: 100
                     },
                     {
                         title: '类别',
                         dataIndex: 'mate_category_name',
-                        width: 100
                     },
                     {
                         title: '规格',
@@ -279,6 +300,12 @@
                         dataIndex: 'mate_warning'
                     },
                     {
+                        title: '默认单价',
+                        scopedSlots: { customRender: 'price' },
+                        dataIndex: 'mate_price',
+                        width: 200,
+                    },
+                    {
                         title: '排序',
                         dataIndex: 'mate_sort'
                     },
@@ -294,6 +321,7 @@
                     {
                         title: '操作',
                         scopedSlots: { customRender: 'action' },
+                        fixed:'right'
                     }
                 ],
                 dialogFormVisible:false,
@@ -301,6 +329,7 @@
                 outComingFormVisible:false,
                 detailFormVisible:false,
                 infoFormVisible:false,
+                unconfirmedFlowFormVisible:false,
                 id:null,
                 inComingMaterialId:null,
                 outComingMaterialId:null,
@@ -308,6 +337,8 @@
                 detailStatus:'',
                 infoId:null,
                 infoStatus:'',
+                unconfirmedFlowId:null,
+                unconfirmedFlowStatus:'',
                 reportLoading:false,
                 reportFormVisible:false,
                 labelCol: { span: 4 },
@@ -338,7 +369,8 @@
                 "manufacturer-select":  httpVueLoader('/statics/components/material/manufacturerSelect.vue'),
                 "category-select":  httpVueLoader('/statics/components/material/categorySelect.vue'),
                 "material-in-coming":  httpVueLoader('/statics/components/material/materialInComing.vue'),
-                "material-out-coming":  httpVueLoader('/statics/components/material/materialOutComing.vue')
+                "material-out-coming":  httpVueLoader('/statics/components/material/materialOutComing.vue'),
+                "unconfirmed-flow-list":  httpVueLoader('/statics/components/material/unconfirmedFlowList.vue')
             },
             methods: {
                 paginationChange (current, pageSize) {
@@ -425,6 +457,11 @@
                     this.infoStatus = row.mate_name;
                     this.infoFormVisible = true;
                 },
+                getUnconfirmedFlow(row){
+                    this.unconfirmedFlowId = row.mate_id;
+                    this.unconfirmedFlowStatus = row.mate_name;
+                    this.unconfirmedFlowFormVisible = true;
+                },
                 onDel(row){
                     axios({
                         // 默认请求方式为get
@@ -486,9 +523,11 @@
                 },
                 categoryChange(value){
                     this.listQuery.category_id = value;
+                    this.handleFilter();
                 },
                 manufacturerChange(value){
                     this.listQuery.manufacturer_id = value;
+                    this.handleFilter();
                 },
                 onReport(){
                     this.reportFormVisible = true;
