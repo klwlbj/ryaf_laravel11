@@ -22,7 +22,6 @@ class FinancialIncomeLogic extends ExcelGenerator
 
     /**
      * 获取可导出字段
-     *
      * @return array
      */
     public function getExportColumns(): array
@@ -300,16 +299,9 @@ class FinancialIncomeLogic extends ExcelGenerator
         }
     }
 
-    protected function handleRow($item, $params = [])
+    protected function handleRow($item, $params = []): void
     {
         $model = $item->getModel();
-        // 一次性获取所有区，街道，村委
-        static  $districtNodes  = Node::whereIn('node_type', ['区县消防救援大队'])->get()->keyBy('node_id');
-        static $districtNodeIds = $districtNodes->keys();
-        static $streetNodes     = Node::whereIn('node_type', ['街道办'])->get()->keyBy('node_id');
-        static $streetNodeIds   = $streetNodes->keys();
-        static $villageNodes    = Node::whereIn('node_type', ['村委'])->get()->keyBy('node_id');
-        static $villageNodeIds  = $villageNodes->keys();
 
         $item->is_overdue                = $item->overdue ? '是' : '否';
         $item->order_pay_cycle           = is_numeric($item->order_pay_cycle) ? $item->order_pay_cycle : 1;
@@ -318,7 +310,15 @@ class FinancialIncomeLogic extends ExcelGenerator
         $item->order_project_type        = empty($params['order_project_type']) ? '烟感' : $model::$formatProductTypeMaps[$item->order_project_type] ?? '无';
         $item->install_number            = empty($params['order_project_type']) ? $item->smoke_detectors_count : $item->order_delivery_number;
         $item->order_account_outstanding = $item->order_account_receivable - $item->order_funds_received;
-        if (isset($params['receivableFunds'])) {
+        if (empty($params['order_project_type'])) {
+            // 一次性获取所有区，街道，村委
+            static  $districtNodes  = Node::whereIn('node_type', ['区县消防救援大队'])->get()->keyBy('node_id');
+            static $districtNodeIds = $districtNodes->keys();
+            static $streetNodes     = Node::whereIn('node_type', ['街道办'])->get()->keyBy('node_id');
+            static $streetNodeIds   = $streetNodes->keys();
+            static $villageNodes    = Node::whereIn('node_type', ['村委'])->get()->keyBy('node_id');
+            static $villageNodeIds  = $villageNodes->keys();
+
             // 处理区域及地址信息
             $nodes = collect(explode(',', $item->order_node_ids));
 
@@ -337,7 +337,8 @@ class FinancialIncomeLogic extends ExcelGenerator
             }
 
             $item->address = $item->places->pluck('plac_name');
-
+        }
+        if (isset($params['receivableFunds'])) {
             $item->is_pay            = $item->order_funds_received ? '是' : '否';
             $item->returning_month   = $item->order_pay_cycle - $item->returned_month;
             $item->return_funds_time = $item->orderAccountFlows->pluck('orac_datetime');
@@ -379,7 +380,13 @@ class FinancialIncomeLogic extends ExcelGenerator
         }
     }
 
-    public function totalStatistics($whereClause, $bindingParams)
+    /**
+     * 合计统计
+     * @param $whereClause
+     * @param $bindingParams
+     * @return mixed
+     */
+    public function totalStatistics($whereClause, $bindingParams): mixed
     {
         return DB::selectOne("
                 SELECT
@@ -414,10 +421,15 @@ class FinancialIncomeLogic extends ExcelGenerator
                     `order`.order_id DESC 
                     ) AS b ;
 
-", $bindingParams);
+        ", $bindingParams);
     }
 
-    public function getStageInfo($params)
+    /**
+     * 获取分期信息
+     * @param array $params
+     * @return array
+     */
+    public function getStageInfo(array $params = []): array
     {
         $model = empty($params['order_project_type']) ? Order::class : OtherOrder::class;
         $data  = $model::query()
@@ -428,7 +440,7 @@ class FinancialIncomeLogic extends ExcelGenerator
 
         $totalReceivable      = $data->order_account_receivable;  // 总应收款
         $totalReceived        = $data->order_funds_received;  // 总实收款
-        $payCycle             = !isset($data->order_pay_cycle) || empty($data->order_pay_cycle) ? 1 : $data->order_pay_cycle;  // 分期数
+        $payCycle             = empty($data->order_pay_cycle) ? 1 : $data->order_pay_cycle;  // 分期数
         $amountPerInstallment = bcdiv($totalReceivable, $payCycle, 2);  // 每期应收款
 
         $paymentDate = $actualDeliveryDate;
@@ -448,7 +460,12 @@ class FinancialIncomeLogic extends ExcelGenerator
         return $list;
     }
 
-    public function getArrearsInfo($params)
+    /**
+     * 获取欠款信息
+     * @param array $params
+     * @return array
+     */
+    public function getArrearsInfo(array $params): array
     {
         $model = empty($params['order_project_type']) ? Order::class : OtherOrder::class;
         $data  = $model::query()
@@ -482,7 +499,6 @@ class FinancialIncomeLogic extends ExcelGenerator
         $stageAmount             = bcdiv($data->order_account_receivable, $orderPayCycle, 2); // 每期应还
         $remainder               = bcmod($orderFundsReceived, $stageAmount, 2);// 最后一期取余
 
-        $a = 1;
         for ($i = 1; $i < 7; $i++) {
             if ($i <= $arrearsMonth) {
                 $data->{'arrears_' . $i} = ($arrearsMonth == $i) ? bcsub($stageAmount, $remainder, 2) : ($orderPayCycle > 1 ? $stageAmount : 0);
@@ -498,11 +514,27 @@ class FinancialIncomeLogic extends ExcelGenerator
         return [$data];
     }
 
-    public function spliceNodeIds($params = [], &$nodeIds = '', $number = 0): void
+    /**
+     * 拼接街道节点id
+     * @param array $params
+     * @param string $nodeIds
+     * @param int $number
+     * @return void
+     */
+    public function spliceNodeIds(array $params = [], string &$nodeIds = '', int $number = 0): void
     {
         if (!empty($params['street_id_' . $number])) {
             $nodeIds .= ',' . $params['street_id_' . $number];
             $this->spliceNodeIds($params, $nodeIds, $number + 1);
         }
+    }
+
+    public function getOrderPaymentDetail($orderId = '')
+    {
+        //  找出该订单所有流水
+
+        // 本月新增欠费
+        // 本月收回欠款
+        // 本年收回欠款
     }
 }

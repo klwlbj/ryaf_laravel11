@@ -73,6 +73,9 @@
                     <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                 </a-form-item>
                 <a-form-item>
+                    <a-button icon="search" @click="exportList">导出</a-button>
+                </a-form-item>
+                <a-form-item>
                     <a-button @click="onCreate" type="primary" icon="edit">添加订单</a-button>
                 </a-form-item>
             </a-form>
@@ -265,6 +268,31 @@
                     this.areaList = res.data.areaList
                 }).catch(error => {
                     this.$message.error('请求失败');
+                });
+            },
+            exportList(){
+                let formData = JSON.parse(JSON.stringify(this.listQuery));
+                formData.export = 1;
+                axios({
+                    // 默认请求方式为get
+                    method: 'post',
+                    url: '/api/advancedOrder/getList',
+                    // 传递参数
+                    data: formData,
+                    responseType: 'json',
+                    headers:{
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }).then(response => {
+                    let res = response.data;
+                    if(res.code !== 0){
+                        this.$message.error(res.message);
+                        return false;
+                    }else{
+                        window.location.href = res.data.url
+                    }
+                }).catch(error => {
+                    this.$message.error(error);
                 });
             },
             // 刷新列表

@@ -191,7 +191,7 @@
                 },
                 {
                     title: '数量',
-                    dataIndex: 'number'
+                    dataIndex: 'order_delivery_number'
                 },
                 {
                     title: '分期数',

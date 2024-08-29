@@ -17,7 +17,14 @@ abstract class BaseController
 
     abstract protected function commonInitialization();
 
-    public function baseMethod(Request $request, array $inputRules, $parentMethod = null)
+    /**
+     * 基方法，减少代码冗余
+     * @param Request $request
+     * @param array $inputRules
+     * @param $parentMethod
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function baseMethod(Request $request, array $inputRules, $parentMethod = null): \Illuminate\Http\JsonResponse
     {
         $params = $request->all();
         $this->validateParams($params, $inputRules);
