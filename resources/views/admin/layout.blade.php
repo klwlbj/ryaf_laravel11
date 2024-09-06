@@ -101,6 +101,11 @@
 
 </script>
 
+
+
+@section('script')
+@show
+
 <script>
     Vue.use(httpVueLoader)
     new Vue({
@@ -127,9 +132,6 @@
     //     document.getElementById('time').innerHTML = year + '-' + month + '-' + day + ' ' +date.toLocaleTimeString();
     // }, 1000)
 </script>
-
-@section('script')
-@show
 
 <script>
     new Vue({

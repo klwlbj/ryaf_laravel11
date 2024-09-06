@@ -107,4 +107,30 @@ class InstallationRegisterLogic extends BaseLogic
 
         return [];
     }
+
+    public function getInfo($params)
+    {
+        $data = InstallationRegister::query()->where('inre_id',$params['id'])->first();
+
+        if(!$data){
+            ResponseLogic::setMsg('数据不存在');
+            return false;
+        }
+
+        $data = $data->toArray();
+
+        $data['address_list'] = InstallationRegisterAddress::query()
+            ->where(['inre_register_id'=>$params['id']])
+            ->select([
+                'inre_code as code',
+                'inre_standard_address as standard_address',
+                'inre_addr_generic_name as addr_generic_name',
+                'inre_install_location as install_location',
+            ])
+            ->get()->toArray();
+
+        $data['node_arr'] = Node::getNodeParent($data['inre_node_id']);
+
+        return $data;
+    }
 }

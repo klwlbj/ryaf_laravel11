@@ -25,8 +25,13 @@
                             <a-select-option :value="1">
                                 是
                             </a-select-option>
-                            <a-select-option :value="0">
-                                否
+                        </a-select>
+                    </a-form-item>
+                    <a-form-item>
+                        <a-select v-model="listQuery.is_verify" show-search placeholder="是否待确认" :max-tag-count="1"
+                                  style="width: 200px;" allow-clear>
+                            <a-select-option :value="1">
+                                是
                             </a-select-option>
                         </a-select>
                     </a-form-item>
@@ -59,8 +64,11 @@
                                     <div>库存：@{{record.mate_number}}</div>
                                     <div>单位：@{{record.mate_unit}}</div>
                                     <div>预警值：@{{record.mate_warning}}</div>
-                                    <div>最后入库数：@{{record.last_in_flow.mafl_number}}</div>
-                                    <div>最后入库时间：@{{record.last_in_flow.mafl_datetime}}</div>
+                                    <div v-if="record.last_in_flow.mafl_number">最后入库数：@{{record.last_in_flow.mafl_number}}</div>
+                                    <div v-if="record.last_in_flow.mafl_number">最后入库时间：@{{record.last_in_flow.mafl_datetime}}</div>
+                                    <div v-if="record.last_out_flow.mafl_number">最后出库数：@{{record.last_out_flow.mafl_number}}</div>
+                                    <div v-if="record.last_out_flow.mafl_number">最后出库申请人：@{{record.last_out_flow.mafl_apply_user_name}}</div>
+                                    <div v-if="record.last_out_flow.mafl_number">最后出库时间：@{{record.last_out_flow.mafl_datetime}}</div>
                                     <div v-if="record.expire_count > 0">临期数：@{{record.expire_count}}</div>
                                     <div v-if="record.expire_count > 0">临期时间：@{{record.expire_date}}</div>
                                 </template>
@@ -220,7 +228,7 @@
                         <a-date-picker format="YYYY-MM-DD" value-format="YYYY-MM-DD" v-model:value="reportForm.start_date"/>
                     </a-form-model-item>
 
-                    <a-form-model-item label="出库日期">
+                    <a-form-model-item label="结束日期">
                         <a-date-picker format="YYYY-MM-DD" value-format="YYYY-MM-DD" v-model:value="reportForm.end_date"/>
                     </a-form-model-item>
                 </a-form-model>
@@ -247,7 +255,8 @@
                     keyword: "",
                     manufacturer_id:'',
                     category_id:'',
-                    is_expire:undefined
+                    is_expire:undefined,
+                    is_verify:undefined
                 },
                 listSource: [],
                 expireList: [],

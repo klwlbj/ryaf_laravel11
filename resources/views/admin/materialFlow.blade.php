@@ -10,7 +10,7 @@
                     </a-form-item>
                     <a-form-item label="类型">
                         <a-select v-model="listQuery.type" show-search placeholder="请选择" :max-tag-count="1"
-                                  style="width: 200px;" allow-clear>
+                                  style="width: 200px;" allow-clear @change="handleFilter">
                             <a-select-option :value="1">
                                 入库
                             </a-select-option>
@@ -21,7 +21,7 @@
                     </a-form-item>
                     <a-form-item label="确认状态">
                         <a-select v-model="listQuery.status" show-search placeholder="请选择" :max-tag-count="1"
-                                  style="width: 200px;" allow-clear>
+                                  style="width: 200px;" allow-clear  @change="handleFilter">
                             <a-select-option :value="1">
                                 未确认
                             </a-select-option>
@@ -104,6 +104,12 @@
                                 </a>
                             </a-popconfirm>
                         </div>
+                        <div v-if="$checkPermission('/api/materialFlow/inComingUpdate') && record.mafl_type==1">
+                            <a style="margin-right: 8px" @click="onIncomingUpdate(record)">
+                                修改
+                            </a>
+                        </div>
+
                         <div v-if="$checkPermission('/api/materialFlow/setPrice') && record.mafl_type==1">
                             <a style="margin-right: 8px" @click="onPrice(record)">
                                 填写单价
@@ -140,6 +146,17 @@
                                      @close="outComingFormVisible = false;"
                 >
                 </material-out-coming>
+            </a-modal>
+
+            <a-modal :mask-closable="false" v-model="inComingUpdateVisible"
+                     title="入库信息修改"
+                     width="800px" :footer="null">
+                <in-coming-update ref="inComingUpdate"
+                                  :id="flowId"
+                                     @submit="inComingUpdateSubmit"
+                                     @close="inComingUpdateVisible = false;"
+                >
+                </in-coming-update>
             </a-modal>
 
             <a-modal :mask-closable="false" v-model="setPriceFormVisible"
@@ -276,7 +293,9 @@
                 inComingFormVisible:false,
                 outComingFormVisible:false,
                 setPriceFormVisible:false,
+                inComingUpdateVisible:false,
                 id:null,
+                flowId:null,
                 admin:{}
             },
             created () {
@@ -291,6 +310,7 @@
                 "material-in-coming":  httpVueLoader('/statics/components/material/materialInComing.vue'),
                 "material-out-coming":  httpVueLoader('/statics/components/material/materialOutComing.vue'),
                 "set-flow-price":  httpVueLoader('/statics/components/material/setFlowPrice.vue'),
+                "in-coming-update":  httpVueLoader('/statics/components/material/inComingUpdate.vue'),
             },
             methods: {
                 paginationChange (current, pageSize) {
@@ -338,6 +358,10 @@
                     // this.incomingId = row.id;
                     this.inComingFormVisible = true;
                 },
+                onIncomingUpdate(row){
+                    this.flowId = row.mafl_id;
+                    this.inComingUpdateVisible = true;
+                },
                 onOutComing(){
                     this.outComingFormVisible = true;
                 },
@@ -353,9 +377,11 @@
                 },
                 categoryChange(value){
                     this.listQuery.category_id = value;
+                    this.handleFilter();
                 },
                 materialChange(value){
                     this.listQuery.material_id = value;
+                    this.handleFilter();
                 },
                 onVerify(row){
                     axios({
@@ -387,6 +413,12 @@
                 setPriceSubmit(){
                     this.id = null;
                     this.setPriceFormVisible = false;
+                    this.$message.success('修改成功');
+                    this.getPageList();
+                },
+                inComingUpdateSubmit(){
+                    this.flowId = null;
+                    this.inComingUpdateVisible = false;
                     this.$message.success('修改成功');
                     this.getPageList();
                 }

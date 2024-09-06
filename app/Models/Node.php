@@ -31,6 +31,29 @@ class Node extends BaseModel
         return $arr;
     }
 
+    public static function getNodeParent($id)
+    {
+        $list = self::query()->where(['node_enabled' => 1])
+            ->select(['node_parent_id','node_id'])->get()->pluck('node_parent_id','node_id')->toArray();
+
+        $arr = [$id];
+
+        $arr = self::getParents($list,$id,$arr);
+
+        return array_reverse($arr);
+    }
+
+    public static function getParents($list,$id,$arr,$pid = 4){
+        $parentId = $list[$id] ?? 0;
+        if($parentId <= $pid){
+            return $arr;
+        }
+        $arr[] = $parentId;
+        $arr = self::getParents($list,$parentId,$arr);
+
+        return $arr;
+    }
+
 
     public function children()
     {

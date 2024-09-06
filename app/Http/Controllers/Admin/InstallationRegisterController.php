@@ -31,6 +31,28 @@ class InstallationRegisterController
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
+    public function getInfo(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+        ],[
+            'id.required' => 'id不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = InstallationRegisterLogic::getInstance()->getInfo($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
     public function add(Request $request)
     {
         $params = $request->all();

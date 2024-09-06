@@ -40,31 +40,27 @@ class MaterialFlowLogic extends BaseLogic
 
         $total = $query->count();
 
+        $query->select([
+                'material_flow.*',
+                'material.mate_name as mafl_material_name',
+//                'node_account.noac_name as mafl_created_user',
+                'receive_user.admin_name as mafl_receive_user',
+                'apply_user.admin_name as mafl_apply_user',
+                'verify_user.admin_name as mafl_verify_user',
+                'warehouse.waho_name as mafl_warehouse_name',
+            ]);
+
+        if(!empty($params['order_by_status'])){
+            $query->orderBy('material_flow.mafl_status','asc');
+        }
+
+        $query->orderBy('material_flow.mafl_id','desc');
+
         if(!empty($params['is_all'])){
             $list = $query
-                ->select([
-                    'material_flow.*',
-                    'material.mate_name as mafl_material_name',
-//                'node_account.noac_name as mafl_created_user',
-                    'receive_user.admin_name as mafl_receive_user',
-                    'apply_user.admin_name as mafl_apply_user',
-                    'verify_user.admin_name as mafl_verify_user',
-                    'warehouse.waho_name as mafl_warehouse_name',
-                ])
-                ->orderBy('material_flow.mafl_id','desc')
                 ->get()->toArray();
         }else{
             $list = $query
-                ->select([
-                    'material_flow.*',
-                    'material.mate_name as mafl_material_name',
-//                'node_account.noac_name as mafl_created_user',
-                    'receive_user.admin_name as mafl_receive_user',
-                    'apply_user.admin_name as mafl_apply_user',
-                    'verify_user.admin_name as mafl_verify_user',
-                    'warehouse.waho_name as mafl_warehouse_name',
-                ])
-                ->orderBy('material_flow.mafl_id','desc')
                 ->offset($point)->limit($pageSize)->get()->toArray();
         }
 
@@ -298,6 +294,7 @@ class MaterialFlowLogic extends BaseLogic
         #把物品变更成出库状态
         if(MaterialDetail::query()
             ->where(['made_material_id' => $params['material_id'],'made_status' => 1])
+                ->orderBy('made_datetime','asc')
             ->orderBy('made_id','asc')
             ->limit($params['number'])
             ->update([
@@ -320,7 +317,13 @@ class MaterialFlowLogic extends BaseLogic
 
     public function getInfo($params)
     {
-        $data = MaterialFlow::query()->where(['mafl_id' => $params['id']])->first();
+        $data = MaterialFlow::query()
+            ->leftJoin('material','material.mate_id','=','material_flow.mafl_material_id')
+            ->select([
+                'material_flow.*',
+                'material.mate_name as mafl_material_name'
+            ])
+            ->where(['mafl_id' => $params['id']])->first();
 
         if(!$data){
             ResponseLogic::setMsg('记录不存在');
@@ -328,6 +331,41 @@ class MaterialFlowLogic extends BaseLogic
         }
 
         return $data->toArray();
+    }
+
+    public function inComingUpdate($params)
+    {
+        $data = MaterialFlow::query()->where(['mafl_id' => $params['id'],'mafl_type' => 1])->first();
+
+        if(!$data){
+            ResponseLogic::setMsg('记录不存在');
+            return false;
+        }
+
+        $update = [
+
+        ];
+
+        if(!empty($params['production_date'])){
+            $update['mafl_production_date'] = $params['production_date'];
+        }
+
+        if(!empty($params['expire_date'])){
+            $update['mafl_expire_date'] = $params['expire_date'];
+        }
+
+        if(!empty($params['remark'])){
+            $update['mafl_remark'] = $params['remark'];
+        }
+
+        if(!empty($update)){
+            if(MaterialFlow::query()->where(['mafl_id' => $params['id']])->update($update) === false){
+                ResponseLogic::setMsg('更新入库记录失败');
+                return false;
+            }
+        }
+
+        return [];
     }
 
     public function verify($params)

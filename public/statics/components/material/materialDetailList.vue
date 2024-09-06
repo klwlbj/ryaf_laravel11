@@ -48,12 +48,8 @@ module.exports = {
                     dataIndex: 'number',
                 },
                 {
-                    title: '入库数量',
-                    dataIndex: 'number',
-                },
-                {
                     title: '剩余数量',
-                    dataIndex: 'number',
+                    dataIndex: 'count',
                 },
                 {
                     title: '生产日期',

@@ -97,6 +97,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/getInfo', [MaterialFlowController::class, 'getInfo']);
         Route::post('/verify', [MaterialFlowController::class, 'verify']);
         Route::post('/setPrice', [MaterialFlowController::class, 'setPrice']);
+        Route::post('/inComingUpdate', [MaterialFlowController::class, 'inComingUpdate']);
     });
 
     Route::prefix('materialPurchase')->group(function () {
@@ -170,6 +171,7 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('installationRegister')->group(function () {
         Route::post('/getList', [InstallationRegisterController::class, 'getList']);
         Route::post('/add', [InstallationRegisterController::class, 'add']);
+        Route::post('/getInfo', [InstallationRegisterController::class, 'getInfo']);
     });
 
     Route::prefix('node')->group(function () {

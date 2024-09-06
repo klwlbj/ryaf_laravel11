@@ -6,13 +6,13 @@
             </a-form-model-item>
 
             <a-form-model-item label="监控中心" prop="node_id">
-                <node-cascader @change="nodeChange"></node-cascader>
+                <node-cascader :default-data="nodeId" @change="nodeChange"></node-cascader>
             </a-form-model-item>
 
             <a-form-model-item label="详细地址" prop="address">
                     <div v-for="(item,index) in formData.address_list" :key="index">
                         <div style="color:red;font-weight: bold">地址{{ index+1 }}：</div>
-                        <standard-address-select :id="item.code" @change="(value) => {addressChange(value,index)}">
+                        <standard-address-select :default-data="item" :id="item.code" @change="(value) => {addressChange(value,index)}">
 
                         </standard-address-select>
                     </div>
@@ -129,7 +129,8 @@ module.exports = {
                 user_phone: [{ required: true, message: '请输入联系方式', trigger: 'blur' }],
             },
             loading :false,
-            cid:undefined
+            cid:undefined,
+            nodeId:undefined,
         }
     },
     methods: {
@@ -258,6 +259,8 @@ module.exports = {
                     remark:res.data.inre_remark,
                     delivery_count:res.data.inre_delivery_count,
                 }
+
+                this.nodeId = res.data.node_arr;
             }).catch(error => {
                 this.$message.error('请求失败');
             });

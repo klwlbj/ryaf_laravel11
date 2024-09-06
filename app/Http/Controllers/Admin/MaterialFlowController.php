@@ -111,7 +111,7 @@ class MaterialFlowController
         $validate = Validator::make($params, [
             'id' => 'required',
         ],[
-            'id.required' => '物品不得为空',
+            'id.required' => '流水id不得为空',
         ]);
 
         if($validate->fails())
@@ -120,6 +120,28 @@ class MaterialFlowController
         }
 
         $res = MaterialFlowLogic::getInstance()->getInfo($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function inComingUpdate(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+        ],[
+            'id.required' => '流水id不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialFlowLogic::getInstance()->inComingUpdate($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }

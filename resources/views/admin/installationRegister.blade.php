@@ -164,6 +164,7 @@
                     },
                     {
                         title: '操作',
+                        fixed: 'right',
                         scopedSlots: { customRender: 'action' },
                     }
                 ],

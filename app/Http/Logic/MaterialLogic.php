@@ -42,6 +42,11 @@ class MaterialLogic extends BaseLogic
             $query->where(['material.mate_specification_id' => $params['specification_id']]);
         }
 
+        if(!empty($params['is_verify'])){
+            $verifyIds = MaterialFlow::query()->where(['mafl_status' => 1])->select(['mafl_material_id'])->distinct()->pluck('mafl_material_id')->toArray();
+            $query->whereIn('material.mate_id',$verifyIds);
+        }
+
         #过期列表
         $expireList = Material::query()
             ->leftJoin('material_detail','material_detail.made_material_id','=','material.mate_id')
@@ -123,6 +128,30 @@ class MaterialLogic extends BaseLogic
             ])
             ->get()->keyBy('mafl_material_id')->toArray();
 
+
+        #最后一次出库记录
+        $lastOutFlowQuery = MaterialFlow::query()
+            ->whereIn('mafl_material_id',$ids)
+            ->where(['mafl_type' => 2])
+            ->select([
+                'mafl_material_id',
+                DB::raw("substring_index( group_concat( mafl_id ORDER BY mafl_id DESC ), ',', 1 ) AS mafl_id")
+            ])
+            ->groupBy(['mafl_material_id']);
+
+        #最后一次出库记录
+        $lastOutFlowArr = MaterialFlow::query()
+            ->joinSub($lastOutFlowQuery,'sub','material_flow.mafl_id','=','sub.mafl_id')
+            ->leftJoin('admin','admin.admin_id','=','material_flow.mafl_apply_user_id')
+            ->select([
+                'material_flow.mafl_id',
+                'admin.admin_name as mafl_apply_user_name',
+                'material_flow.mafl_material_id',
+                'material_flow.mafl_datetime',
+                'material_flow.mafl_number'
+            ])
+            ->get()->keyBy('mafl_material_id')->toArray();
+
         #规格列表
         $specificationArr = MaterialSpecificationRelation::query()
             ->leftJoin('material_specification','material_specification.masp_id','=','material_specification_relation.masp_specification_id')
@@ -159,6 +188,7 @@ class MaterialLogic extends BaseLogic
             }
 
             $value['last_in_flow'] = $lastInFlowArr[$value['mate_id']] ?? [];
+            $value['last_out_flow'] = $lastOutFlowArr[$value['mate_id']] ?? [];
             $value['mate_price'] = bcdiv($value['mate_price_tax'],1 + $value['mate_tax']/100,2);
             $value['mate_invoice_type_msg'] = Material::$invoiceTypeArr[$value['mate_invoice_type']] ?? '未确认';
             $value['flow_count'] = $flowArr[$value['mate_id']]['count'] ?? 0;
@@ -484,6 +514,10 @@ class MaterialLogic extends BaseLogic
     {
         $startStr = date('Y.m.d',strtotime($params['start_date']));
         $endStr = date('Y.m.d',strtotime($params['end_date']));
+
+        $params['start_date'] = $params['start_date'] . ' 00:00:00';
+        $params['end_date'] = $params['end_date'] . ' 23:59:59';
+
 
         $title = ['序号','材料名称','规格型号','品牌','用量单位','单价(元)',"期初数量\n({$startStr})","初始金额(元)","初期金额(不含税)","本期入库数\n(" . $startStr . '-' . $endStr . ')',"本期入库成本(元)\n(" . $startStr . '-' . $endStr . ')',"本期入库成本(不含税)","本期出库数\n(" . $startStr . '-' . $endStr . ')',"本期出库金额(元)","本期出库金额(不含税)","期末数量\n({$endStr})","期末金额(元)","期末金额(不含税)"];
 

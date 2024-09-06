@@ -84,6 +84,20 @@ module.exports = {
         },
         clearData(){
             this.id = undefined;
+        },
+        setDefaultValue(data){
+            if(!data.code){
+                return false;
+            }
+
+            this.list = [
+                {
+                    'MPDM' : data.code,
+                    'MPDZMC' : data.standard_address
+                }
+            ]
+
+            this.id = data.code;
         }
     },
     created () {
@@ -94,8 +108,10 @@ module.exports = {
         }
         this.getList();
         if(this.defaultData){
-            this.id = this.defaultData;
-            this.$emit('change',this.defaultData);
+            // console.log(this.defaultData);
+            this.setDefaultValue(this.defaultData);
+            // this.id = this.defaultData;
+            // this.$emit('change',this.defaultData);
         }
     },
     watch: {
@@ -103,8 +119,9 @@ module.exports = {
             if(newData === oldData){
                 return false
             }
+            // console.log(newData);
 
-            this.id = newData;
+            this.setDefaultValue(newData);
         }
     },
     computed: {

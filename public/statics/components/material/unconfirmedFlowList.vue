@@ -78,8 +78,9 @@ module.exports = {
         return {
             listQuery: {
                 id: "",
-                status: 1,
+                // status: 1,
                 get_all: true,
+                order_by_status:1
             },
             listSource: [],
             listLoading: false,
@@ -93,7 +94,7 @@ module.exports = {
             columns:[
                 {
                     title: '规格',
-                    scopedSlots: { customRender: 'mafl_specification_name' },
+                    scopedSlots: { customRender: 'mafl_specification_name'},
                     dataIndex: 'mafl_specification_name',
                     align: 'center'
                 },

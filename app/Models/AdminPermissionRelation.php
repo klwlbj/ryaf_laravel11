@@ -15,10 +15,12 @@ class AdminPermissionRelation extends BaseModel
     {
         #获取父级菜单
         $ids = self::query()->where(['admin_permission_relation.adpe_admin_id' => $adminId])
-            ->select(['adpe_permission_id'])->pluck('adpe_permission_id')->toArray();
+            ->select(['adpe_permission_id'])
+            ->orderBy('adpe_permission_id','asc')
+            ->pluck('adpe_permission_id')->toArray();
 
         $permissionList = AdminPermission::query()
-            ->where(['adpe_status' => 1])
+            ->where(['adpe_status' => 1,'adpe_type' => 1])
             ->orderBy('adpe_sort','desc')
             ->select([
                 'adpe_id',

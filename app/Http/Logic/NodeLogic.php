@@ -37,7 +37,7 @@ class NodeLogic extends BaseLogic
 
         $list = $query->select(['node_id','node_parent_id','node_name'])->get()->toArray();
 
-
-        return ToolsLogic::toTree($list,4,'node_id','node_parent_id');
+        $pid = $params['parent_id'] ?? 4;
+        return ToolsLogic::toTree($list,$pid,'node_id','node_parent_id');
     }
 }
