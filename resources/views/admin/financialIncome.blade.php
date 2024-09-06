@@ -169,7 +169,7 @@
                 },
                 {
                     title: '数量',
-                    dataIndex: 'number'
+                    dataIndex: 'install_number'
                 },
                 {
                     title: '分期数',

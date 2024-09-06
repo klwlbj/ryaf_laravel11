@@ -32,6 +32,9 @@
                             :default-value="[defaultDate,defaultDate]"></a-range-picker>
                 </a-form-item>
                 <a-form-item>
+                    <a-cascader v-model="listQuery.street_id" :options="areaList" placeholder="区域" :show-search="{}" change-on-select />
+                </a-form-item>
+                <a-form-item>
                     <a-input v-model="listQuery.address" placeholder="地址" style="width: 120px;" />
                 </a-form-item>
 
@@ -66,7 +69,9 @@
     new Vue({
         el: '#app',
         data: {
+            areaList:[],
             listQuery: {
+                street_id:[],
                 start_date:null,
                 end_date:null,
                 address: '',
@@ -91,6 +96,21 @@
                     width: 80
                 },
                 {
+                    title: '所属区域',
+                    dataIndex: 'district_name',
+                    width: 100
+                },
+                {
+                    title: '街道',
+                    dataIndex: 'street_name',
+                    width: 100
+                },
+                {
+                    title: '村委/经济联社/社区',
+                    dataIndex: 'village_name',
+                    width: 100
+                },
+                {
                     title: '单位',
                     dataIndex: 'order_user_name',
                     width: 100
@@ -105,7 +125,7 @@
                 },
                 {
                     title: '数量',
-                    dataIndex: 'number'
+                    dataIndex: 'install_number'
                 },
                 {
                     title: '收款类型',
@@ -136,7 +156,7 @@
         },
         created () {
             // 获取区域和街道等
-            // this.getEnumList()
+            this.getEnumList()
             this.listQuery.page_size = this.pagination.pageSize;
             this.handleFilter()
         },
@@ -158,6 +178,24 @@
                 this.listQuery.page = 1
                 this.pagination.current = 1;
                 this.getPageList()
+            },
+            // 获取枚举列表
+            getEnumList () {
+                axios({
+                    // 默认请求方式为get
+                    method: 'post',
+                    url: '/api/area/getList2',
+                    // 传递参数
+                    responseType: 'json',
+                    headers:{
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }).then(response => {
+                    let res = response.data;
+                    this.areaList = res.data.areaList
+                }).catch(error => {
+                    this.$message.error('请求失败');
+                });
             },
             // 获取列表
             getPageList () {

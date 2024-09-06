@@ -10,6 +10,9 @@ class AdvancedOrder extends BaseModel
 
     protected $table = 'advanced_order';
 
+    public $primaryKey = 'ador_id';
+
+
     protected array $dates = ['deleted_at'];
 
     public function area()
