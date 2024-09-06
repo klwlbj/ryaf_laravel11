@@ -67,6 +67,11 @@ module.exports = {
           dataIndex: 'arrears_6',
           width: 80
         },
+        {
+          title: '12个月以上',
+          dataIndex: 'arrears_7',
+          width: 80
+        },
       ],
     }
   },

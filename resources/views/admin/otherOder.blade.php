@@ -52,6 +52,7 @@
                             <a-select-option value="4">3-4个月</a-select-option>
                             <a-select-option value="5">4-5个月内</a-select-option>
                             <a-select-option value="6">5-12个月内</a-select-option>
+                            <a-select-option value="7">1年以上</a-select-option>
                         </a-select>
                     </a-space>
                 </a-form-item>

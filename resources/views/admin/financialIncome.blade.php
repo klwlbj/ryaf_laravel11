@@ -52,12 +52,24 @@
                             <a-select-option value="4">3-4个月</a-select-option>
                             <a-select-option value="5">4-5个月内</a-select-option>
                             <a-select-option value="6">5-12个月内</a-select-option>
+                            <a-select-option value="7">1年以上</a-select-option>
                         </a-select>
                     </a-space>
                 </a-form-item>
 
                 <a-form-item>
                     <a-button icon="search" v-on:click="handleFilter">查询</a-button>
+                </a-form-item>
+
+                <a-form-item>
+                    <a-range-picker
+                            :placeholder="['统计月初时间', '统计月末时间']"
+                            @change="statisticsDateChange"
+                            :default-value="[defaultDate,defaultDate]"></a-range-picker>
+                </a-form-item>
+
+                <a-form-item>
+                    <a-button icon="search" @click="exportList">导出应收款项明细表</a-button>
                 </a-form-item>
             </a-form>
 
@@ -134,6 +146,8 @@
             listQuery: {
                 start_date:null,
                 end_date:null,
+                statistics_start_date:null,
+                statistics_end_date:null,
                 address: '',
                 order_project_type: 0,
                 arrears_duration: undefined,
@@ -262,12 +276,41 @@
                     this.$message.error('请求失败');
                 });
             },
+            exportList(){
+                let formData = JSON.parse(JSON.stringify(this.listQuery));
+                formData.export = 2;
+                axios({
+                    // 默认请求方式为get
+                    method: 'post',
+                    url: '/api/financialIncome/getList',
+                    // 传递参数
+                    data: formData,
+                    responseType: 'json',
+                    headers:{
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }).then(response => {
+                    let res = response.data;
+                    if(res.code !== 0){
+                        this.$message.error(res.message);
+                        return false;
+                    }else{
+                        window.location.href = res.data.url
+                    }
+                }).catch(error => {
+                    this.$message.error(error);
+                });
+            },
             handleChange(value){
                 this.$emit('change',value);
             },
             dateChange(value,arr){
                 this.listQuery.start_date = arr[0];
                 this.listQuery.end_date = arr[1];
+            },
+            statisticsDateChange(value,arr){
+                this.listQuery.statistics_start_date = arr[0];
+                this.listQuery.statistics_end_date = arr[1];
             },
             onStageInfo(row){
                 this.id = row.order_id
