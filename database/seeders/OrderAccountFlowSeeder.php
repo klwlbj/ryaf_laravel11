@@ -17,7 +17,7 @@ class OrderAccountFlowSeeder extends Seeder
     {
         DB::transaction(function () {
             $list        = Order::query()->where('order_id', '>', 34550)->get();
-            $stageList   = [1, 36];
+            $stageList   = [1, 1, 1, 1, 6, 36];
             $transaction = [];
             foreach ($list as $item) {
                 $time  = strtotime($item->order_actual_delivery_date);
@@ -25,7 +25,6 @@ class OrderAccountFlowSeeder extends Seeder
 
                 $item->order_pay_cycle = $stageList[array_rand($stageList)];
                 if ($count !== 0) {
-                    // $item->order_amount_given = random_int(0,1);
                     $item->order_account_receivable = ($count) * 240;
                     // 随机流水数
                     $orderAccountFlow           = random_int(1, 6);
@@ -43,7 +42,8 @@ class OrderAccountFlowSeeder extends Seeder
                     if (1 > $balance - ($orderAccountFlow - $i)) {
                         var_dump($balance, $orderAccountFlow, $i, $item->order_account_receivable);
                     }
-                    $randomAmount = random_int(1, $balance - ($orderAccountFlow - $i)); // 生成随机金额
+                    // 随机流水，欠款or还款
+                    $randomAmount = random_int(-10, $balance - ($orderAccountFlow - $i)); // 生成随机金额
                     if ($i === $orderAccountFlow) {
                         $randomAmount = $balance;
                     }
@@ -63,6 +63,8 @@ class OrderAccountFlowSeeder extends Seeder
                     ];
                 }
             }
+            // 清空表
+            OrderAccountFlow::query()->delete();
             // 将流水记录保存到数据库
             OrderAccountFlow::query()->insert($transaction);
         });

@@ -52,6 +52,9 @@ class FinancialIncomeLogic extends BaseLogic
         if (!empty($params['order_user_name'])) {
             $query->where('order_user_name', 'like', '%' . $params['order_user_name'] . '%');
         }
+        if (isset($params['receivableFunds'])) {
+            $query->whereColumn('order_account_receivable', '>', 'order_funds_received');
+        }
 
         if (isset($params['arrears_duration']) && $params['arrears_duration'] !== '') {
             $condition = $params['arrears_duration'] == 7 ? '>=' : '=';
@@ -129,7 +132,7 @@ class FinancialIncomeLogic extends BaseLogic
                     return $excelGenerator->export($list, $params, $total, (array) $otherTotal);
                 case '2':
                     // 导出-财务应收款项明细表
-                    $list           = Order::getCursorSortById($list, 34845, 100);
+                    $list           = Order::getCursorSortById($list, 34550);
                     $excelGenerator = new PaymentDetailExcelGenerator();
                     return $excelGenerator->export($list, $params, $total);
                     break;
@@ -323,23 +326,44 @@ class FinancialIncomeLogic extends BaseLogic
 
     public static function handleArrearsItem($item): void
     {
-        $orderPayCycle           = empty($item->order_pay_cycle) ? 1 : $item->order_pay_cycle;
+        $orderPayCycle           = empty($item->order_pay_cycle) ? 1 : $item->order_pay_cycle;// 分期数
         $arrearsMonth            = $item->arrears_month; // 差几个月没还
-        $orderFundsReceived      = $item->order_funds_received;
+        $orderFundsReceived      = $item->order_funds_received; // 已还
         $orderAccountOutstanding = bcsub($item->order_account_receivable, $item->order_funds_received, 2); //欠款
         $stageAmount             = bcdiv($item->order_account_receivable, $orderPayCycle, 2); // 每期应还
-        $remainder               = bcmod($orderFundsReceived, $stageAmount, 2);// 最后一期取余
+        $remainder               = $stageAmount == 0 ? 0 : bcmod($orderFundsReceived, $stageAmount, 2);// 最后一期取余
 
-        for ($i = 1; $i < 8; $i++) {
-            if ($i <= $arrearsMonth) {
-                $item->{'arrears_' . $i} = ($arrearsMonth == $i) ? bcsub($stageAmount, $remainder, 2) : ($orderPayCycle > 1 ? $stageAmount : 0);
+        $monthStructs = [
+            [12, INF],
+            [5, 12],
+            [4, 5],
+            [3, 4],
+            [2, 3],
+            [1, 2],
+            [0, 1],
+        ];
+        foreach ($monthStructs as $key => $monthStruct) {
+            if ($orderAccountOutstanding <= 0) {
+                $currentArrears = 0;
             } else {
-                $item->{'arrears_' . $i} = 0;
+                $monthStart     = $monthStruct[0];
+                $monthEnd       = $monthStruct[1] === INF ? $arrearsMonth : $monthStruct[1];
+                $currentArrears = 0;
+                if ($arrearsMonth > $monthStart && $arrearsMonth <= $monthEnd) {
+                    static $lastMonth = true;
+                    $currentArrears   = min($lastMonth && $orderPayCycle > 1 ? $stageAmount * ($monthEnd - $monthStart - 1) + $remainder : $stageAmount * ($monthEnd - $monthStart), $orderAccountOutstanding);
+                    $lastMonth        = false;
+                }
+                if ($arrearsMonth > $monthEnd) {
+                    $currentArrears = $orderPayCycle > 1 ? min($stageAmount * ($monthEnd - $monthStart), $orderAccountOutstanding) : 0;
+                }
+                if ($arrearsMonth < $monthStart) {
+                    $currentArrears = 0;
+                }
             }
-            if ($i === 7 && $arrearsMonth >= 7) {
-                $item->{'arrears_' . $i} = $orderAccountOutstanding;
-            }
-            $orderAccountOutstanding = bcsub($orderAccountOutstanding, ($orderPayCycle > 1 ? $stageAmount : 0), 2);
+            $item->{'arrears_' . 7 - $key} = $currentArrears;
+
+            $orderAccountOutstanding = bcsub($orderAccountOutstanding, $currentArrears, 2);
         }
     }
 
@@ -375,13 +399,7 @@ class FinancialIncomeLogic extends BaseLogic
             }
             if ($extraField === 'returned_month') {
                 $select .= ",
-	FLOOR( order_funds_received / (order_account_receivable / cast( order_pay_cycle AS SIGNED ))) as returned_month,
-	IF
-	(
-			order_pay_cycle > 1,
-			GREATEST(  round( LEAST(order_pay_cycle,TIMESTAMPDIFF( MONTH, order_actual_delivery_date, CURDATE())) * order_account_receivable / cast( order_pay_cycle AS SIGNED ) - order_funds_received, 2 ), 0 ),
-			0 
-		) AS intra_day_remaining_funds ";
+	FLOOR( order_funds_received / (order_account_receivable / cast( order_pay_cycle AS SIGNED ))) as returned_month ";
             }
             if ($extraField === 'intra_day_remaining_funds') {
                 $select .= ",
@@ -417,17 +435,4 @@ class FinancialIncomeLogic extends BaseLogic
 
         return $select;
     }
-
-    public function getOrderPaymentDetail($orderId = '')
-    {
-        //  找出该订单所有流水
-
-        // 本月新增欠费
-        // 本月收回欠款
-        // 本年收回欠款
-    }
-
-    // protected function setHeader($columns, $sheet){
-    //
-    // }
 }

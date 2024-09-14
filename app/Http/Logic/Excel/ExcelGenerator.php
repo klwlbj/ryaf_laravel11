@@ -22,6 +22,7 @@ abstract class ExcelGenerator extends BaseLogic
 
     public string $exportTitle = '导出excel';
 
+
     // 公式计算
     public bool $preCalculateFormulas = false;
 
@@ -192,11 +193,12 @@ abstract class ExcelGenerator extends BaseLogic
      * 设置自定义标题
      * @return string
      */
-    protected function setExportTitle($params){
+    protected function setExportTitle($params): string
+    {
         return $this->exportTitle;
     }
 
-    protected function reQuery(array $ids, array $params){
+    protected function reQuery(array $ids, array &$params){
     }
 
     /**

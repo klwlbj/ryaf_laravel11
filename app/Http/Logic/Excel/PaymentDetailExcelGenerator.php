@@ -139,6 +139,8 @@ class PaymentDetailExcelGenerator extends ExcelGenerator
 
     protected function handleRow($item, $params = [])
     {
+        $item->address = $item->places->pluck('plac_name');
+
         // 账龄
         $arrearsMonth = $item->arrears_month;
         $item->aging  = match (true) {
@@ -155,8 +157,12 @@ class PaymentDetailExcelGenerator extends ExcelGenerator
         self::$ids[] = $item->order_id;
     }
 
-    protected function reQuery(array $ids, array $params)
+    protected function reQuery(array $ids, array &$params)
     {
+        if (empty($params['statistics_start_date']) || empty($params['statistics_end_date'])) {
+            $params['statistics_start_date'] = date("Y-m-01 00:00:00");
+            $params['statistics_end_date']   = date("Y-m-d H:i:s");
+        }
         $startDate  = $params['statistics_start_date'];
         $startYear  = date('Y-01-01 00:00:00', strtotime($startDate));
         $startMonth = date('Y-m-01 00:00:00', strtotime($startDate));
@@ -196,7 +202,7 @@ class PaymentDetailExcelGenerator extends ExcelGenerator
         return compact('currentMonthDeductOrderAccountFlows', 'currentMonthAddOrderAccountFlows', 'yearAgoAddOrderAccountFlows', 'monthAgoAddOrderAccountFlows');
     }
 
-    protected function reprocessing(array $reQueryList, $sheet)
+    protected function reprocessing(array $reQueryList, $sheet): void
     {
         // 1.年前已还 sum(+)
         // 2.年内月前已还 sum(+)
@@ -246,7 +252,7 @@ class PaymentDetailExcelGenerator extends ExcelGenerator
         }
     }
 
-    protected function setExportTitle($params)
+    protected function setExportTitle($params): string
     {
         $time = date('Y年m月', strtotime($params['statistics_start_date']));
         return "如约安防" . $time . $this->exportTitle;
