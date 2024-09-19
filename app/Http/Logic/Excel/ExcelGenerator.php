@@ -191,6 +191,7 @@ abstract class ExcelGenerator extends BaseLogic
 
     /**
      * 设置自定义标题
+     * @param $params
      * @return string
      */
     protected function setExportTitle($params): string

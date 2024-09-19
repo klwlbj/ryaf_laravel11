@@ -236,7 +236,7 @@ class FinancialIncomeLogic extends BaseLogic
                     IF
                         (
                             order_pay_cycle > 1,
-                            GREATEST(  round( LEAST(order_pay_cycle,TIMESTAMPDIFF( MONTH, order_actual_delivery_date, CURDATE())) * order_account_receivable / cast( order_pay_cycle AS SIGNED ) - order_funds_received, 2 ), 0 ),
+                            GREATEST(  round( LEAST(cast( order_pay_cycle AS SIGNED),TIMESTAMPDIFF( MONTH, order_actual_delivery_date, CURDATE())) * order_account_receivable / cast( order_pay_cycle AS SIGNED ) - order_funds_received, 2 ), 0 ),
                             0 
                         ) AS intra_day_remaining_funds 
                     FROM
@@ -265,7 +265,6 @@ class FinancialIncomeLogic extends BaseLogic
             ->first();
 
         $actualDeliveryDate = $data->order_actual_delivery_date; // 交付日期
-
         $totalReceivable      = $data->order_account_receivable;  // 总应收款
         $totalReceived        = $data->order_funds_received;  // 总实收款
         $payCycle             = empty($data->order_pay_cycle) ? 1 : $data->order_pay_cycle;  // 分期数
@@ -406,7 +405,7 @@ class FinancialIncomeLogic extends BaseLogic
 	IF
 	(
 			order_pay_cycle > 1,
-			GREATEST(  round( LEAST(order_pay_cycle,TIMESTAMPDIFF( MONTH, order_actual_delivery_date, CURDATE())) * order_account_receivable / cast( order_pay_cycle AS SIGNED ) - order_funds_received, 2 ), 0 ),
+			GREATEST(  round( LEAST(cast( order_pay_cycle AS SIGNED),TIMESTAMPDIFF( MONTH, order_actual_delivery_date, CURDATE())) * order_account_receivable / cast( order_pay_cycle AS SIGNED ) - order_funds_received, 2 ), 0 ),
 			0 
 		) AS intra_day_remaining_funds ";
             }
