@@ -269,7 +269,7 @@ class AdvancedOrderLogic extends ExcelGenerator
          return $item;
      }
 
-     protected function handleLastRow($sheet, int $lastRow)
+     protected function handleLastRow($sheet, int $lastRow, array $lastRowTotal = [])
      {
      }
 }

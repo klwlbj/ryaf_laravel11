@@ -22,11 +22,15 @@ abstract class ExcelGenerator extends BaseLogic
 
     public string $exportTitle = '导出excel';
 
+
+    // 公式计算
+    public bool $preCalculateFormulas = false;
+
     /**
      * 导出限制
      * @var int
      */
-    public int $exportLimit = 1000000000;
+    public int $exportLimit = 100000;
 
     public int $defaultWidth = 20;
 
@@ -35,11 +39,14 @@ abstract class ExcelGenerator extends BaseLogic
      * @var bool
      */
     public bool $lockFirstRow = false;
+
     /**
      * 是否开启最后一行的合计
      * @var bool
      */
     public bool $openLastRowTotal = false;
+
+    public static array $ids = [];
 
     /**
      * 排序字段 todo
@@ -49,8 +56,8 @@ abstract class ExcelGenerator extends BaseLogic
 
     protected static array $columnNameArr = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
 
-    public const FIRST_ROW = 1;
-    public const ALL_ROW   = 2;
+    public const int FIRST_ROW = 1;
+    public const int ALL_ROW   = 2;
 
     /**
      * 获取可导出字段
@@ -75,7 +82,7 @@ abstract class ExcelGenerator extends BaseLogic
         return (empty($group) ? '' : self::$columnNameArr[$group - 1]) . self::$columnNameArr[$index];
     }
 
-    public function export($list, array $params, int $count = 0 ,$lastRowTotal = [])
+    public function export($list, array $params, int $count = 0, $lastRowTotal = [])
     {
         // 条数超限或为0时不导出
         if ($count == 0) {
@@ -95,15 +102,21 @@ abstract class ExcelGenerator extends BaseLogic
         $spreadsheet = new Spreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();
 
-        $sheet = $this->setHeader($this->getExportColumns(), $sheet);
+        $sheet = $this->setHeader( $sheet);
 
         // 锁定首行
         (!$this->lockFirstRow) ?: $sheet->freezePane('A2');
 
         foreach ($list as $index => $item) {
-            $this->setTableContent($this->getExportColumns(), $sheet, $item, $index, $params);
+            // 再查询
+            $this->setTableContent($sheet, $item, $index, $params);
             unset($item);
         }
+        if(!empty(self::$ids)){
+            $reQueryList = $this->reQuery(self::$ids, $params);
+            $this->reprocessing($reQueryList, $sheet);
+        }
+
         if ($lastRowTotal) {
             // 找到最后一行
             $lastRow = $sheet->getHighestRow() + 1;
@@ -112,8 +125,8 @@ abstract class ExcelGenerator extends BaseLogic
 
         // 导出 Excel 文件
         $writer = new Xlsx($spreadsheet);
-        // 禁止公式计算
-        $writer->setPreCalculateFormulas(false);
+        // 控制公式计算
+        $writer->setPreCalculateFormulas($this->preCalculateFormulas);
 
         $time = time();
 
@@ -121,15 +134,16 @@ abstract class ExcelGenerator extends BaseLogic
             ResponseLogic::setMsg('创建文件夹失败');
             return false;
         }
-        $excelPath = storage_path('app/public/excel/' . $this->exportTitle . $time . '.xlsx');
+        $exportTitle = $this->setExportTitle($params);
+        $excelPath = storage_path('app/public/excel/' . $exportTitle . $time . '.xlsx');
         $writer->save($excelPath);
 
-        return ['url' => Storage::url('excel/' . $this->exportTitle . $time . '.xlsx')];
+        return ['url' => Storage::url('excel/' . $exportTitle . $time . '.xlsx')];
     }
 
-        protected function setHeader($columns, $sheet)
+        protected function setHeader($sheet)
         {
-            foreach ($columns  as $key => $column) {
+            foreach ($this->getExportColumns()  as $key => $column) {
                 $sheet->setCellValue([$key + 1, 1], $column['name']);
                 $columnName = $this->getColumnName($key + 1);
 
@@ -154,10 +168,11 @@ abstract class ExcelGenerator extends BaseLogic
             return $sheet;
         }
 
-        protected function setTableContent($columns, $sheet, $item, $index, $params = []): void
+        protected function setTableContent($sheet, $item, $index, $params = []): void
         {
             $this->handleRow($item, $params);
-            foreach ($columns  as $key => $column) {
+
+            foreach ($this->getExportColumns() as $key => $column) {
                 $indexName = $column['index'];
                 $cellValue = $item?->{$indexName};
                 if ($cellValue  instanceof Collection) {
@@ -170,5 +185,29 @@ abstract class ExcelGenerator extends BaseLogic
 
     abstract protected function handleRow($item, $params = []);
 
-    abstract protected function handleLastRow($sheet, int $lastRow);
+    protected function handleLastRow($sheet, int $lastRow, array $lastRowTotal = []){
+
+    }
+
+    /**
+     * 设置自定义标题
+     * @param $params
+     * @return string
+     */
+    protected function setExportTitle($params): string
+    {
+        return $this->exportTitle;
+    }
+
+    protected function reQuery(array $ids, array &$params){
+    }
+
+    /**
+     * 特殊字段再处理
+     * @param array $reQueryList
+     * @param $sheet
+     * @return void
+     */
+    protected function reprocessing(array $reQueryList, $sheet){
+    }
 }

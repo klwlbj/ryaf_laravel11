@@ -8,6 +8,11 @@ class Order extends BaseModel
     public $timestamps = null;
     public $primaryKey = 'order_id';
 
+    protected $attributes = [
+        'order_account_receivable' => 0,
+        'order_funds_received'     => 0,
+    ];
+
     public function smokeDetectors()
     {
         return $this->hasMany(SmokeDetector::class, 'smde_order_id', 'order_id');
