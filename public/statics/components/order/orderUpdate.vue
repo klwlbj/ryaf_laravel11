@@ -1,25 +1,16 @@
 <template>
     <div>
         <a-form-model :loading="loading" :model="formData" ref="dataForm" :label-col="dialogFormLabelCol" :wrapper-col="dialogFormWrapperCol" :rules="formRules">
-            <a-form-model-item label="物品" prop="material_id">
-                {{formData.name}}
+            <a-form-model-item label="订单编号">
+                {{formData.order_iid}}
             </a-form-model-item>
 
-            <a-form-model-item label="生产日期" prop="production_date">
-                <a-date-picker @change="productionDateChange" format="YYYY-MM-DD" v-model:value="formData.production_date"/>
+            <a-form-model-item label="应收款" prop="order_account_receivable">
+                <a-input-number v-model="formData.order_account_receivable" :step="0.01"/>
             </a-form-model-item>
 
-            <a-form-model-item label="质保期" prop="expire_date">
-                <a-date-picker @change="expireDateChange" format="YYYY-MM-DD" v-model:value="formData.expire_date"/>
-            </a-form-model-item>
-
-
-            <a-form-model-item label="备注" prop="remark">
-                <a-textarea
-                    v-model="formData.remark"
-                    placeholder="备注"
-                    :auto-size="{ minRows: 3, maxRows: 5 }"
-                />
+            <a-form-model-item label="设备费用" prop="order_device_funds">
+                <a-input-number v-model="formData.order_device_funds" :step="0.01"/>
             </a-form-model-item>
 
 
@@ -38,7 +29,7 @@
 
 <script>
 module.exports = {
-    name: 'inComingUpdate',
+    name: 'orderUpdate',
     components: {
 
     },
@@ -66,23 +57,22 @@ module.exports = {
         moment,
         initForm(){
             this.formData= {
-                name:'',
-                production_date:moment().format("YYYY-MM-DD"),
-                expire_date:moment().add(10, 'years').format("YYYY-MM-DD"),
-                remark:'',
+                order_iid:'',
+                order_account_receivable:0,
+                order_device_funds:0,
             };
         },
         submitData(){
             let that = this;
-            console.log(this.formData);
+            // console.log(this.formData);
             this.$refs.dataForm.validate((valid) => {
                 if (valid) {
-                    that.formData.id = this.id;
+                    that.formData.order_id = this.id;
                     that.loading = true;
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/api/materialFlow/inComingUpdate',
+                        url: '/api/order/update',
                         // 传递参数
                         data: that.formData,
                         responseType: 'json',
@@ -117,10 +107,10 @@ module.exports = {
             axios({
                 // 默认请求方式为get
                 method: 'post',
-                url: '/api/materialFlow/getInfo',
+                url: '/api/order/getInfo',
                 // 传递参数
                 data: {
-                    id:id
+                    order_id:id
                 },
                 responseType: 'json',
                 headers:{
@@ -134,23 +124,13 @@ module.exports = {
                     return false;
                 }
                 this.formData = {
-                    name : res.data.mafl_material_name,
-                    production_date : res.data.mafl_production_date,
-                    expire_date : res.data.mafl_expire_date,
-                    remark : res.data.mafl_remark,
+                    order_iid : res.data.order_iid,
+                    order_account_receivable : res.data.order_account_receivable,
+                    order_device_funds : res.data.order_device_funds
                 }
             }).catch(error => {
                 this.$message.error('请求失败');
             });
-        },
-        materialChange(value){
-            this.formData.material_id = value;
-        },
-        productionDateChange(value,str){
-            this.formData.production_date = str;
-        },
-        expireDateChange(value,str){
-            this.formData.expire_date = str;
         },
     },
     created () {

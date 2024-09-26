@@ -62,7 +62,7 @@ module.exports = {
             dialogFormLabelCol: { span: 4 },
             dialogFormWrapperCol: { span: 14 },
             formRules: {
-                name: [{ required: true, message: '请输入类型名称', trigger: 'blur' }],
+                name: [{ required: true, message: '请输入规格名称', trigger: 'blur' }],
             },
             loading :false,
             categoryId:undefined

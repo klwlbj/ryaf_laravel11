@@ -112,6 +112,8 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('order')->group(function () {
         Route::post('/getList', [OrderController::class, 'getList']);
+        Route::post('/getInfo', [OrderController::class, 'getInfo']);
+        Route::post('/update', [OrderController::class, 'update']);
         Route::post('/addAccountFlow', [OrderController::class, 'addAccountFlow']);
         Route::post('/getAccountFlow', [OrderController::class, 'getAccountFlow']);
         Route::post('/approveAccountFlow', [OrderController::class, 'approveAccountFlow']);
@@ -171,7 +173,9 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('installationRegister')->group(function () {
         Route::post('/getList', [InstallationRegisterController::class, 'getList']);
         Route::post('/add', [InstallationRegisterController::class, 'add']);
+        Route::post('/update', [InstallationRegisterController::class, 'update']);
         Route::post('/getInfo', [InstallationRegisterController::class, 'getInfo']);
+        Route::post('/delete', [InstallationRegisterController::class, 'delete']);
     });
 
     Route::prefix('node')->group(function () {

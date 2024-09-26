@@ -33,6 +33,50 @@ class OrderController
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
+    public function getInfo(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'order_id' => 'required',
+        ],[
+            'order_id.required' => '订单id不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = OrderLogic::getInstance()->getInfo($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function update(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'order_id' => 'required',
+        ],[
+            'order_id.required' => '订单id不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = OrderLogic::getInstance()->update($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
     public function addAccountFlow(Request $request)
     {
         $params = $request->all();

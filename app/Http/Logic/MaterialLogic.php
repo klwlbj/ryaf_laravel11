@@ -111,7 +111,7 @@ class MaterialLogic extends BaseLogic
             ->where(['mafl_type' => 1])
             ->select([
                 'mafl_material_id',
-                DB::raw("substring_index( group_concat( mafl_id ORDER BY mafl_id DESC ), ',', 1 ) AS mafl_id")
+                DB::raw("substring_index( group_concat( mafl_id ORDER BY mafl_datetime DESC ), ',', 1 ) AS mafl_id")
             ])
             ->groupBy(['mafl_material_id']);
 
@@ -135,7 +135,7 @@ class MaterialLogic extends BaseLogic
             ->where(['mafl_type' => 2])
             ->select([
                 'mafl_material_id',
-                DB::raw("substring_index( group_concat( mafl_id ORDER BY mafl_id DESC ), ',', 1 ) AS mafl_id")
+                DB::raw("substring_index( group_concat( mafl_id ORDER BY mafl_datetime DESC ), ',', 1 ) AS mafl_id")
             ])
             ->groupBy(['mafl_material_id']);
 

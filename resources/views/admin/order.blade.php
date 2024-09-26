@@ -6,6 +6,9 @@
             <div>
                 <a-form layout="inline" >
                     <a-form-item>
+                        <node-cascader :default-data="nodeId" @change="nodeChange"></node-cascader>
+                    </a-form-item>
+                    <a-form-item>
                         <a-input v-model="listQuery.keyword" placeholder="订单编号" style="width: 200px;" />
                     </a-form-item>
                     <a-form-item>
@@ -52,13 +55,18 @@
 
                     <div slot="order_pay_cycle" slot-scope="text, record">
                         <span v-if="record.order_pay_cycle == 1">一次性付款</span>
-                        <span v-if="record.order_pay_cycle > 1">@{{  record.order_pay_cycle }}期</span>
+                        <span v-else-if="record.order_pay_cycle > 1">@{{  record.order_pay_cycle }}期</span>
                         <span v-else>未知</span>
 
                         <span v-if="record.is_debt == 1" style="color: red">(欠款)</span>
                     </div>
 
                     <div slot="action" slot-scope="text, record">
+                        <div>
+                            <a style="margin-right: 8px" @click="onUpdateOrder(record)">
+                                修改订单信息
+                            </a>
+                        </div>
                         <div>
                             <a style="margin-right: 8px" @click="onAdd(record)">
                                 添加收款流水
@@ -105,6 +113,19 @@
                 </account-flow-list>
             </a-modal>
 
+            <a-modal :mask-closable="false" v-model="updateOrderFormVisible"
+                     title="流水明细"
+                     width="800px" :footer="null">
+                <order-update ref="orderUpdate"
+                                   :id="updateOrderId"
+                                   @submit="afterOrderUpdate"
+                                   @close="updateOrderFormVisible = false;"
+                >
+                </order-update>
+            </a-modal>
+
+
+
         </a-card>
     </div>
 @endsection
@@ -120,6 +141,7 @@
                     keyword: "",
                     address:'',
                     user_keyword:'',
+                    node_id: '',
                     start_date:null,
                     end_date:null,
                 },
@@ -203,6 +225,8 @@
                 flowFormVisible:false,
                 id:null,
                 orderId:null,
+                updateOrderId:null,
+                updateOrderFormVisible:false,
                 defaultDate:undefined
             },
             created () {
@@ -211,7 +235,9 @@
             },
             components: {
                 "account-flow-list":  httpVueLoader('/statics/components/order/accountFlowList.vue'),
-                "account-flow-add":  httpVueLoader('/statics/components/order/accountFlowAdd.vue')
+                "account-flow-add":  httpVueLoader('/statics/components/order/accountFlowAdd.vue'),
+                "order-update":  httpVueLoader('/statics/components/order/orderUpdate.vue'),
+                "node-cascader":  httpVueLoader('/statics/components/node/nodeCascader.vue')
             },
             methods: {
                 moment,
@@ -229,6 +255,10 @@
                     this.orderId = row.order_id;
                     this.flowFormVisible = true;
                 },
+                onUpdateOrder(row){
+                    this.updateOrderId = row.order_id;
+                    this.updateOrderFormVisible = true;
+                },
                 afterAdd(){
                     this.id = null;
                     this.orderId = null;
@@ -237,6 +267,12 @@
                 },
                 afterApprove(){
                     // this.orderId = null;
+                    this.getPageList();
+                },
+                afterOrderUpdate(){
+                    this.updateOrderFormVisible = false;
+                    this.$message.success('更新成功');
+                    this.updateOrderId = null;
                     this.getPageList();
                 },
                 // 刷新列表
@@ -270,6 +306,9 @@
                 dateChange(value,arr){
                     this.listQuery.start_date = arr[0];
                     this.listQuery.end_date = arr[1];
+                },
+                nodeChange(value){
+                    this.listQuery.node_id = value;
                 }
             },
 

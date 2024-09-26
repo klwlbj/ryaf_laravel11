@@ -3,6 +3,7 @@
 namespace App\Http\Logic;
 
 use App\Models\File;
+use App\Models\Node;
 use App\Models\Order;
 use App\Models\OrderAccountFlow;
 use App\Models\Place;
@@ -24,6 +25,11 @@ class OrderLogic extends BaseLogic
 
         if(isset($params['keyword']) && !empty($params['keyword'])){
             $query->where('order_iid','like',"%{$params['keyword']}%");
+        }
+
+        if(!empty($params['node_id'])){
+            $childIds = Node::getNodeChild($params['node_id']);
+            $query->whereIn('order_node_id',$childIds);
         }
 
         if(isset($params['address']) && !empty($params['address'])){
@@ -104,6 +110,49 @@ class OrderLogic extends BaseLogic
             'total' => $total,
             'list' => $list,
         ];
+    }
+
+    public function getInfo($params)
+    {
+        $orderData = Order::query()->where(['order_id' => $params['order_id']])->first();
+
+        if(!$orderData){
+            ResponseLogic::setMsg('订单数据不存在');
+            return false;
+        }
+
+        return $orderData->toArray();
+    }
+
+    public function update($params)
+    {
+        $orderData = Order::query()->where(['order_id' => $params['order_id']])->first();
+
+        if(!$orderData){
+            ResponseLogic::setMsg('订单数据不存在');
+            return false;
+        }
+
+//        $orderData = $orderData->toArray();
+
+        $update = [];
+
+        if(!empty($params['order_account_receivable'])){
+            $update['order_account_receivable'] = $params['order_account_receivable'];
+        }
+
+        if(!empty($params['order_device_funds'])){
+            $update['order_device_funds'] = $params['order_device_funds'];
+        }
+
+        if(!empty($update)){
+            if(Order::query()->where(['order_id' => $params['order_id']])->update($update) === false){
+                ResponseLogic::setMsg('更新订单失败');
+                return false;
+            }
+        }
+
+        return [];
     }
 
     public function addAccountFlow($params)

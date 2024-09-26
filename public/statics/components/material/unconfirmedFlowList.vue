@@ -79,7 +79,7 @@ module.exports = {
             listQuery: {
                 id: "",
                 // status: 1,
-                get_all: true,
+                is_all: true,
                 order_by_status:1
             },
             listSource: [],

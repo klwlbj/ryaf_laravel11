@@ -108,6 +108,62 @@ class InstallationRegisterLogic extends BaseLogic
         return [];
     }
 
+    public function update($params)
+    {
+        $addressList = ToolsLogic::jsonDecode($params['address_list']);
+        if(empty($addressList)){
+            ResponseLogic::setMsg('地址不能为空');
+            return false;
+        }
+
+        $updateData = [
+            'inre_datetime' => $params['datetime'],
+            'inre_node_id' => $params['node_id'],
+            'inre_user_name' => $params['user_name'],
+            'inre_user_phone' => $params['user_phone'],
+            'inre_user_type' => $params['user_type'],
+            'inre_price' => $params['price'] ?? 0,
+            'inre_install_count' => $params['install_count'],
+            'inre_given_count' => $params['given_count'] ?? 0,
+            'inre_pay_way' => $params['pay_way'],
+            'inre_total_price' => $params['total_price'] ?? 0,
+            'inre_remark' => $params['remark'] ?? '',
+            'inre_delivery_count' => $params['delivery_count'] ?? 0,
+            'inre_operator_id' => AuthLogic::$userId
+        ];
+
+        DB::beginTransaction();
+
+        if(InstallationRegister::query()->where(['inre_id' => $params['id']])->update($updateData) === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('更新失败');
+            return false;
+        }
+
+        $addressInsertData = [];
+        foreach ($addressList as $key => $value){
+            $addressInsertData[] = [
+                'inre_register_id' => $params['id'],
+                'inre_code' => $value['code'],
+                'inre_standard_address' => $value['standard_address'],
+                'inre_addr_generic_name' => $value['addr_generic_name'],
+                'inre_install_location' => $value['install_location'],
+            ];
+        }
+        #删除原本地址
+        InstallationRegisterAddress::query()->where(['inre_register_id' => $params['id']])->delete();
+
+        if(InstallationRegisterAddress::query()->insert($addressInsertData) === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('添加地址失败');
+            return false;
+        }
+
+        DB::commit();
+
+        return [];
+    }
+
     public function getInfo($params)
     {
         $data = InstallationRegister::query()->where('inre_id',$params['id'])->first();
@@ -132,5 +188,39 @@ class InstallationRegisterLogic extends BaseLogic
         $data['node_arr'] = Node::getNodeParent($data['inre_node_id']);
 
         return $data;
+    }
+
+    public function delete($params)
+    {
+        $data = InstallationRegister::query()->where('inre_id',$params['id'])->first();
+        if(!$data){
+            ResponseLogic::setMsg('数据不存在');
+            return false;
+        }
+
+        $data = $data->toArray();
+
+        if($data['inre_status'] == 2){
+            ResponseLogic::setMsg('已安装的不能删除');
+            return false;
+        }
+
+        DB::beginTransaction();
+
+        if(InstallationRegister::query()->where('inre_id',$params['id'])->delete() === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('删除失败');
+            return false;
+        }
+
+        if(InstallationRegisterAddress::query()->where(['inre_register_id'=>$params['id']])->delete() === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('删除地址失败');
+            return false;
+        }
+
+        DB::commit();
+
+        return [];
     }
 }

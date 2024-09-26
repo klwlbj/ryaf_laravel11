@@ -88,4 +88,64 @@ class InstallationRegisterController
         }
         return ResponseLogic::apiResult(0,'ok',$res);
     }
+
+    public function update(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+            'datetime' => 'required',
+            'node_id' => 'required',
+            'address_list' => 'required',
+            'user_name' => 'required',
+            'user_phone' => 'required',
+            'user_type' => 'required',
+            'install_count' => 'required',
+            'pay_way' => 'required',
+        ],[
+            'id.required' => '预装日期不得为空',
+            'datetime.required' => '预装日期不得为空',
+            'node_id.required' => '节点不得为空',
+            'address_list.required' => '地址信息不得为空',
+            'user_name.required' => '单位/用户名不得为空',
+            'user_phone.required' => '联系方式不得为空',
+            'user_type.required' => '客户类型不得为空',
+            'install_count.required' => '预装日期不得为空',
+            'pay_way.required' => '预装日期不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = InstallationRegisterLogic::getInstance()->update($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function delete(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+        ],[
+            'id.required' => '预装日期不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = InstallationRegisterLogic::getInstance()->delete($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
 }

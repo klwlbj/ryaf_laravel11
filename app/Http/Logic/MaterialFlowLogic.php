@@ -54,7 +54,7 @@ class MaterialFlowLogic extends BaseLogic
             $query->orderBy('material_flow.mafl_status','asc');
         }
 
-        $query->orderBy('material_flow.mafl_id','desc');
+        $query->orderBy('material_flow.mafl_datetime','desc');
 
         if(!empty($params['is_all'])){
             $list = $query
@@ -346,12 +346,18 @@ class MaterialFlowLogic extends BaseLogic
 
         ];
 
+        $detailUpdate = [
+
+        ];
+
         if(!empty($params['production_date'])){
             $update['mafl_production_date'] = $params['production_date'];
+            $detailUpdate['made_production_date'] = $params['production_date'];
         }
 
         if(!empty($params['expire_date'])){
             $update['mafl_expire_date'] = $params['expire_date'];
+            $detailUpdate['made_expire_date'] = $params['expire_date'];
         }
 
         if(!empty($params['remark'])){
@@ -361,6 +367,13 @@ class MaterialFlowLogic extends BaseLogic
         if(!empty($update)){
             if(MaterialFlow::query()->where(['mafl_id' => $params['id']])->update($update) === false){
                 ResponseLogic::setMsg('更新入库记录失败');
+                return false;
+            }
+        }
+
+        if(!empty($detailUpdate)){
+            if(MaterialDetail::query()->where(['made_in_id' => $params['id']])->update($detailUpdate) === false){
+                ResponseLogic::setMsg('更新入库物品记录失败');
                 return false;
             }
         }
