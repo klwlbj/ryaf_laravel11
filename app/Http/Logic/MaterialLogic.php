@@ -704,16 +704,16 @@ class MaterialLogic extends BaseLogic
                         $flowItem['price_tax'],
                         $flowItem['count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['count'],2),
-                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'],2),1 + $flowItem['tax']/100,2),
+                        round(bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'],2),1 + $flowItem['tax']/100,3),2),
                         $flowItem['in_count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['in_count'],2),
-                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['in_count'],2),1 + $flowItem['tax']/100,2),
+                        round(bcdiv(bcmul($flowItem['price_tax'],$flowItem['in_count'],2),1 + $flowItem['tax']/100,3),2),
                         $flowItem['out_count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['out_count'],2),
-                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['out_count'],2),1 + $flowItem['tax']/100,2),
+                        round(bcdiv(bcmul($flowItem['price_tax'],$flowItem['out_count'],2),1 + $flowItem['tax']/100,3),2),
                         ($flowItem['count'] ?? 0) + (($flowItem['in_count'] ?? 0) - ($flowItem['out_count'] ?? 0)),
                         bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),
-                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),1 + $flowItem['tax']/100,2),
+                        round(bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),1 + $flowItem['tax']/100,3),2),
                     ];
                 }else{
                     $secondList[] = [
@@ -725,16 +725,16 @@ class MaterialLogic extends BaseLogic
                         $flowItem['price_tax'],
                         $flowItem['count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['count'],2),
-                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'],2),1 + $flowItem['tax']/100,2),
+                        round(bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'],2),1 + $flowItem['tax']/100,3),2),
                         $flowItem['in_count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['in_count'],2),
-                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['in_count'],2),1 + $flowItem['tax']/100,2),
+                        round(bcdiv(bcmul($flowItem['price_tax'],$flowItem['in_count'],2),1 + $flowItem['tax']/100,3),2),
                         $flowItem['out_count'] ?? 0,
                         bcmul($flowItem['price_tax'],$flowItem['out_count'],2),
-                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['out_count'],2),1 + $flowItem['tax']/100,2),
+                        round(bcdiv(bcmul($flowItem['price_tax'],$flowItem['out_count'],2),1 + $flowItem['tax']/100,3),2),
                         ($flowItem['count'] ?? 0) + (($flowItem['in_count'] ?? 0) - ($flowItem['out_count'] ?? 0)),
                         bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),
-                        bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),1 + $flowItem['tax']/100,2),
+                        round(bcdiv(bcmul($flowItem['price_tax'],$flowItem['count'] + $flowItem['in_count'] -  $flowItem['out_count'],2),1 + $flowItem['tax']/100,3),2),
                     ];
                 }
                 $index++;

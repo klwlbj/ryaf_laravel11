@@ -84,5 +84,9 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('installationRegister')->group(function () {
         Route::view('/view', 'admin.installationRegister');
     });
+
+    Route::prefix('receivableAccount')->group(function () {
+        Route::view('/view', 'admin.receivableAccount');
+    });
 });
 

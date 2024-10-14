@@ -161,7 +161,7 @@ module.exports = {
                 image:'',
                 remark:'',
                 price_tax:0,
-                tax:1.13,
+                tax:13,
                 invoice_type:1,
                 sort:0,
                 status : 1,

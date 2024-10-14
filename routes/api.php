@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\InstallationController;
 use App\Http\Controllers\Admin\InstallationRegisterController;
 use App\Http\Controllers\Admin\NodeController;
+use App\Http\Controllers\Admin\ReceivableAccountController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AreaController;
 use App\Http\Controllers\Admin\AdminController;
@@ -181,5 +182,14 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('node')->group(function () {
         Route::post('/getAllList', [NodeController::class, 'getAllList']);
         Route::post('/getTreeList', [NodeController::class, 'getTreeList']);
+    });
+
+    Route::prefix('receivableAccount')->group(function () {
+        Route::post('/getList', [ReceivableAccountController::class, 'getList']);
+        Route::post('/getInfo', [ReceivableAccountController::class, 'getInfo']);
+        Route::post('/update', [ReceivableAccountController::class, 'update']);
+        Route::post('/import', [ReceivableAccountController::class, 'import']);
+        Route::post('/addFlow', [ReceivableAccountController::class, 'addFlow']);
+        Route::post('/getFlow', [ReceivableAccountController::class, 'getFlow']);
     });
 });
