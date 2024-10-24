@@ -91,6 +91,11 @@ class ExportLogic extends BaseLogic
                         $sheet->getColumnDimension($k)->setWidth($v);
                     }
                     break;
+                case 'height':
+                    foreach ($item as $k => $v){
+                        $sheet->getRowDimension($k)->setRowHeight($v);
+                    }
+                    break;
                 case 'bold':
                     foreach ($item as $k => $v){
                         $sheet->getStyle($k)->getFont()->setBold($v);
@@ -107,6 +112,13 @@ class ExportLogic extends BaseLogic
                             ->getAlignment()
                             ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER)
                             ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                    }
+                    break;
+                case 'vertical_center' :
+                    foreach ($item as $k => $v){
+                        $sheet->getStyle($k)
+                            ->getAlignment()
+                            ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
                     }
                     break;
                 case 'color':

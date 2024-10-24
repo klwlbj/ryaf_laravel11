@@ -59,6 +59,10 @@ class ToolsLogic
             $data = array_merge($_GET,$_POST);
         }
 
+        if(AuthLogic::$userId){
+            $data['user_id'] = AuthLogic::$userId;
+        }
+
 
         if(!is_array($data)){
             $data = ToolsLogic::jsonDecode($data);
@@ -104,5 +108,17 @@ class ToolsLogic
         }
 
         return $tree;
+    }
+
+    public static function convertExcelTime($excelValue)
+    {
+        try {
+            $fixation = 25569;
+            $fixationT = 24 * 60 * 60;
+            $date = gmdate('Y-m-d H:i:s', ($excelValue- $fixation) * $fixationT);
+        } catch (\Exception $e) {
+            $date = '1970-01-01';
+        }
+        return $date;
     }
 }

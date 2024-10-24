@@ -34,6 +34,9 @@ class ReceivableAccountLogic extends BaseLogic
 
         $query = ReceivableAccount::query();
 
+        if(isset($params['area']) && !empty($params['area'])){
+            $query->where(['reac_area' => $params['area']]);
+        }
 
         if(isset($params['address']) && !empty($params['address'])){
             $ids = ReceivableAccountAddress::query()
@@ -58,18 +61,39 @@ class ReceivableAccountLogic extends BaseLogic
         }
 
         if(isset($params['is_debt']) && !empty($params['is_debt'])){
-            $query->whereRaw("CASE
-			WHEN cast( reac_pay_cycle AS SIGNED ) > 1 THEN
-		( TIMESTAMPDIFF( MONTH, reac_installation_date, CURDATE() ) / cast( reac_pay_cycle AS SIGNED ) * reac_account_receivable ) > reac_funds_received ELSE reac_account_receivable    > reac_funds_received END");
+//            $query->whereRaw("CASE
+//			WHEN cast( reac_pay_cycle AS SIGNED ) > 1 THEN
+//		( TIMESTAMPDIFF( MONTH, reac_installation_date, CURDATE() ) / cast( reac_pay_cycle AS SIGNED ) * reac_account_receivable ) > reac_funds_received ELSE reac_account_receivable    > reac_funds_received END");
+            $query->where('reac_account_receivable' , '>','reac_funds_received');
         }
 
         $total = $query->count();
 
+        #克隆出来用来做统计
+        $statisticsQuery = clone $query;
+
+        $statistics = $statisticsQuery->select([
+            DB::raw("count(1) as count"),
+            DB::raw("COALESCE(sum(reac_account_receivable),0) as account_receivable"),
+            DB::raw("COALESCE(sum(reac_funds_received),0) as funds_received"),
+        ])->first();
+
+
         $list = $query
             ->select([
-                '*',
-                DB::raw("(case when cast( reac_pay_cycle AS SIGNED ) > 1
-                             then (case when (TIMESTAMPDIFF( MONTH, reac_installation_date, CURDATE() ) / cast( reac_pay_cycle AS SIGNED ) * reac_account_receivable ) > reac_funds_received then 1 else 0 end) else (case when reac_account_receivable > reac_funds_received then 1 else 0 end) end) as is_debt")
+                'reac_id',
+                'reac_area',
+                'reac_street',
+                'reac_installation_date',
+                'reac_user_type',
+                'reac_user_name',
+                'reac_user_mobile',
+                'reac_installation_count',
+                'reac_given_count',
+                'reac_account_receivable',
+                'reac_funds_received',
+                'reac_pay_cycle',
+                'reac_remark'
             ])
             ->orderBy('reac_id','desc')
             ->offset($point)->limit($pageSize)->get()->toArray();
@@ -96,9 +120,14 @@ class ReceivableAccountLogic extends BaseLogic
         }
 
         unset($value);
-
+//        $statistics = [
+//            'count' => 0,
+//            'account_receivable' => 0,
+//            'funds_received' => 0,
+//        ];
         return [
             'total' => $total,
+            'statistics' => $statistics,
             'list' => $list,
             'area' => self::$area
         ];
@@ -155,8 +184,6 @@ class ReceivableAccountLogic extends BaseLogic
             $update['reac_account_receivable'] = $params['account_receivable'];
         }
 
-
-
         if(!empty($update)){
             if(ReceivableAccount::query()->where(['reac_id' => $params['receivable_id']])->update($update) === false){
                 ResponseLogic::setMsg('更新记录失败');
@@ -167,126 +194,184 @@ class ReceivableAccountLogic extends BaseLogic
         return [];
     }
 
+    public function delete($params)
+    {
+        $data = ReceivableAccount::query()->where(['reac_id' => $params['receivable_id']])->first();
+
+        if(!$data){
+            ResponseLogic::setMsg('收款数据不存在');
+            return false;
+        }
+
+        DB::beginTransaction();
+
+        if(ReceivableAccount::query()->where(['reac_id' => $params['receivable_id']])->delete() === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('删除收款数据失败');
+            return false;
+        }
+
+        #删除地址表
+        if(ReceivableAccountAddress::query()->where(['reac_account_id' => $params['receivable_id']])->delete() === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('删除收款地址数据失败');
+            return false;
+        }
+
+        #删除流水表
+        if(ReceivableAccountFlow::query()->where(['reac_account_id' => $params['receivable_id']])->delete() === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('删除收款流水数据失败');
+            return false;
+        }
+
+        DB::commit();
+    }
+
     public function import($params)
     {
         ini_set( 'max_execution_time', 7200 );
         ini_set( 'memory_limit', '512M' );
-        $spreadsheet = IOFactory::load($params['file']);
 
-        $sheetData = $spreadsheet->getSheet(0)->toArray(null, true, true, true);
-        $sheetData = array_values($sheetData);
+//        $filename= $params['file']->getRealPath();
+//
+//        $inputFileType=  IOFactory::identify($filename);
+//
+//        $reader= IOFactory::createReader($inputFileType);
+
+//        $spreadsheet=$reader->load($filename);
+
+
+//        $spreadsheet = IOFactory::load($params['file']);
+//
+//        $sheetData = $spreadsheet->getSheet(0)->toArray(null, true, true, true);
+//
+//        print_r($sheetData);die;
+//        $sheetData = array_values($sheetData);
+        $sheetData = ToolsLogic::jsonDecode($params['data']);
+
         $addressInsert = [];
         $flowInsert = [];
         $errorArr = [];
 
         $sucCount = 0;
 
+        #获取存在数据
+        $existArr = ReceivableAccount::query()
+            ->leftJoin('receivable_account_address','receivable_account_address.reac_account_id','=','receivable_account.reac_id')
+            ->select([
+                DB::raw("CONCAT(receivable_account.reac_installation_date,'_',receivable_account.reac_user_mobile,'_',receivable_account.reac_installation_count,'_',receivable_account_address.reac_address) as str")
+            ])->pluck('str')->toArray();
+
         foreach ($sheetData as $key => $value){
-            if($key == 0){
-                continue;
-            }
+//            if($key == 0){
+//                continue;
+//            }
 
-            $value = array_values($value);
-
-            $area = $value[1];
-            $installationDate = date('Y-m-d',strtotime($value[0]));
-            $userType = ($value[2] == '2C') ? 2 : 1;
-            $street =  $value[3];
-            $userName = $value[4];
-            $userMobile = $value[5];
-            $address = explode("\n",$value[6]);
-            $installationCount = $value[7] ?: 0;
-            $givenCount = is_numeric($value[8]) ? $value[8] : 0;
-            $remark = $value[9] ?? '';
-            $accountReceivable = $value[10] ?? 0;
-            $fundsReceived = $value[12] ?? 0;
-            $cycleType = $value[14];
-            if($cycleType == '一次性付款'){
-                $cycle = 1;
-            }else{
-                $cycle = $value[15] ?: 36;
-            }
-
-
-            if(empty($userName)){
-                continue;
-            }
-
-            if($installationDate == '1970-01-01'){
-                $errorArr[] = '序号为' . ($key + 1) . '记录安装时间异常  用户：' . $userName;
-                continue;
-            }
-
-
-            #判断是否已存在记录
-            if(ReceivableAccount::query()
-                ->leftJoin('receivable_account_address','receivable_account_address.reac_account_id','=','receivable_account.reac_id')
-                ->where([
-                    'receivable_account.reac_installation_date' => $installationDate,
-                    'receivable_account.reac_user_name' => $userName,
-                    'receivable_account.reac_user_mobile' => $userMobile,
-                    'receivable_account.reac_installation_count' => $installationCount,
-                    'receivable_account.reac_account_receivable' => $accountReceivable,
-                    'receivable_account_address.reac_address' => $address[0] ?? ''
-                ])->exists()){
-                $errorArr[] = '序号为' . ($key + 1) . '的记录已存在  用户：' . $userName;
-                continue;
-            }
-
-            #主数据
-            $insert = [
-                'reac_type' => 1,
-                'reac_area' => $area,
-                'reac_street' => $street,
-                'reac_installation_date' => $installationDate,
-                'reac_user_type' => $userType,
-                'reac_user_name' => $userName,
-                'reac_user_mobile' => $userMobile,
-                'reac_installation_count' => $installationCount,
-                'reac_given_count' => $givenCount,
-                'reac_account_receivable' => $accountReceivable,
-                'reac_funds_received' => $fundsReceived,
-                'reac_pay_cycle' => $cycle,
-                'reac_status' => 1,
-                'reac_remark' => $remark,
-                'reac_operator_id' => AuthLogic::$userId
-            ];
-            print_r($insert);die;
-            $id = ReceivableAccount::query()->insertGetId($insert);
-            $sucCount ++ ;
-//            $addressInsert = [];
-            foreach ($address as $item){
-                $addressInsert[] = [
-                    'reac_account_id' => $id,
-                    'reac_address' => $item
-                ];
-            }
-
-            if(count($addressInsert) >= 500){
-                ReceivableAccountAddress::query()->insert($addressInsert);
-                $addressInsert = [];
-            }
-
-            #如果有实收 默认插入一条流水
-            if($fundsReceived > 0){
-                $flowInsert[] = [
-                    'reac_account_id' => $id,
-                    'reac_datetime' => date('Y-m-d H:i:s'),
-                    'reac_pay_way' => 5,
-                    'reac_funds_received' => $fundsReceived,
-                    'reac_type' => 1,
-                    'reac_status' => 2,
-                    'reac_remark' => '自动生成第一条欠款',
-                    'reac_operator_id' => AuthLogic::$userId,
-                ];
-
-                if(count($flowInsert) >= 500){
-                    ReceivableAccountFlow::query()->insert($flowInsert);
-                    $flowInsert = [];
+            try {
+                $value = array_values($value);
+                $value[0] = ToolsLogic::convertExcelTime($value[0]);
+//            print_r($value);die;
+                $area = $value[1];
+                $installationDate = date('Y-m-d',strtotime($value[0]));
+                $userType = ($value[2] == '2C') ? 2 : 1;
+                $street =  $value[3];
+                $userName = $value[4];
+                $userMobile = $value[5];
+                $address = explode("\n",$value[6]);
+                $installationCount = $value[7] ?: 0;
+                $givenCount = is_numeric($value[8]) ? $value[8] : 0;
+                $remark = $value[9] ?? '';
+                $accountReceivable = $value[10] ?? 0;
+                $fundsReceived = $value[11] ?? 0;
+                $cycleType = $value[12];
+                if($cycleType == '一次性付款'){
+                    $cycle = 1;
+                }else{
+                    $cycle = $value[13] ?: 36;
                 }
 
 
+                if(empty($userName)){
+                    continue;
+                }
+
+                if($installationDate == '1970-01-01'){
+                    $errorArr[] = '行' . ($key + 2) . '记录安装时间异常  用户：' . $userName;
+                    continue;
+                }
+
+                $existKey = $installationDate . '_' . $userMobile . '_' . $installationCount . '_' . ($address[0] ?? '');
+
+                #判断是否已存在记录
+                if(in_array($existKey, $existArr)){
+                    $errorArr[] = '行' . ($key + 2) . '的记录已存在  用户：' . $userName . '(' . $userMobile . ')' . ' 安装日期：'.$installationDate . ' 安装台数：' . $installationCount . ' 安装地址：' . $address[0];
+                    continue;
+                }
+
+                #主数据
+                $insert = [
+                    'reac_type' => 1,
+                    'reac_device_type' => 1,
+                    'reac_area' => $area,
+                    'reac_street' => $street,
+                    'reac_installation_date' => $installationDate,
+                    'reac_user_type' => $userType,
+                    'reac_user_name' => $userName,
+                    'reac_user_mobile' => $userMobile,
+                    'reac_installation_count' => $installationCount,
+                    'reac_given_count' => $givenCount,
+                    'reac_account_receivable' => $accountReceivable,
+                    'reac_funds_received' => $fundsReceived,
+                    'reac_pay_cycle' => $cycle,
+                    'reac_status' => 1,
+                    'reac_remark' => $remark,
+                    'reac_operator_id' => AuthLogic::$userId
+                ];
+
+                $id = ReceivableAccount::query()->insertGetId($insert);
+                $existArr[] = $existKey;
+                $sucCount ++ ;
+
+
+//            $addressInsert = [];
+                foreach ($address as $item){
+                    $addressInsert[] = [
+                        'reac_account_id' => $id,
+                        'reac_address' => $item
+                    ];
+                }
+
+                if(count($addressInsert) >= 500){
+                    ReceivableAccountAddress::query()->insert($addressInsert);
+                    $addressInsert = [];
+                }
+
+                #如果有实收 默认插入一条流水
+                if($fundsReceived > 0){
+                    $flowInsert[] = [
+                        'reac_account_id' => $id,
+                        'reac_datetime' => date('Y-m-d H:i:s'),
+                        'reac_pay_way' => 5,
+                        'reac_funds_received' => $fundsReceived,
+                        'reac_type' => 1,
+                        'reac_status' => 2,
+                        'reac_remark' => '自动生成第一条欠款',
+                        'reac_operator_id' => AuthLogic::$userId,
+                    ];
+
+                    if(count($flowInsert) >= 500){
+                        ReceivableAccountFlow::query()->insert($flowInsert);
+                        $flowInsert = [];
+                    }
+
+
+                }
+            } catch (\Exception $e) {
+                $errorArr[] = '行' . ($key + 2) . '的记录异常：' . $e->getMessage();
+                continue;
             }
+
 
         }
 
@@ -372,5 +457,15 @@ class ReceivableAccountLogic extends BaseLogic
         unset($value);
 
         return ['list' => $list ,'info' => $data];
+    }
+
+    public function syncOrder($params)
+    {
+        if(empty($params['start_date']) || empty($params['end_date'])){
+            ResponseLogic::setMsg('请选择时间范围');
+            return false;
+        }
+
+
     }
 }

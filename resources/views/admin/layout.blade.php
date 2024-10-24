@@ -76,7 +76,7 @@
             <admin-menu></admin-menu>
         </div>
 
-        <div class="container" style="background-color: #F1F1F1;padding: 10px;">
+        <div id="container" class="container" style="background-color: #F1F1F1;padding: 10px;display: none">
             @section('content')
             @show
         </div>
@@ -105,7 +105,9 @@
 
 @section('script')
 @show
-
+<script>
+    document.getElementById("container").style.display="block";
+</script>
 <script>
     Vue.use(httpVueLoader)
     new Vue({

@@ -9,11 +9,8 @@
                     <a-form-item>
                         <a-select v-model="listQuery.area" show-search placeholder="区域" :max-tag-count="1"
                                   style="width: 200px;" allow-clear>
-                            <a-select-option :value="1">
-                                是
-                            </a-select-option>
-                            <a-select-option :value="2">
-                                否
+                            <a-select-option v-for="item in areaArr"  :value="item" >
+                                @{{item}}
                             </a-select-option>
                         </a-select>
                     </a-form-item>
@@ -44,14 +41,18 @@
                     <a-form-item>
                         <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                     </a-form-item>
+
                     <a-form-item>
+                        <a-button icon="download" v-on:click="downloadFile('AccountsReceivableTemplate.xlsx')">下载导入模板</a-button>
+                    </a-form-item>
+
+                    <a-form-item v-if="$checkPermission('/api/receivableAccount/import')">
                         <a-upload
                             :file-list="fileList"
                             :multiple="false"
                             :before-upload="fileBeforeUpload"
                             @change="fileHandleChange"
                         >
-
                             <a-button>
                                 <a-icon type="upload" ></a-icon>
                                 导入数据
@@ -59,6 +60,10 @@
                         </a-upload>
                     </a-form-item>
                 </a-form>
+
+                <div style="color:red">
+                    <span>记录数：@{{statistics.count}}</span> <span style="margin-left: 10px">应收：@{{ statistics.account_receivable }}</span> <span style="margin-left: 10px">实收：@{{ statistics.funds_received }}</span>
+                </div>
 
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
                          :pagination="false"  :scroll="{ x: 1800,y: 650}">
@@ -88,12 +93,12 @@
                     </div>
 
                     <div slot="action" slot-scope="text, record">
-                        <div>
+                        <div  v-if="$checkPermission('/api/receivableAccount/update')">
                             <a style="margin-right: 8px" @click="onUpdate(record)">
                                 修改信息
                             </a>
                         </div>
-                        <div>
+                        <div v-if="$checkPermission('/api/receivableAccount/addFlow')">
                             <a style="margin-right: 8px" @click="onAdd(record)">
                                 添加收款流水
                             </a>
@@ -102,6 +107,20 @@
                             <a style="margin-right: 8px" @click="onFlow(record)">
                                 流水明细 <span v-if="record.account_flow_count" style="color: red">(未审批:@{{record.account_flow_count}})</span>
                             </a>
+                        </div>
+
+                        <div>
+                            <a-popconfirm
+                                v-if="$checkPermission('/api/receivableAccount/delete')"
+                                title="是否确定删除记录?"
+                                ok-text="确认"
+                                cancel-text="取消"
+                                @confirm="onDel(record)"
+                            >
+                                <a style="margin-right: 8px">
+                                    删除
+                                </a>
+                            </a-popconfirm>
                         </div>
                     </div>
                 </a-table>
@@ -152,7 +171,7 @@
 
 
             <a-modal v-model="importVisible" width="800px" title="导入结果" @ok="afterImport">
-                <div style="height: 600px;overflow: scroll">
+                <div style="max-height: 600px;overflow-y: auto">
                     <div>
                         @{{ importMsg }}
                     </div>
@@ -170,6 +189,7 @@
 @endsection
 
 @section('script')
+    <script src="{{asset('statics/js/xlsx.min.js')}}"></script>
     <script>
         Vue.use(httpVueLoader)
         new Vue({
@@ -186,6 +206,7 @@
                     end_date:null,
                 },
                 listSource: [],
+                areaArr : [],
                 listLoading:false,
                 allLoading:false,
                 status:'新增回款流水',
@@ -228,7 +249,7 @@
                         scopedSlots: { customRender: 'address' },
                         dataIndex: 'address',
                         align: 'center',
-                        width: 300
+                        width: 400
                     },
                     {
                         title: '付款周期',
@@ -268,6 +289,11 @@
                 importVisible:false,
                 importMsg:'',
                 importErrorArr:[],
+                statistics:{
+                    count:0,
+                    account_receivable:0,
+                    funds_received:0,
+                },
                 id:null,
                 reacId:null,
                 updateId:null,
@@ -286,6 +312,13 @@
             },
             methods: {
                 moment,
+                downloadFile(fileName) {
+                    const fileUrl = '/' + fileName; // 文件的URL地址
+                    const link = document.createElement('a');
+                    link.href = fileUrl;
+                    link.setAttribute('download', fileName);
+                    link.click();
+                },
                 fileHandleChange(file){
                     if(file.file.status && file.file.status === 'removed'){
                         return false;
@@ -294,30 +327,105 @@
                     const formData = new FormData();
                     formData.append('file', file.file);
                     this.allLoading = true;
-                    axios({
-                        // 默认请求方式为get
-                        method: 'post',
-                        url: '/api/receivableAccount/import',
-                        // 传递参数
-                        data: formData,
-                        responseType: 'json',
-                        headers:{
-                            'Content-Type': 'multipart/form-data'
+                    let that = this;
+                    let fileReader = new FileReader();
+                    fileReader.onload = function(ev) {
+                        try {
+                            var data = ev.target.result,
+                                workbook = XLSX.read(data, {
+                                    type: 'binary'
+                                }), // 以二进制流方式读取得到整份excel表格对象
+                                persons = []; // 存储获取到的数据
+                        } catch (e) {
+                            console.log('文件类型不正确');
+                            return;
                         }
-                    }).then(response => {
-                        this.allLoading = false;
-                        let res = response.data;
-                        if(res.code !== 0){
-                            this.$message.error(res.message);
-                            return false;
+
+                        // 表格的表格范围，可用于判断表头是否数量是否正确
+                        var fromTo = '';
+                        // 遍历每张表读取
+                        for (var sheet in workbook.Sheets) {
+                            if (workbook.Sheets.hasOwnProperty(sheet)) {
+                                fromTo = workbook.Sheets[sheet]['!ref'];
+                                console.log(fromTo);
+                                persons = persons.concat(XLSX.utils.sheet_to_json(workbook.Sheets[sheet]));
+                                break; // 如果只取第一张表，就取消注释这行
+                            }
                         }
-                        this.importMsg = res.data.success_count + '条数据导入成功 ;' + res.data.error_arr.length + '条数据导入失败 ；';
-                        this.importErrorArr = [];
-                        if(res.data.error_arr.length > 0){
-                            this.importErrorArr = res.data.error_arr;
+
+                        let jsonData = [];
+                        for (let item of persons){
+                            jsonData.push([
+                                item['安装日期'],
+                                item['地区'],
+                                item['客户类型'],
+                                item['区域场所'],
+                                item['单位'],
+                                item['联系方式'],
+                                item['地址'],
+                                item['安装总数'],
+                                item['赠送台数'],
+                                item['备注（完成情况）'],
+                                item['应收账款'],
+                                item['付款金额'],
+                                item['付款方案'],
+                                item['付款期数'],
+                            ])
                         }
-                        this.importVisible = true;
-                    })
+                        // console.log(jsonData);
+                        axios({
+                            // 默认请求方式为get
+                            method: 'post',
+                            url: '/api/receivableAccount/import',
+                            // 传递参数
+                            data: {
+                                data:JSON.stringify(jsonData)
+                            },
+                            responseType: 'json',
+                            headers:{
+                                'Content-Type': 'multipart/form-data'
+                            }
+                        }).then(response => {
+                            that.allLoading = false;
+                            let res = response.data;
+                            if(res.code !== 0){
+                                that.$message.error(res.message);
+                                return false;
+                            }
+                            that.importMsg = res.data.success_count + '条数据导入成功 ;' + res.data.error_arr.length + '条数据导入失败 ；';
+                            that.importErrorArr = [];
+                            if(res.data.error_arr.length > 0){
+                                that.importErrorArr = res.data.error_arr;
+                            }
+                            that.importVisible = true;
+                        })
+                    };
+
+                    fileReader.readAsBinaryString(file.file);
+                    // axios({
+                    //     // 默认请求方式为get
+                    //     method: 'post',
+                    //     url: '/api/receivableAccount/import',
+                    //     // 传递参数
+                    //     data: formData,
+                    //     responseType: 'json',
+                    //     headers:{
+                    //         'Content-Type': 'multipart/form-data'
+                    //     }
+                    // }).then(response => {
+                    //     this.allLoading = false;
+                    //     let res = response.data;
+                    //     if(res.code !== 0){
+                    //         this.$message.error(res.message);
+                    //         return false;
+                    //     }
+                    //     this.importMsg = res.data.success_count + '条数据导入成功 ;' + res.data.error_arr.length + '条数据导入失败 ；';
+                    //     this.importErrorArr = [];
+                    //     if(res.data.error_arr.length > 0){
+                    //         this.importErrorArr = res.data.error_arr;
+                    //     }
+                    //     this.importVisible = true;
+                    // })
                 },
                 fileBeforeUpload(file) {
                     // this.fileList = [...this.fileList, {
@@ -345,6 +453,33 @@
                 onUpdate(row){
                     this.updateId = row.reac_id;
                     this.updateFormVisible = true;
+                },
+                onDel(row){
+                    this.listLoading = true
+                    axios({
+                        // 默认请求方式为get
+                        method: 'post',
+                        url: '/api/receivableAccount/delete',
+                        // 传递参数
+                        data: {
+                            receivable_id:row.reac_id
+                        },
+                        responseType: 'json',
+                        headers:{
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }).then(response => {
+                        this.listLoading = false;
+                        let res = response.data;
+                        if(res.code !== 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
+                        this.$message.success('删除成功');
+                        this.getPageList();
+                    }).catch(error => {
+                        this.$message.error('请求失败');
+                    });
                 },
                 afterAdd(){
                     this.id = null;
@@ -386,6 +521,8 @@
                         let res = response.data;
                         this.listSource = res.data.list
                         this.pagination.total = res.data.total
+                        this.statistics = res.data.statistics
+                        this.areaArr = res.data.area
                         this.listLoading = false
                     }).catch(error => {
                         this.$message.error('请求失败');

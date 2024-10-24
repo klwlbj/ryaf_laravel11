@@ -103,6 +103,7 @@ class MaterialFlowLogic extends BaseLogic
 
     public function inComing($params)
     {
+        ToolsLogic::writeLog('入库操作','material_flow',$params);
         $materialData = Material::getDataById($params['material_id']);
 
         if(!$materialData){
@@ -206,6 +207,7 @@ class MaterialFlowLogic extends BaseLogic
 
     public function outComing($params)
     {
+        ToolsLogic::writeLog('出库操作','material_flow',$params);
         $materialData = Material::query()
             ->where(['mate_id' => $params['material_id']])->select(['mate_id','mate_number'])->first();
 
@@ -335,6 +337,7 @@ class MaterialFlowLogic extends BaseLogic
 
     public function inComingUpdate($params)
     {
+        ToolsLogic::writeLog('更新入库信息','material_flow',$params);
         $data = MaterialFlow::query()->where(['mafl_id' => $params['id'],'mafl_type' => 1])->first();
 
         if(!$data){
@@ -383,6 +386,7 @@ class MaterialFlowLogic extends BaseLogic
 
     public function verify($params)
     {
+        ToolsLogic::writeLog('最终确认流水','material_flow',$params);
         $data = MaterialFlow::query()->where(['mafl_id' => $params['id']])->first();
 
         if(!$data){

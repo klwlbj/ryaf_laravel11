@@ -78,6 +78,28 @@ class ReceivableAccountController
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
+    public function delete(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'receivable_id' => 'required',
+        ],[
+            'receivable_id.required' => '订单id不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = ReceivableAccountLogic::getInstance()->delete($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
     public function addFlow(Request $request)
     {
         $params = $request->all();
@@ -133,9 +155,9 @@ class ReceivableAccountController
         $params = $request->all();
 
         $validate = Validator::make($params, [
-            'file' => 'required',
+            'data' => 'required',
         ],[
-            'file.required' => '文件不得为空',
+            'data.required' => '数据不得为空',
         ]);
 
         if($validate->fails())

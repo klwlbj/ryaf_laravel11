@@ -203,6 +203,7 @@ module.exports = {
                 }
 
                 this.getPageList(this.id);
+                this.$emit('refresh');
             }).catch(error => {
                 this.$message.error('请求失败');
             });

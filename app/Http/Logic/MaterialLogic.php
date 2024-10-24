@@ -773,14 +773,19 @@ class MaterialLogic extends BaseLogic
         $row++;
         $exportData = array_merge($firstList,$secondList);
 
+        $exportData[] = ['仓库保管：','','安全应急（内控）部负责人：','','','','综合管理部负责人：','','','财务部负责人：','','总经理：','','','董事长：','','',''];
+
         $config = [
             'color' => [ExportLogic::getColumnName(2) . '2:' . ExportLogic::getColumnName(2) . $row => 'FFFF0000','F'.($firstCount + 2).':R'. ($firstCount + 2) => 'FFFF0000','F'.($firstCount + 2 + $secondCount + 1).':R'. ($firstCount + 2 + $secondCount + 1) => 'FFFF0000'],
-            'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . '1' => true],
+            'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . '1' => true,'A'.$row.':' . ExportLogic::getColumnName(count($title)) .$row => true],
             'width' => $width,
-            'horizontal_center' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true],
+            'horizontal_center' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . ($row - 1) => true],
+            'vertical_center' => ['A'.$row.':' . ExportLogic::getColumnName(count($title)) .$row => true],
             'wrap_text' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true],
             'freeze_pane' => ['F2' => true],
             'sum_func' => $sum,
+            'merge' => ['A'.$row.':B'.$row => true,'C'.$row.':F'.$row => true,'G'.$row.':I'.$row => true,'J'.$row.':K'.$row => true,'L'.$row.':N'.$row => true,'O'.$row.':R'.$row => true],
+            'height' => [$row => 27]
         ];
 
         return ExportLogic::getInstance()->export($title,$exportData,'进销存报表',$config);

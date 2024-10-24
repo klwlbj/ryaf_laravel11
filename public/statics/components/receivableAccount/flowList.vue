@@ -37,6 +37,7 @@ module.exports = {
                 receivable_id : '',
             },
             listSource: [],
+            listLoading:false,
             info : {},
             columns:[
                 {

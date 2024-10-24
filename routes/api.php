@@ -188,6 +188,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/getList', [ReceivableAccountController::class, 'getList']);
         Route::post('/getInfo', [ReceivableAccountController::class, 'getInfo']);
         Route::post('/update', [ReceivableAccountController::class, 'update']);
+        Route::post('/delete', [ReceivableAccountController::class, 'delete']);
         Route::post('/import', [ReceivableAccountController::class, 'import']);
         Route::post('/addFlow', [ReceivableAccountController::class, 'addFlow']);
         Route::post('/getFlow', [ReceivableAccountController::class, 'getFlow']);
