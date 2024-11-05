@@ -207,6 +207,11 @@ class MaterialLogic extends BaseLogic
         ];
     }
 
+    public function getCardRemain()
+    {
+//        $cardIds = ['']
+    }
+
     public function export($list)
     {
         $title = ['名称','厂家','类别','规格','单位','库存','预警'];

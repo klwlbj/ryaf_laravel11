@@ -172,14 +172,16 @@ class ReceivableAccountController
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
-    public function getAccountFlow(Request $request)
+    public function syncOrder(Request $request)
     {
         $params = $request->all();
 
         $validate = Validator::make($params, [
-            'order_id' => 'required',
+            'start_date' => 'required',
+            'end_date' => 'required',
         ],[
-            'order_id.required' => '订单id不得为空',
+            'start_date.required' => '开始时间不得为空',
+            'end_date.required' => '结束时间不得为空',
         ]);
 
         if($validate->fails())
@@ -187,29 +189,7 @@ class ReceivableAccountController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = OrderLogic::getInstance()->getAccountFlow($params);
-        if($res === false){
-            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
-        }
-        return ResponseLogic::apiResult(0,'ok',$res);
-    }
-
-    public function approveAccountFlow(Request $request)
-    {
-        $params = $request->all();
-
-        $validate = Validator::make($params, [
-            'id' => 'required',
-        ],[
-            'id.required' => '流水id不得为空',
-        ]);
-
-        if($validate->fails())
-        {
-            return ResponseLogic::apiErrorResult($validate->errors()->first());
-        }
-
-        $res = OrderLogic::getInstance()->approveAccountFlow($params);
+        $res = ReceivableAccountLogic::getInstance()->syncOrder($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }

@@ -29,7 +29,8 @@ Route::any('/pushUnits', [\App\Http\Controllers\ScriptController::class, 'pushUn
 
 Route::any('/login', [AdminController::class, 'login']);
 
-//Route::any('/importAdmin', [\App\Http\Controllers\Admin\ImportController::class, 'importAdmin']);
+Route::any('/importDemo', [\App\Http\Controllers\DemoController::class, 'import']);
+Route::any('/compareDemo', [\App\Http\Controllers\DemoController::class, 'compare']);
 
 Route::middleware(['login'])->group(function () {
     //标准地址
@@ -192,5 +193,6 @@ Route::middleware(['login'])->group(function () {
         Route::post('/import', [ReceivableAccountController::class, 'import']);
         Route::post('/addFlow', [ReceivableAccountController::class, 'addFlow']);
         Route::post('/getFlow', [ReceivableAccountController::class, 'getFlow']);
+        Route::post('/syncOrder', [ReceivableAccountController::class, 'syncOrder']);
     });
 });

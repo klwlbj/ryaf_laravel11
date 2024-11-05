@@ -16,15 +16,13 @@ class Login
 {
     public function handle($request, Closure $next)
     {
-        if($request->ajax()){
+        if($request->ajax() || in_array($request->getMethod(),['POST'])){
             $token = $request->header('X-Token');
         }else{
             $token = $_COOKIE['X-Token'] ?? '';
         }
-
-
+//        print_r($token);die;
         $userInfo = Cache::get($token);
-
 
         if(empty($userInfo)){
             if($request->ajax()){
@@ -37,7 +35,6 @@ class Login
         if(!AuthLogic::checkPermission($userInfo['admin_id'])){
             return ResponseLogic::apiErrorResult('没有权限访问');
         }
-
 
         view()->share('adminInfo',$userInfo);
 

@@ -2,9 +2,13 @@
 
 namespace App\Http\Logic;
 
+use App\Models\Node;
+use App\Models\Order;
+use App\Models\Place;
 use App\Models\ReceivableAccount;
 use App\Models\ReceivableAccountAddress;
 use App\Models\ReceivableAccountFlow;
+use App\Models\SmokeDetector;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -466,6 +470,107 @@ class ReceivableAccountLogic extends BaseLogic
             return false;
         }
 
+        $params['end_date'] = $params['end_date'] . ' 23:59:59';
 
+        $orderList = Order::query()
+            ->leftJoin('receivable_account','receivable_account.reac_relation_id','=',DB::raw("order.order_id and receivable_account.reac_type = 2"))
+            ->where('order.order_crt_time','>=',$params['start_date'])
+            ->where('order.order_crt_time','<=',$params['end_date'])
+            ->where('order.order_account_receivable','>',0)
+            ->select([
+                'order.order_id',
+                'order.order_iid',
+                'order.order_node_id',
+                'order.order_user_name',
+                'order.order_user_mobile',
+                'order.order_pay_cycle',
+                'order.order_pay_way',
+                'order_remark',
+                'order_account_receivable',
+                'order_funds_received',
+                'order_crt_time'
+            ])
+            ->get()->toArray();
+
+        $orderIds = array_column($orderList,'order_id');
+
+        $nodeIds = array_values(array_unique(array_column($orderList,'order_node_id')));
+
+        $placeGroup = Place::query()->select([
+            'plac_order_id',
+            'plac_name',
+            'plac_address'
+        ])->whereIn('plac_order_id',$orderIds)->get()->groupBy('plac_order_id')->toArray();
+
+        $nodeArr = Node::query()->whereIn('node_id',$nodeIds)->select(['node_id','node_name'])->pluck('node_name','node_id')->toArray();
+
+        $deviceCountArr = SmokeDetector::query()->whereIn('smde_order_id',$orderIds)
+            ->select([
+                'smde_order_id',
+                DB::raw('count(smde_order_id) as count'),
+            ])->groupBy(['smde_order_id'])->get()->pluck('count','smde_order_id')->toArray();
+
+//        print_r($placeGroup);die;
+        $addressInsert = [];
+        $flowInsert = [];
+        foreach ($orderList as $key => $value){
+            $addressList = $placeGroup[$value['order_id']] ?? [];
+
+            print_r($addressList);die;
+
+            $insertData = [
+                'reac_type' => 2,
+                'reac_device_type' => 1,
+                'reac_area' => '订单',
+                'reac_street' => $nodeArr[$value['order_node_id']] ?? '',
+                'reac_installation_date' => $value['order_crt_time'],
+                'reac_user_type' => 2,
+                'reac_user_name' => $value['order_user_name'],
+                'reac_user_mobile' => $value['order_user_mobile'],
+                'reac_installation_count' => $deviceCountArr[$value['order_node_id']],
+                'reac_given_count' => 0,
+                'reac_account_receivable' => $value['order_account_receivable'],
+                'reac_funds_received' => $value['order_funds_received'],
+                'reac_pay_cycle' => $value['order_pay_cycle'],
+                'reac_status' => 1,
+                'reac_remark' => $value['order_remark'],
+                'reac_operator_id' => AuthLogic::$userId
+            ];
+
+            $id = ReceivableAccount::query()->insertGetId($insertData);
+
+            foreach ($addressList as $addressItem){
+                $addressInsert[] = [
+                    'reac_account_id' => $id,
+                    'reac_address' => $addressItem['plac_address']
+                ];
+            }
+
+            #如果实收大于0 则添加一条流水记录
+            if($value['order_funds_received'] > 0){
+                $flowInsert[] = [
+                    'reac_account_id' => $id,
+                    'reac_datetime' => date('Y-m-d H:i:s'),
+                    'reac_pay_way' => 5,
+                    'reac_funds_received' => $value['order_funds_received'],
+                    'reac_type' => 1,
+                    'reac_status' => 2,
+                    'reac_remark' => '自动生成第一条欠款',
+                    'reac_operator_id' => AuthLogic::$userId,
+                ];
+
+                if(count($flowInsert) >= 500){
+                    ReceivableAccountFlow::query()->insert($flowInsert);
+                    $flowInsert = [];
+                }
+            }
+
+            if(count($addressInsert) >= 500){
+                ReceivableAccountAddress::query()->insert($addressInsert);
+                $addressInsert = [];
+            }
+        }
+
+        print_r($orderList);die;
     }
 }
