@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
-use App\Http\Logic\ResponseLogic;
 use App\Http\Logic\AdvancedOrderLogic;
-use Illuminate\Support\Facades\Validator;
 
 class AdvancedOrderController extends BaseController
 {
@@ -21,25 +19,25 @@ class AdvancedOrderController extends BaseController
 
     public function getInfo(Request $request)
     {
-        return $this->baseMethod($request, ['id' => 'required',]);
+        return $this->baseMethod($request, ['id' => 'required']);
     }
 
     public function getLinkInfo(Request $request)
     {
-        return $this->baseMethod($request, ['id' => 'required',]);
+        return $this->baseMethod($request, ['id' => 'required']);
     }
 
     public function link(Request $request)
     {
-        return $this->baseMethod($request,[
-            'id' => 'required',
+        return $this->baseMethod($request, [
+            'id'     => 'required',
             'detail' => 'required',
         ]);
     }
 
     public function add(Request $request)
     {
-        return $this->baseMethod($request,[
+        return $this->baseMethod($request, [
             'name'                     => 'required',
             'address'                  => 'required',
             'phone'                    => 'required',
@@ -52,7 +50,7 @@ class AdvancedOrderController extends BaseController
 
     public function update(Request $request)
     {
-        return $this->baseMethod($request,[
+        return $this->baseMethod($request, [
             'id'                       => 'required|string|exists:advanced_order,ador_id',
             'name'                     => 'required',
             'address'                  => 'required',
@@ -66,6 +64,6 @@ class AdvancedOrderController extends BaseController
 
     public function delete(Request $request)
     {
-        return $this->baseMethod($request, ['id' => 'required',]);
+        return $this->baseMethod($request, ['id' => 'required']);
     }
 }

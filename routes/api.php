@@ -1,25 +1,26 @@
 <?php
 
-use App\Http\Controllers\Admin\AddressController;
-use App\Http\Controllers\Admin\AdminPermissionController;
-use App\Http\Controllers\Admin\DepartmentController;
-use App\Http\Controllers\Admin\InstallationController;
-use App\Http\Controllers\Admin\InstallationRegisterController;
-use App\Http\Controllers\Admin\NodeController;
-use App\Http\Controllers\Admin\ReceivableAccountController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AreaController;
+use App\Http\Controllers\Admin\NodeController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\UploadController;
+use App\Http\Controllers\Admin\AddressController;
 use App\Http\Controllers\Admin\MaterialController;
+use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\WarehouseController;
+use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\OtherOrderController;
+use App\Http\Controllers\Admin\InstallationController;
 use App\Http\Controllers\Admin\MaterialFlowController;
 use App\Http\Controllers\Admin\AdvancedOrderController;
+use App\Http\Controllers\Admin\AdminPermissionController;
 use App\Http\Controllers\Admin\FinancialIncomeController;
 use App\Http\Controllers\Admin\MaterialCategoryController;
 use App\Http\Controllers\Admin\MaterialPurchaseController;
+use App\Http\Controllers\Admin\ReceivableAccountController;
+use App\Http\Controllers\Admin\InstallationRegisterController;
 use App\Http\Controllers\Admin\MaterialManufacturerController;
 use App\Http\Controllers\Admin\MaterialSpecificationController;
 
@@ -28,6 +29,15 @@ Route::any('/upload', [UploadController::class, 'upload']);
 Route::any('/pushUnits', [\App\Http\Controllers\ScriptController::class, 'pushUnits']);
 
 Route::any('/login', [AdminController::class, 'login']);
+Route::prefix('security')->group(function () {
+    Route::any('/total', [SecurityController::class, 'total']);
+    Route::any('/unitTotal', [SecurityController::class, 'unitTotal']);
+    Route::any('/list', [SecurityController::class, 'list']);
+    Route::any('/alertTotal', [SecurityController::class, 'alertTotal']);
+    Route::any('/unitAlertTotal', [SecurityController::class, 'unitAlertTotal']);
+    Route::any('/alertList', [SecurityController::class, 'alertList']);
+});
+Route::any('/security/login', [AdminController::class, 'login']);
 
 Route::any('/importDemo', [\App\Http\Controllers\DemoController::class, 'import']);
 Route::any('/compareDemo', [\App\Http\Controllers\DemoController::class, 'compare']);
@@ -194,5 +204,9 @@ Route::middleware(['login'])->group(function () {
         Route::post('/addFlow', [ReceivableAccountController::class, 'addFlow']);
         Route::post('/getFlow', [ReceivableAccountController::class, 'getFlow']);
         Route::post('/syncOrder', [ReceivableAccountController::class, 'syncOrder']);
+    });
+
+    Route::prefix('test')->group(function () {
+        Route::get('/getList', [\App\Http\Controllers\Admin\TestController::class, 'getList']);
     });
 });

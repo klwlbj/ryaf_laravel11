@@ -264,7 +264,7 @@ class FinancialIncomeLogic extends BaseLogic
             ->where(['order_id' => $params['id']])
             ->first();
 
-        $actualDeliveryDate = $data->order_actual_delivery_date; // 交付日期
+        $actualDeliveryDate   = $data->order_actual_delivery_date; // 交付日期
         $totalReceivable      = $data->order_account_receivable;  // 总应收款
         $totalReceived        = $data->order_funds_received;  // 总实收款
         $payCycle             = empty($data->order_pay_cycle) ? 1 : $data->order_pay_cycle;  // 分期数
