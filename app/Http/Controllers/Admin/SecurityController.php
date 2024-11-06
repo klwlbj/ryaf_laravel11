@@ -35,17 +35,17 @@ class SecurityController
 
         // 进行验证
         $validator = Validator::make($params, [
-            'page'       => 'nullable|int',
-            'page_size'  => 'nullable|int',
+            'page'      => 'nullable|int',
+            'page_size' => 'nullable|int',
         ]);
 
         if ($validator->fails()) {
             return ResponseLogic::apiErrorResult($validator->errors()->first());
         }
         // 获取单个参数
-        $page      = $params['page'] ?? 1;
-        $pageSize  = $params['page_size'] ?? 10;
-        $point     = ($page - 1) * $pageSize;
+        $page     = $params['page'] ?? 1;
+        $pageSize = $params['page_size'] ?? 10;
+        $point    = ($page - 1) * $pageSize;
 
         $query = SmokeDetector::select('smde_place_id', 'plac_name', DB::raw('count(*) as count, sum(smde_online_real = "1") as online_count, sum(smde_online_real = "0") as offline_count'))
             ->where('smde_place_id', "!=", 0)
@@ -131,7 +131,7 @@ class SecurityController
             ->whereIn('iono_type', [1, 3])
             ->count();
 
-        return ResponseLogic::apiResult(0, 'ok', $count);
+        return ResponseLogic::apiResult(0, 'ok', ['count' => $count]);
     }
 
         public function unitAlertTotal(Request $request)
