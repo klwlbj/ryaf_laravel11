@@ -15,4 +15,9 @@ class SmokeDetector extends BaseModel
     {
         return $this->belongsTo(Order::class, 'order_id', 'smde_order_id');
     }
+
+    public function place()
+    {
+        return $this->belongsTo(Place::class, 'plac_id', "smde_place_id");
+    }
 }
