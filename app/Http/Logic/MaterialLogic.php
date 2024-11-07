@@ -62,6 +62,8 @@ class MaterialLogic extends BaseLogic
             ->keyBy('mate_id')
             ->toArray();
 
+        $cardActivateRemainList = $this->getCardRemain();
+
         if(!empty($params['is_expire'])){
             if(!empty($expireList)){
                 $ids = array_column($expireList,'mate_id');
@@ -204,12 +206,58 @@ class MaterialLogic extends BaseLogic
             'total' => $total,
             'list' => $list,
             'expire_list' => array_values($expireList),
+            'card_remain_list' => $cardActivateRemainList
         ];
     }
 
     public function getCardRemain()
     {
-//        $cardIds = ['']
+        $cardIds = [4,5,6,7,46,47,48,50];
+
+        $cardActivateRemainList = Material::query()
+            ->leftJoin('material_detail','material_detail.made_material_id','=','material.mate_id')
+            ->where(['material.mate_status' => 1,'material_detail.made_status' => 1,'material_detail.made_verify_warn' => 0])
+            ->whereIn('material.mate_id',$cardIds)
+            ->whereRaw("DATEDIFF(NOW(),material_detail.made_datetime) > 60")
+            ->select([
+                'material.mate_id',
+                'material.mate_name',
+                DB::raw("GROUP_CONCAT(distinct DATE_ADD(material_detail.made_datetime,INTERVAL 90 DAY)) as remain_date"),
+                DB::raw('count(material_detail.made_id) as expire_count')
+            ])->groupBy(['material.mate_id'])
+            ->get()
+//            ->keyBy('mate_id')
+            ->toArray();
+
+        foreach ($cardActivateRemainList as $key => &$value){
+            $value['remain_date'] = date('Y-m-d',strtotime($value['remain_date']));
+        }
+
+        return $cardActivateRemainList;
+    }
+
+    public function verifyWarn($params)
+    {
+        $cardIds = [4,5,6,7,46,47,48,50];
+
+        $detailIds = Material::query()
+            ->leftJoin('material_detail','material_detail.made_material_id','=','material.mate_id')
+            ->where(['material.mate_status' => 1,'material_detail.made_status' => 1,'material_detail.made_verify_warn' => 0])
+            ->whereIn('material.mate_id',$cardIds)
+            ->where(['material.mate_id' => $params['material_id']])
+            ->whereRaw("DATEDIFF(NOW(),material_detail.made_datetime) > 60")
+            ->select([
+                'material.mate_id',
+                'material_detail.made_id'
+            ])
+            ->pluck('made_id')
+            ->toArray();
+
+        if(!empty($detailIds)){
+            MaterialDetail::query()->whereIn('made_id',$detailIds)->update(['made_verify_warn' => 1]);
+        }
+
+        return [];
     }
 
     public function export($list)
@@ -795,4 +843,6 @@ class MaterialLogic extends BaseLogic
 
         return ExportLogic::getInstance()->export($title,$exportData,'进销存报表',$config);
     }
+
+
 }

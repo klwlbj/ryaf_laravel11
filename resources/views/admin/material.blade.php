@@ -7,6 +7,25 @@
             message="物品临期警告"
             :description="expireStr"
             banner closable></a-alert>
+
+        <a-alert v-if="cardRemainList.length > 0" message="卡激活临期" banner closable>
+            <template #description>
+                <div v-for="item in cardRemainList">
+                    <span>@{{ item.mate_name }}</span> <span>即将过激活期数: @{{ item.expire_count }}</span><span>，最晚激活期: @{{ item.remain_date }}</span>
+                    <a-popconfirm
+                        style="margin-left: 10px"
+                        title="是否不在提醒?"
+                        ok-text="确认"
+                        cancel-text="取消"
+                        @confirm="onVerifyWarn(item)"
+                    >
+                        <a style="margin-right: 8px">
+                            不在提醒
+                        </a>
+                    </a-popconfirm>
+                </div>
+            </template>
+        </a-alert>
         <a-card>
             <div>
                 <a-form layout="inline" >
@@ -309,6 +328,7 @@
                 },
                 listSource: [],
                 expireList: [],
+                cardRemainList: [],
                 listLoading:false,
                 exportLoading:false,
                 dialogStatus:'新增',
@@ -491,6 +511,7 @@
                         }
                         this.listSource = res.data.list
                         this.expireList = res.data.expire_list
+                        this.cardRemainList = res.data.card_remain_list
                         this.pagination.total = res.data.total
                     }).catch(error => {
                         this.$message.error('请求失败');
@@ -521,6 +542,7 @@
                     this.unconfirmedFlowFormVisible = true;
                 },
                 onDel(row){
+                    this.loading = true;
                     axios({
                         // 默认请求方式为get
                         method: 'post',
@@ -629,6 +651,33 @@
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
+                },
+                onVerifyWarn(row){
+                    this.loading = true;
+                    axios({
+                        // 默认请求方式为get
+                        method: 'post',
+                        url: '/api/material/verifyWarn',
+                        // 传递参数
+                        data: {
+                            material_id : row.mate_id
+                        },
+                        responseType: 'json',
+                        headers:{
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }).then(response => {
+                        this.loading = false;
+                        let res = response.data;
+                        if(res.code !== 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
+                        this.$message.success('确认成功');
+                        this.handleFilter();
+                    }).catch(error => {
+                        this.$message.error('请求失败');
+                    });
                 }
             },
         })

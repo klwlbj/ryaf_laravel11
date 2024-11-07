@@ -224,4 +224,26 @@ class MaterialController
         }
         return ResponseLogic::apiResult(0,'ok',$res);
     }
+
+    public function verifyWarn(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'material_id' => 'required',
+        ],[
+            'material_id.required' => '物品id不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialLogic::getInstance()->verifyWarn($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
 }

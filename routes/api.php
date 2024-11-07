@@ -90,6 +90,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/getDetailList', [MaterialController::class, 'getDetailList']);
         Route::post('/getDetail', [MaterialController::class, 'getDetail']);
         Route::post('/reportExport', [MaterialController::class, 'reportExport']);
+        Route::post('/verifyWarn', [MaterialController::class, 'verifyWarn']);
     });
 
     Route::prefix('materialFlow')->group(function () {
