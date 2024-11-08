@@ -18,7 +18,7 @@ class SignatureMiddleware
             return response()->json(['error' => 'secret not found'], 401);
         }
 
-        $expectedSignature = md5($partnerCode . date('Ymd') . $secret);
+        $expectedSignature = md5($partnerCode . date('Y-m-d') . $secret);
 
         $requestSignature = $request->input('signature');
 
