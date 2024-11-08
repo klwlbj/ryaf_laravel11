@@ -33,8 +33,7 @@ Route::any('/pushUnits', [\App\Http\Controllers\ScriptController::class, 'pushUn
 Route::any('/login', [AdminController::class, 'login']);
 
 Route::prefix('security')
-    ->middleware(SignatureMiddleware::class)
-    ->middleware(CheckIpMiddleware::class)
+    ->middleware([SignatureMiddleware::class,CheckIpMiddleware::class])
     ->group(function () {
     Route::any('/total', [SecurityController::class, 'total']);
     Route::any('/unitTotal', [SecurityController::class, 'unitTotal']);
