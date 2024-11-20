@@ -34,5 +34,8 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+    'fire_alarm_panel' => [
+        'tcp_ip' => env('FIRE_ALARM_PANEL_TCP_HOST'),
+        'tcp_port' => env('FIRE_ALARM_PANEL_TCP_PORT'),
+    ]
 ];

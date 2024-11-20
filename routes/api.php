@@ -39,6 +39,7 @@ Route::prefix('security')->group(function () {
 });
 Route::any('/security/login', [AdminController::class, 'login']);
 
+Route::any('/test', [\App\Http\Controllers\DemoController::class, 'test']);
 Route::any('/importDemo', [\App\Http\Controllers\DemoController::class, 'import']);
 Route::any('/compareDemo', [\App\Http\Controllers\DemoController::class, 'compare']);
 
