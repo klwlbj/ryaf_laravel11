@@ -11,16 +11,20 @@ use Illuminate\Support\Facades\Validator;
 
 class SecurityController
 {
+    //smde_user_ids like '%,1345,%'
+    // plac_user_ids like '%,1345,%'
     public function total()
     {
-        $count        = SmokeDetector::query()->count();
-        $onlineCount  = SmokeDetector::query()->where('smde_online_real', 1)->count();
-        $offlineCount = SmokeDetector::query()->where('smde_online_real', 0)->count();
+        $query = SmokeDetector::select(DB::raw('count(*) as count, sum(smde_online = "1") as online_count, sum(smde_online = "0") as offline_count'))
+            ->where('smde_place_id', "!=", 0)
+            ->where('smde_user_ids', 'like', '%,1345,%')
+            ->whereNotNull('smde_place_id')
+            ->first();
 
         $res = [
-            'total_count'   => $count,
-            'online_count'  => $onlineCount,
-            'offline_count' => $offlineCount,
+            'total_count'   => (int) $query->count,
+            'online_count'  => (int) $query->online_count,
+            'offline_count' => (int) $query->offline_count,
         ];
 
         return ResponseLogic::apiResult(0, 'ok', $res);
@@ -47,17 +51,19 @@ class SecurityController
         $pageSize = $params['page_size'] ?? 10;
         $point    = ($page - 1) * $pageSize;
 
-        $query = SmokeDetector::select('smde_place_id', 'plac_name', DB::raw('count(*) as count, sum(smde_online_real = "1") as online_count, sum(smde_online_real = "0") as offline_count'))
+        $query = SmokeDetector::query()
+            ->select('smde_place_id as plac_id', 'plac_name', DB::raw('count(*) as count, sum(smde_online = "1") as online_count, sum(smde_online = "0") as offline_count'))
             ->where('smde_place_id', "!=", 0)
-            ->orderBy('count', 'desc')
+            ->where('smde_user_ids', 'like', '%,1345,%')
             ->groupBy('smde_place_id')
             ->leftJoin('place', 'plac_id', '=', 'smde_place_id');
 
         $count = DB::selectOne("
-            select count('sub.smde_place_id') as count from ({$query->toSql()}) as sub
+            select count('sub.smde_place_id') as count from ({$query->clone()->select('smde_place_id')->toSql()}) as sub
             ", $query->getQuery()->getBindings());
 
         $list = $query
+            ->orderBy('count', 'desc')
             ->offset($point)
             ->limit($pageSize)
             ->get();
@@ -71,7 +77,8 @@ class SecurityController
         $validator = Validator::make($params, [
             'page'      => 'nullable|int',
             'page_size' => 'nullable|int',
-            'unit_name' => "nullable",
+            'plac_id'   => 'required_without:plac_name|int',
+            'plac_name' => "required_without:plac_id|nullable",
             'status'    => "nullable|in:0,1",
         ]);
 
@@ -85,19 +92,25 @@ class SecurityController
 
         $query = SmokeDetector::query()
             ->where('smde_place_id', "!=", 0)
-            ->when(isset($params['unit_name']), function ($query) use ($params) {
-                return $query->where('plac_name', 'like', '%' . $params['unit_name'] . '%')
-                    ->leftJoin('place', 'plac_id', '=', 'smde_place_id');
+            ->where('smde_user_ids', 'like', '%,1345,%')
+            ->when(isset($params['plac_name']), function ($query) use ($params) {
+                return $query->where('plac_name', $params['plac_name']);
+            })
+            ->when(isset($params['plac_id']), function ($query) use ($params) {
+                return $query->where('plac_id', $params['plac_id']);
             })
             ->when(isset($params['status']), function ($query) use ($params) {
-                return $query->where('smde_online_real', $params['status']);
-            });
+                return $query->where('smde_online', $params['status']);
+            })
+            //     ->where('plac_name', 'like', '%' . $params['plac_name'] . '%')
+            ->leftJoin('place', 'plac_id', '=', 'smde_place_id');
         $count  = $query->count();
-        $select = ['smde_id', 'smde_type', 'smde_position', 'smde_lng', 'smde_lat', 'smde_threshold_temperature', 'smde_last_heart_beat', 'smde_online_real'];
+        $select = ['smde_id', 'smde_type', 'smde_position', 'smde_lng', 'smde_lat', 'smde_threshold_temperature', 'smde_last_heart_beat', 'smde_online'];
 
-        if (isset($params['unit_name'])) {
+        if (isset($params['plac_name'])) {
             $select[] = 'plac_name';
             $select[] = 'plac_address';
+            $select[] = 'plac_id';
         }
 
         $list = $query->select($select)
@@ -125,9 +138,12 @@ class SecurityController
         $startTime = $params['start_time'] ?? '';
         $endTime   = $params['end_time'] ?? '';
 
+        $smokeDetectorIMEIs = SmokeDetector::query()->where('smde_user_ids', 'like', '%,1345,%')->pluck('smde_imei');
+
         $count = IotNotificationAlert::query()
             ->where('iono_crt_time', '>=', $startTime)
             ->where('iono_crt_time', '<=', $endTime)
+            ->whereIn('iono_msg_imei', $smokeDetectorIMEIs)
             ->whereIn('iono_type', [1, 3])
             ->count();
 
@@ -156,24 +172,27 @@ class SecurityController
             $startTime = $params['start_time'] ?? '';
             $endTime   = $params['end_time'] ?? '';
 
+            $smokeDetectorIMEIs = SmokeDetector::query()->where('smde_user_ids', 'like', '%,1345,%')->pluck('smde_imei');
+
             $query = IotNotificationAlert::query()
-                ->select('smde_place_id', 'plac_name', DB::raw('count(*) as count'))
+                ->select('smde_place_id as plac_id', 'plac_name', DB::raw('count(*) as count'))
                 ->where('smde_place_id', "!=", 0)
                 ->whereNotNull('smde_place_id')
                 ->where('iono_crt_time', '>=', $startTime)
                 ->where('iono_crt_time', '<=', $endTime)
+                ->whereIn('iono_msg_imei', $smokeDetectorIMEIs)
                 ->whereIn('iono_type', [1, 3])
                 ->leftJoin('smoke_detector', 'smde_id', '=', 'iono_smde_id')
                 ->leftJoin('place', 'plac_id', '=', 'smde_place_id')
-                ->orderBy('count', 'desc')
                 ->groupBy('smde_place_id');
 
             // todo 多种方式子查询
             $count = DB::selectOne("
-            select count('sub.smde_place_id') as count from ({$query->toSql()}) as sub
+            select count('sub.smde_place_id') as count from ({$query->clone()->select('smde_place_id')->toSql()}) as sub
             ", $query->getQuery()->getBindings());
 
             $list = $query
+                ->orderBy('count', 'desc')
                 ->offset($point)
                 ->limit($pageSize)
                 ->get();
@@ -188,7 +207,8 @@ class SecurityController
         $validator = Validator::make($params, [
             'page'        => 'nullable|int',
             'page_size'   => 'nullable|int',
-            'unit_name'   => "nullable",
+            'plac_id'     => 'required_without:plac_name|int',
+            'plac_name'   => "required_without:plac_id|nullable",
             'iono_status' => "nullable|in:1,2,3,4",
         ]);
 
@@ -203,21 +223,26 @@ class SecurityController
         $ionoStatusList = [
             0 => "处理中", 1 => "已处理", 2 => "已忽略", 3 => "待处理", 4 => "自动恢复",
         ];
+        $smokeDetectorIMEIs = SmokeDetector::query()->where('smde_user_ids', 'like', '%,1345,%')->pluck('smde_imei');
 
         $query = IotNotificationAlert::query()
             ->whereIn('iono_type', [1, 3])
-            ->when(isset($params['unit_name']), function ($query) use ($params) {
-                return $query->where('plac_name', 'like', '%' . $params['unit_name'] . '%')
-                    ->leftJoin('smoke_detector', 'smde_id', '=', 'iono_smde_id')
-                    ->leftJoin('place', 'plac_id', '=', 'smde_place_id');
+            ->whereIn('iono_msg_imei', $smokeDetectorIMEIs)
+            ->when(isset($params['plac_name']), function ($query) use ($params) {
+                return $query->where('plac_name', $params['plac_name']);
+            })
+            ->when(isset($params['plac_id']), function ($query) use ($params) {
+                return $query->where('plac_id', $params['plac_id']);
             })
             ->when(isset($params['iono_status']), function ($query) use ($params, $ionoStatusList) {
                 return $query->where('iono_status', $ionoStatusList[$params['iono_status']] ?? '');
-            });
+            })
+            ->leftJoin('smoke_detector', 'smde_id', '=', 'iono_smde_id')
+            ->leftJoin('place', 'plac_id', '=', 'smde_place_id');
         $count  = $query->count();
-        $select = ['iono_id', 'iono_msg_imei', 'iono_type', 'iono_crt_time', 'iono_alert_status', 'iono_status', 'iono_remark', 'iono_conclusion'];
+        $select = ['iono_id', 'iono_msg_imei', 'iono_type', 'iono_crt_time', 'iono_status', 'iono_remark', 'iono_conclusion'];
 
-        if (isset($params['unit_name'])) {
+        if (isset($params['plac_name'])) {
             $select[] = 'plac_name';
         }
         $list = $query->select($select)

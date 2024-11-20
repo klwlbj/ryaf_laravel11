@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\CheckIpMiddleware;
+use App\Http\Middleware\SignatureMiddleware;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AreaController;
 use App\Http\Controllers\Admin\NodeController;
@@ -29,7 +31,10 @@ Route::any('/upload', [UploadController::class, 'upload']);
 Route::any('/pushUnits', [\App\Http\Controllers\ScriptController::class, 'pushUnits']);
 
 Route::any('/login', [AdminController::class, 'login']);
-Route::prefix('security')->group(function () {
+
+Route::prefix('security')
+    ->middleware([SignatureMiddleware::class,CheckIpMiddleware::class])
+    ->group(function () {
     Route::any('/total', [SecurityController::class, 'total']);
     Route::any('/unitTotal', [SecurityController::class, 'unitTotal']);
     Route::any('/list', [SecurityController::class, 'list']);
@@ -37,7 +42,6 @@ Route::prefix('security')->group(function () {
     Route::any('/unitAlertTotal', [SecurityController::class, 'unitAlertTotal']);
     Route::any('/alertList', [SecurityController::class, 'alertList']);
 });
-Route::any('/security/login', [AdminController::class, 'login']);
 
 Route::any('/test', [\App\Http\Controllers\DemoController::class, 'test']);
 Route::any('/importDemo', [\App\Http\Controllers\DemoController::class, 'import']);
