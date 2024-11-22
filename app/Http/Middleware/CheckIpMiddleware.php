@@ -8,6 +8,9 @@ class CheckIpMiddleware
 {
     public function handle($request, Closure $next)
     {
+        if($request->get('super_user') == 1){
+            return $next($request);
+        }
         $allowedIps = [
             '127.0.0.1',
             '183.6.174.106',
