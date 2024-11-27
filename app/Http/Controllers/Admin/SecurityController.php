@@ -13,8 +13,11 @@ use Illuminate\Support\Facades\Validator;
 
 class SecurityController
 {
-    //smde_user_ids like ',1345,%'
-    // plac_user_ids like ',1345,%'
+    public function __construct()
+    {
+        DB::setDefaultConnection('mysql2');
+    }
+
     public function total(Request $request)
     {
         $params = $request->all();

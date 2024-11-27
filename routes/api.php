@@ -162,8 +162,8 @@ Route::middleware(['login'])->group(function () {
     });
 
     Route::prefix('area')->group(function () {
-        Route::get('/getList', [AreaController::class, 'getList']);
-        Route::get('/getList2', [AreaController::class, 'getList2']);
+        Route::any('/getList', [AreaController::class, 'getList']);
+        Route::any('/getList2', [AreaController::class, 'getList2']);
         Route::get('/generateJson', [AreaController::class, 'generateJson']);
         Route::get('/generateJson2', [AreaController::class, 'generateJson2']);
     });
