@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Node;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\SmokeDetector;
 use App\Http\Logic\ResponseLogic;
@@ -11,14 +13,31 @@ use Illuminate\Support\Facades\Validator;
 
 class SecurityController
 {
-    //smde_user_ids like '%,1345,%'
-    // plac_user_ids like '%,1345,%'
-    public function total()
+    public function __construct()
     {
+        DB::setDefaultConnection('mysql2');
+    }
+
+    public function total(Request $request)
+    {
+        $params = $request->all();
+
+        // 进行验证
+        $validator = Validator::make($params, [
+            'node_id' => 'nullable|int',
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseLogic::apiErrorResult($validator->errors()->first());
+        }
         $query = SmokeDetector::select(DB::raw('count(*) as count, sum(smde_online = "1") as online_count, sum(smde_online = "0") as offline_count'))
             ->where('smde_place_id', "!=", 0)
-            ->where('smde_user_ids', 'like', '%,1345,%')
+            ->where('plac_user_ids', 'like', ',1345,%')
             ->whereNotNull('smde_place_id')
+            ->leftJoin('place', 'plac_id', '=', 'smde_place_id')
+            ->when(isset($params['node_id']), function ($query) use ($params) {
+                return $query->where('plac_node_ids', 'like', '%,' . $params['node_id'] . ',%');
+            })
             ->first();
 
         $res = [
@@ -32,42 +51,57 @@ class SecurityController
 
     public function unitTotal(Request $request)
     {
-        // 设置脚本最大执行时间为 360 秒
-        set_time_limit(100);
-
         $params = $request->all();
 
         // 进行验证
         $validator = Validator::make($params, [
-            'page'      => 'nullable|int',
-            'page_size' => 'nullable|int',
+            'node_id' => 'required|int',
         ]);
 
         if ($validator->fails()) {
             return ResponseLogic::apiErrorResult($validator->errors()->first());
         }
-        // 获取单个参数
-        $page     = $params['page'] ?? 1;
-        $pageSize = $params['page_size'] ?? 10;
-        $point    = ($page - 1) * $pageSize;
+        // 找出node_id的所有下级
+        $nodes = Node::query()->where('node_parent_id', $params['node_id'])
+            ->orWhere('node_id', $params['node_id'])
+            ->pluck('node_name', 'node_id');
 
-        $query = SmokeDetector::query()
-            ->select('smde_place_id as plac_id', 'plac_name', DB::raw('count(*) as count, sum(smde_online = "1") as online_count, sum(smde_online = "0") as offline_count'))
+        $nodeIds = $nodes->keys();
+        $data    = [];
+        foreach ($nodeIds as $nodeId) {
+            // 初始化值
+            $data[$nodeId] = [
+                'node_id'       => $nodeId,
+                'node_name'     => $nodes->get($nodeId),
+                'count'         => 0,
+                'online_count'  => 0,
+                'offline_count' => 0,
+            ];
+        }
+
+        $list = SmokeDetector::query()->select("plac_node_id as node_id", "plac_node_ids", 'smde_online')
+            ->where('plac_node_ids', 'like', '%,' . $params['node_id'] . ',%')
             ->where('smde_place_id', "!=", 0)
-            ->where('smde_user_ids', 'like', '%,1345,%')
-            ->groupBy('smde_place_id')
-            ->leftJoin('place', 'plac_id', '=', 'smde_place_id');
-
-        $count = DB::selectOne("
-            select count('sub.smde_place_id') as count from ({$query->clone()->select('smde_place_id')->toSql()}) as sub
-            ", $query->getQuery()->getBindings());
-
-        $list = $query
-            ->orderBy('count', 'desc')
-            ->offset($point)
-            ->limit($pageSize)
+            ->whereNotNull('plac_node_id')
+            ->where('plac_user_ids', 'like', ',1345,%')
+            ->leftJoin('place', 'plac_id', '=', 'smde_place_id')
+            ->leftJoin('node', 'plac_node_id', '=', 'node_id')
             ->get();
-        return ResponseLogic::apiResult(0, 'ok', ['list' => $list, 'count' => $count->count]);
+
+        foreach ($list as $item) {
+            foreach ($nodeIds as $newNodeId) {
+                if (Str::contains($item->plac_node_ids, ',' . $newNodeId . ',')) {
+                    $data[$newNodeId]['count'] = ($data[$newNodeId]['count'] ?? 0) + 1;
+                    if ($item->smde_online == 1) {
+                        $data[$newNodeId]['online_count'] = ($data[$newNodeId]['online_count'] ?? 0) + 1;
+                    } else {
+                        $data[$newNodeId]['offline_count'] = ($data[$newNodeId]['offline_count'] ?? 0) + 1;
+                    }
+                }
+            }
+        }
+
+        return ResponseLogic::apiResult(0, 'ok', ['list' => array_values($data)]);
     }
 
     public function list(Request $request)
@@ -77,8 +111,7 @@ class SecurityController
         $validator = Validator::make($params, [
             'page'      => 'nullable|int',
             'page_size' => 'nullable|int',
-            'plac_id'   => 'required_without:plac_name|int',
-            'plac_name' => "required_without:plac_id|nullable",
+            'node_id'   => 'nullable|int',
             'status'    => "nullable|in:0,1",
         ]);
 
@@ -92,32 +125,32 @@ class SecurityController
 
         $query = SmokeDetector::query()
             ->where('smde_place_id', "!=", 0)
-            ->where('smde_user_ids', 'like', '%,1345,%')
-            ->when(isset($params['plac_name']), function ($query) use ($params) {
-                return $query->where('plac_name', $params['plac_name']);
-            })
-            ->when(isset($params['plac_id']), function ($query) use ($params) {
-                return $query->where('plac_id', $params['plac_id']);
+            ->where('plac_user_ids', 'like', ',1345,%')
+            ->when(isset($params['node_id']), function ($query) use ($params) {
+                return $query->where('plac_node_ids', 'like', '%,' . $params['node_id'] . ',%');
             })
             ->when(isset($params['status']), function ($query) use ($params) {
                 return $query->where('smde_online', $params['status']);
             })
-            //     ->where('plac_name', 'like', '%' . $params['plac_name'] . '%')
-            ->leftJoin('place', 'plac_id', '=', 'smde_place_id');
+            ->leftJoin('place', 'plac_id', '=', 'smde_place_id')
+            ->leftJoin('node', 'plac_node_id', '=', 'node_id')
+        ;
         $count  = $query->count();
-        $select = ['smde_id', 'smde_type', 'smde_position', 'smde_lng', 'smde_lat', 'smde_threshold_temperature', 'smde_last_heart_beat', 'smde_online'];
-
-        if (isset($params['plac_name'])) {
-            $select[] = 'plac_name';
-            $select[] = 'plac_address';
-            $select[] = 'plac_id';
-        }
+        $select = ['node_id', 'node_name', 'smde_id', 'smde_type', 'smde_position', 'smde_lng', 'smde_lat',
+            'smde_last_heart_beat', 'smde_last_temperature', 'smde_last_smokescope', 'smde_online',
+            'plac_name', 'plac_address',
+        ];
 
         $list = $query->select($select)
         ->orderBy('smde_id', 'desc')
         ->offset($point)
         ->limit($pageSize)
-        ->get();
+        ->get()
+        ->transform(function ($item) {
+            $item->smde_last_temperature = (int) $item->smde_last_temperature / 100;
+            $item->smde_last_smokescope  = (int) $item->smde_last_smokescope / 100;
+            return $item;
+        });
 
         return ResponseLogic::apiResult(0, 'ok', ['list' => $list, 'count' => $count]);
     }
@@ -129,6 +162,7 @@ class SecurityController
         $validator = Validator::make($params, [
             'start_time' => "required|date_format:Y-m-d H:i:s",
             'end_time'   => "required|date_format:Y-m-d H:i:s",
+            'node_id'    => 'nullable|int',
         ]);
 
         if ($validator->fails()) {
@@ -138,13 +172,18 @@ class SecurityController
         $startTime = $params['start_time'] ?? '';
         $endTime   = $params['end_time'] ?? '';
 
-        $smokeDetectorIMEIs = SmokeDetector::query()->where('smde_user_ids', 'like', '%,1345,%')->pluck('smde_imei');
+        $smokeDetectorIMEIs = SmokeDetector::query()->where('smde_user_ids', 'like', ',1345,%')->pluck('smde_imei');
 
         $count = IotNotificationAlert::query()
             ->where('iono_crt_time', '>=', $startTime)
             ->where('iono_crt_time', '<=', $endTime)
             ->whereIn('iono_msg_imei', $smokeDetectorIMEIs)
             ->whereIn('iono_type', [1, 3])
+            ->when(isset($params['node_id']), function ($query) use ($params) {
+                return $query->where('plac_node_ids', 'like', '%,' . $params['node_id'] . ',%')
+                    ->leftJoin('smoke_detector', 'smde_id', '=', 'iono_smde_id')
+                    ->leftJoin('place', 'plac_id', '=', 'smde_place_id');
+            })
             ->count();
 
         return ResponseLogic::apiResult(0, 'ok', ['count' => $count]);
@@ -159,6 +198,7 @@ class SecurityController
                 'page'       => 'nullable|int',
                 'page_size'  => 'nullable|int',
                 'start_time' => "required|date_format:Y-m-d H:i:s",
+                'node_id'    => 'nullable|int',
                 'end_time'   => "required|date_format:Y-m-d H:i:s",
             ]);
 
@@ -172,10 +212,13 @@ class SecurityController
             $startTime = $params['start_time'] ?? '';
             $endTime   = $params['end_time'] ?? '';
 
-            $smokeDetectorIMEIs = SmokeDetector::query()->where('smde_user_ids', 'like', '%,1345,%')->pluck('smde_imei');
+            $smokeDetectorIMEIs = SmokeDetector::query()->where('smde_user_ids', 'like', ',1345,%')->pluck('smde_imei');
 
             $query = IotNotificationAlert::query()
-                ->select('smde_place_id as plac_id', 'plac_name', DB::raw('count(*) as count'))
+                ->select('plac_node_id as node_id', 'node_name', DB::raw('count(*) as count'))
+                ->when(isset($params['node_id']), function ($query) use ($params) {
+                    return $query->where('plac_node_ids', 'like', '%,' . $params['node_id'] . ',%');
+                })
                 ->where('smde_place_id', "!=", 0)
                 ->whereNotNull('smde_place_id')
                 ->where('iono_crt_time', '>=', $startTime)
@@ -184,11 +227,11 @@ class SecurityController
                 ->whereIn('iono_type', [1, 3])
                 ->leftJoin('smoke_detector', 'smde_id', '=', 'iono_smde_id')
                 ->leftJoin('place', 'plac_id', '=', 'smde_place_id')
-                ->groupBy('smde_place_id');
+                ->leftJoin('node', 'plac_node_id', '=', 'node_id')
+                ->groupBy('plac_node_id');
 
-            // todo 多种方式子查询
             $count = DB::selectOne("
-            select count('sub.smde_place_id') as count from ({$query->clone()->select('smde_place_id')->toSql()}) as sub
+            select count('sub.plac_node_id') as count from ({$query->clone()->select('plac_node_id')->toSql()}) as sub
             ", $query->getQuery()->getBindings());
 
             $list = $query
@@ -207,46 +250,47 @@ class SecurityController
         $validator = Validator::make($params, [
             'page'        => 'nullable|int',
             'page_size'   => 'nullable|int',
-            'plac_id'     => 'required_without:plac_name|int',
-            'plac_name'   => "required_without:plac_id|nullable",
-            'iono_status' => "nullable|in:1,2,3,4",
+            'node_id'     => 'nullable|int',
+            'iono_status' => "nullable|in:0,1,2,3,4",
+            'start_time'  => "required|date_format:Y-m-d H:i:s",
+            'end_time'    => "required|date_format:Y-m-d H:i:s",
         ]);
 
         if ($validator->fails()) {
             return ResponseLogic::apiErrorResult($validator->errors()->first());
         }
         // 获取单个参数
-        $page     = $params['page'] ?? 1;
-        $pageSize = $params['page_size'] ?? 10;
-        $point    = ($page - 1) * $pageSize;
+        $page      = $params['page'] ?? 1;
+        $pageSize  = $params['page_size'] ?? 10;
+        $point     = ($page - 1) * $pageSize;
+        $startTime = $params['start_time'] ?? '';
+        $endTime   = $params['end_time'] ?? '';
 
         $ionoStatusList = [
             0 => "处理中", 1 => "已处理", 2 => "已忽略", 3 => "待处理", 4 => "自动恢复",
         ];
-        $smokeDetectorIMEIs = SmokeDetector::query()->where('smde_user_ids', 'like', '%,1345,%')->pluck('smde_imei');
 
         $query = IotNotificationAlert::query()
             ->whereIn('iono_type', [1, 3])
-            ->whereIn('iono_msg_imei', $smokeDetectorIMEIs)
-            ->when(isset($params['plac_name']), function ($query) use ($params) {
-                return $query->where('plac_name', $params['plac_name']);
-            })
-            ->when(isset($params['plac_id']), function ($query) use ($params) {
-                return $query->where('plac_id', $params['plac_id']);
+            ->where('iono_crt_time', '>=', $startTime)
+            ->where('iono_crt_time', '<=', $endTime)
+            ->where('plac_user_ids', 'like', ',1345,%')
+            ->when(isset($params['node_id']), function ($query) use ($params) {
+                return $query->where('plac_node_id', $params['node_id']);
             })
             ->when(isset($params['iono_status']), function ($query) use ($params, $ionoStatusList) {
                 return $query->where('iono_status', $ionoStatusList[$params['iono_status']] ?? '');
             })
             ->leftJoin('smoke_detector', 'smde_id', '=', 'iono_smde_id')
-            ->leftJoin('place', 'plac_id', '=', 'smde_place_id');
+            ->leftJoin('place', 'plac_id', '=', 'smde_place_id')
+            ->leftJoin('node', 'plac_node_id', '=', 'node_id')
+            ->leftJoin('user', 'user_id', '=', 'plac_user_id');
         $count  = $query->count();
-        $select = ['iono_id', 'iono_msg_imei', 'iono_type', 'iono_crt_time', 'iono_status', 'iono_remark', 'iono_conclusion'];
+        $select = ['node_name', 'iono_id', 'plac_name', 'user_mobile', 'user_name', 'iono_msg_imei', 'plac_address', 'iono_type', 'iono_crt_time', 'iono_status', 'iono_remark', 'iono_conclusion'];
 
-        if (isset($params['plac_name'])) {
-            $select[] = 'plac_name';
-        }
         $list = $query->select($select)
             ->offset($point)
+            ->orderBy('iono_crt_time', 'desc')
             ->limit($pageSize)
             ->get();
 

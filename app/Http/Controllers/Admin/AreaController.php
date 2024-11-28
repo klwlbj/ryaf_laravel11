@@ -35,6 +35,26 @@ class AreaController
         ]);
     }
 
+/*    public function getBaiyunAreaList()
+    {
+        // 从文件中读取JSON数据
+        $jsonData = Storage::disk('local')->get('area2.json');
+
+        if ($jsonData === false) {
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+
+        $collection = collect(json_decode($jsonData));
+
+        $filteredCollection = $collection->where('value', '=', 5);// 筛选白云区下的
+
+        // 如果需要将结果转换为数组，可以使用如下方式
+        $filteredArray = $filteredCollection->values()->all();
+        return ResponseLogic::apiResult(0, 'ok', [
+            'areaList' => $filteredArray,
+        ]);
+    }*/
+
     public function generateJson()
     {
         // 获取所有区级数据
@@ -89,11 +109,11 @@ class AreaController
                             return [
                                 'value'    => $community->node_id,
                                 'label'    => $community->node_name,
-                                'children' =>  $community->children->map(function ($community2) {
+                                'children' => $community->children->map(function ($community2) {
                                     return [
-                                        'value' => $community2->node_id,
-                                        'label' => $community2->node_name,
-                                        'children' =>  $community2->children->map(function ($community3) {
+                                        'value'    => $community2->node_id,
+                                        'label'    => $community2->node_name,
+                                        'children' => $community2->children->map(function ($community3) {
                                             return [
                                                 'value' => $community3->node_id,
                                                 'label' => $community3->node_name,

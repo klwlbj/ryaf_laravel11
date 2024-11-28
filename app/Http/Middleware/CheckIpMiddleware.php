@@ -8,11 +8,16 @@ class CheckIpMiddleware
 {
     public function handle($request, Closure $next)
     {
+        if($request->get('super_user') == 1){
+            return $next($request);
+        }
         $allowedIps = [
             '127.0.0.1',
             '183.6.174.106',
             '120.236.178.4',
-            '116.21.228.206', // 加入泰沙路IP，暂时
+            '120.236.189.237',
+            '120.234.195.243',
+            '113.111.6.40', // 加入泰沙路IP，暂时
         ]; // 允许访问的 IP 地址
 
         $allowedIpRanges = [
@@ -20,6 +25,7 @@ class CheckIpMiddleware
         ];
 
         $ip = ip2long($request->ip());
+        // dd($request->ip());
 
         foreach ($allowedIpRanges as $allowedIpRange) {
             list($subnet, $mask) = explode('/', $allowedIpRange);

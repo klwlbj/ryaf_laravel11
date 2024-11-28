@@ -42,6 +42,12 @@ Route::prefix('security')
     Route::any('/alertTotal', [SecurityController::class, 'alertTotal']);
     Route::any('/unitAlertTotal', [SecurityController::class, 'unitAlertTotal']);
     Route::any('/alertList', [SecurityController::class, 'alertList']);
+    Route::get('/getGuangzhouList', [AreaController::class, 'getList2']);
+});
+
+Route::prefix('test')->group(function () {
+    Route::get('/getList', [\App\Http\Controllers\Admin\TestController::class, 'getList']);
+    Route::get('/getList2', [\App\Http\Controllers\Admin\TestController::class, 'getList2']);
 });
 
 Route::any('/test', [\App\Http\Controllers\DemoController::class, 'test']);
@@ -157,8 +163,8 @@ Route::middleware(['login'])->group(function () {
     });
 
     Route::prefix('area')->group(function () {
-        Route::post('/getList', [AreaController::class, 'getList']);
-        Route::post('/getList2', [AreaController::class, 'getList2']);
+        Route::any('/getList', [AreaController::class, 'getList']);
+        Route::any('/getList2', [AreaController::class, 'getList2']);
         Route::get('/generateJson', [AreaController::class, 'generateJson']);
         Route::get('/generateJson2', [AreaController::class, 'generateJson2']);
     });
