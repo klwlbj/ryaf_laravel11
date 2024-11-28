@@ -43,6 +43,10 @@
                     </a-form-item>
 
                     <a-form-item>
+                        <a-button type="primary" icon="sync" v-on:click="syncFormVisible = true">同步订单数据</a-button>
+                    </a-form-item>
+
+                    <a-form-item>
                         <a-button icon="download" v-on:click="downloadFile('AccountsReceivableTemplate.xlsx')">下载导入模板</a-button>
                     </a-form-item>
 
@@ -167,6 +171,26 @@
                                    @close="updateFormVisible = false;"
                 >
                 </update>
+            </a-modal>
+
+            <a-modal :mask-closable="false" v-model="syncFormVisible"
+                     title="同步订单"
+                     width="800px" :footer="null">
+                <a-form-model :model="syncForm" :label-col="labelCol" :wrapper-col="wrapperCol">
+                    <a-form-model-item label="开始日期">
+                        <a-date-picker format="YYYY-MM-DD" value-format="YYYY-MM-DD" v-model:value="syncForm.start_date"/>
+                    </a-form-model-item>
+
+                    <a-form-model-item label="结束日期">
+                        <a-date-picker format="YYYY-MM-DD" value-format="YYYY-MM-DD" v-model:value="syncForm.end_date"/>
+                    </a-form-model-item>
+                </a-form-model>
+
+                <a-form-model-item :wrapper-col="{ span: 14, offset: 4 }">
+                    <a-button type="primary" :loading="syncLoading" @click="submitSync">
+                        同步数据
+                    </a-button>
+                </a-form-model-item>
             </a-modal>
 
 
@@ -300,6 +324,14 @@
                 updateFormVisible:false,
                 defaultDate:undefined,
                 fileList:[],
+                syncFormVisible:false,
+                syncLoading:false,
+                labelCol: { span: 4 },
+                wrapperCol: { span: 14 },
+                syncForm:{
+                    start_date : moment().format("YYYY-MM-DD"),
+                    end_date: moment().format("YYYY-MM-DD"),
+                }
             },
             created () {
                 this.listQuery.page_size = this.pagination.pageSize;
@@ -538,6 +570,30 @@
                 afterImport(){
                     this.importVisible = false;
                     this.getPageList();
+                },
+                submitSync(){
+                    this.syncLoading = true;
+                    axios({
+                        // 默认请求方式为get
+                        method: 'post',
+                        url: '/api/receivableAccount/syncOrder',
+                        // 传递参数
+                        data: this.reportForm,
+                        responseType: 'json',
+                        headers:{
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }).then(response => {
+                        this.syncLoading = false;
+                        let res = response.data;
+                        if(res.code !== 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
+                        this.$message.success('同步成功');
+                    }).catch(error => {
+                        this.$message.error('请求失败');
+                    });
                 }
             },
 

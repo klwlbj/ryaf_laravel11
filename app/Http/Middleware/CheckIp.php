@@ -14,7 +14,7 @@ class CheckIp
         $serverName = gethostname(); // 获取当前主机名
         $localIP = gethostbyname($serverName);
 
-        $localIps = ['127.0.0.1','47.104.10.228', $localIP];
+        $localIps = ['127.0.0.1','47.104.10.228','113.111.6.40', $localIP];
 
         if(!in_array($clientIp,$localIps)){
             return ResponseLogic::apiResult(403 ,'ip有误' ,[]);

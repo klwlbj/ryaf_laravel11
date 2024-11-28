@@ -88,5 +88,9 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('receivableAccount')->group(function () {
         Route::view('/view', 'admin.receivableAccount');
     });
+
+    Route::prefix('maintain')->group(function () {
+        Route::view('place/view', 'admin.maintainPlace');
+    });
 });
 

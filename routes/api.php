@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\MaintainController;
 use App\Http\Middleware\CheckIpMiddleware;
 use App\Http\Middleware\SignatureMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -214,5 +215,10 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('test')->group(function () {
         Route::get('/getList', [\App\Http\Controllers\Admin\TestController::class, 'getList']);
+    });
+
+
+    Route::prefix('maintain')->group(function () {
+        Route::post('/placeList', [MaintainController::class,'placeList']);
     });
 });

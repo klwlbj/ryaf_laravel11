@@ -37,7 +37,7 @@ class AdminPermissionLogic extends BaseLogic
 
     public function add($params)
     {
-        $parentLevel = adminPermission::query()->where(['adpe_id' => $params['parent_id']])->value('adpe_level') ?: 1;
+        $parentLevel = adminPermission::query()->where(['adpe_id' => $params['parent_id'] ?? 0])->value('adpe_level') ?: 0;
         if($parentLevel >= 2 && $params['type'] == 1){
             ResponseLogic::setMsg('不可以添加3级菜单');
             return false;
@@ -64,7 +64,7 @@ class AdminPermissionLogic extends BaseLogic
 
     public function update($params)
     {
-        $parentLevel = adminPermission::query()->where(['adpe_id' => $params['parent_id']])->value('adpe_level') ?: 1;
+        $parentLevel = adminPermission::query()->where(['adpe_id' => $params['parent_id']])->value('adpe_level') ?: 0;
         if($parentLevel >= 2 && $params['type'] == 1){
             ResponseLogic::setMsg('不可以添加3级菜单');
             return false;

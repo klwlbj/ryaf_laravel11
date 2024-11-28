@@ -239,12 +239,9 @@ class MaterialFlowHandle
             ->where(['main_warehouse_id' => $params['warehouse_id'],'main_material_id' => $params['material_id']])
             ->value('main_id');
 
-        DB::beginTransaction();
-
         #插入库存流水
         $flowId = MaterialFlow::query()->insertGetId($incomingData);
         if(!$flowId){
-            DB::rollBack();
             ResponseLogic::setMsg('插入库存流水失败');
             return false;
         }
@@ -253,53 +250,12 @@ class MaterialFlowHandle
             if(MaterialInventory::query()->insert([
                     'main_warehouse_id' => $params['warehouse_id'],
                     'main_material_id' => $params['material_id'],
-                    'main_number' => $params['number'],
+                    'main_number' => 0,
                 ]) === false){
-                DB::rollBack();
                 ResponseLogic::setMsg('创建物品仓库库存失败');
                 return false;
             }
-        }else{
-            if(MaterialInventory::query()->where(['main_id' => $inventoryId])->update(['main_number' => DB::raw("main_number+".$params['number'])]) === false){
-                DB::rollBack();
-                ResponseLogic::setMsg('更新物品仓库库存失败');
-                return false;
-            }
         }
-
-        #变更物品库存数量
-        if(Material::query()->where(['mate_id' => $params['material_id']])->update(['mate_number' => DB::raw("mate_number+".$params['number'])]) === false){
-            DB::rollBack();
-            ResponseLogic::setMsg('更新总库存失败');
-            return false;
-        }
-
-        $detailInsert = [];
-
-        for ($i = 0; $i < $params['number']; $i++) {
-            $detailInsert[] = [
-                'made_material_id' => $params['material_id'],
-                'made_warehouse_id' => $params['warehouse_id'],
-                'made_in_id' => $flowId,
-                'made_is_deliver' => $materialData['mate_is_deliver'],
-                'made_production_date' => $params['production_date'],
-                'made_expire_date' => $params['expire_date'],
-                'made_datetime' => $params['datetime'],
-                'made_status' => 1,
-            ];
-
-            if(count($detailInsert) >= 1000){
-                MaterialDetail::query()->insert($detailInsert);
-                $detailInsert = [];
-            }
-        }
-
-        if(!empty($detailInsert)){
-            MaterialDetail::query()->insert($detailInsert);
-            $detailInsert = [];
-        }
-
-        DB::commit();
 
         Material::delCacheById($params['material_id']);
 
@@ -350,48 +306,11 @@ class MaterialFlowHandle
             'mafl_operator_id' => 10010 #操作人 默认写死2
         ];
 
-        DB::beginTransaction();
-
-        #插入库存流水
-        if(($flowId = MaterialFlow::query()->insertGetId($outComingData)) === false){
-            DB::rollBack();
+        #只插入流水
+        if((MaterialFlow::query()->insertGetId($outComingData)) === false){
             ResponseLogic::setMsg('插入流水记录失败');
             return false;
         }
-
-
-        #变更该仓库物品流水
-        if(MaterialInventory::query()->where(['main_warehouse_id' => $params['warehouse_id'],'main_material_id' => $params['material_id']])->update(['main_number' => DB::raw("main_number-".$params['number'])]) === false){
-            DB::rollBack();
-            ResponseLogic::setMsg('更新物品仓库库存失败');
-            return false;
-        }
-        #变更物品库存数量
-        if(Material::query()->where(['mate_id' => $params['material_id']])->update([
-                'mate_number' => DB::raw("mate_number-".$params['number']),
-            ]) === false){
-            DB::rollBack();
-            ResponseLogic::setMsg('更新物品仓库库存失败');
-            return false;
-        }
-        #把物品变更成出库状态
-        if(MaterialDetail::query()
-                ->where(['made_material_id' => $params['material_id'],'made_status' => 1])
-                ->orderBy('made_datetime','asc')
-                ->orderBy('made_id','asc')
-                ->limit($params['number'])
-                ->update([
-                    'made_out_id' => $flowId,
-                    'made_status' => 2,
-                    'made_receive_user_id' => $params['receive_user_id']
-                ]) === false){
-            DB::rollBack();
-            ResponseLogic::setMsg('更新物品详情失败');
-            return false;
-        }
-
-
-        DB::commit();
 
         Material::delCacheById($params['material_id']);
 

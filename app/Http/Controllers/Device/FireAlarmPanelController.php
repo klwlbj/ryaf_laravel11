@@ -150,4 +150,30 @@ class FireAlarmPanelController
         }
         return ResponseLogic::apiResult(0,'ok',$res);
     }
+
+    public function pushData(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+            'type' => 'required',
+            'data' => 'required',
+        ],[
+            'id.required' => '设备ID 不得为空',
+            'type.required' => '数据类型 不得为空',
+            'data.required' => '数据 不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = FireAlarmPanelLogic::getInstance()->pushData($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
 }

@@ -5,7 +5,14 @@ namespace App\Http\Logic\Device;
 use App\Http\Library\FireAlarmPanel\HuiXiao;
 use App\Http\Logic\BaseLogic;
 use App\Http\Logic\ResponseLogic;
+use App\Http\Logic\ToolsLogic;
+use App\Models\IotNotification;
+use App\Models\IotNotificationAlert;
+use App\Models\IotNotificationSelfCheck;
+use App\Models\Mainframe;
+use App\Models\SmokeDetector;
 use App\Models\UitdCommand;
+use Illuminate\Support\Facades\DB;
 
 class FireAlarmPanelLogic extends BaseLogic
 {
@@ -129,5 +136,106 @@ class FireAlarmPanelLogic extends BaseLogic
         }
 
         return ['result' => $res];
+    }
+
+    public function pushData($params)
+    {
+
+        $data = ToolsLogic::jsonDecode($params['data']);
+
+        $mainId = Mainframe::query()->where(['mafr_no' => $params['id']])->value('mafr_id') ?: 0;
+        if(empty($mainId)){
+            ResponseLogic::setMsg('主机设备不存在');
+            return false;
+        }
+
+        #如果是其他类型  则插入警报表
+        if(!in_array($params['type'],['heartbeat','fire_alert'])){
+            $insertData = [
+                'iono_body' => $params['data'],
+                'iono_platform' => 'HUIXIAO',
+                'iono_msg_at' => strtotime($data['datetime']['value']),
+//                'iono_msg_imei' => $params['id'],
+                'iono_type' => -1,
+//                'iono_imei' => $params['id'],
+                'iono_mafr_id' => $mainId
+            ];
+
+
+            IotNotification::query()->insert($insertData);
+            return [];
+        }
+
+        try {
+            if($params['type'] == 'heartbeat'){
+
+                $insertData = [
+                    'iono_body' => $params['data'],
+                    'iono_platform' => 'HUIXIAO',
+                    'iono_msg_at' => strtotime($data['datetime']['value']),
+//                    'iono_msg_imei' => $params['id'],
+                    'iono_type' => 21,
+//                    'iono_imei' => $params['id'],
+                    'iono_mafr_id' => $mainId
+                ];
+
+
+                $ionoId = IotNotification::query()->insertGetId($insertData);
+
+                $insertData['iono_id'] = $ionoId;
+
+                IotNotificationSelfCheck::query()->insert($insertData);
+
+                #更新消控主机主表心跳包时间
+                Mainframe::query()->where(['mafr_id' => $mainId])->update(['mafr_last_heart_beat' => $data['datetime']['value']]);
+
+            }elseif($params['type'] == 'fire_alert'){
+                if($data['status']['value'] == '点型感烟'){
+                    $alertType = 1;
+                }elseif ($data['status']['value'] == '点型感温'){
+                    $alertType = 3;
+                }else{
+                    $alertType = 1;
+                }
+
+                $imei = $data['probe_code']['value'] ?? '';
+                if(empty($imei)){
+                    ResponseLogic::setMsg('imei不存在');
+                    return false;
+                }
+
+                $smdeId = SmokeDetector::query()
+                    ->where(['smde_mafr_id' => $mainId,'smde_imei' => $imei])->value('smde_id') ?: 0;
+
+                if(empty($smdeId)){
+                    ResponseLogic::setMsg('设备不存在');
+                    return false;
+                }
+
+                $insertData = [
+                    'iono_body' => $params['data'],
+                    'iono_platform' => 'HUIXIAO',
+                    'iono_msg_at' => strtotime($data['datetime']['value']),
+                    'iono_msg_imei' => $imei,
+                    'iono_type' => $alertType,
+                    'iono_imei' => $imei,
+                    'iono_smde_id' => $smdeId,
+                    'iono_mafr_id' => $mainId
+                ];
+
+                $ionoId = IotNotification::query()->insertGetId($insertData);
+
+                $insertData['iono_id'] = $ionoId;
+
+                IotNotificationAlert::query()->insert($insertData);
+            }
+        } catch (\Exception $e) {
+            ResponseLogic::setMsg($e->getMessage());
+            return false;
+        }
+
+
+
+        return [];
     }
 }

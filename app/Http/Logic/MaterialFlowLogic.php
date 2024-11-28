@@ -38,6 +38,14 @@ class MaterialFlowLogic extends BaseLogic
             $query->where(['material_flow.mafl_status' => $params['status']]);
         }
 
+        if(!empty($params['start_date'])){
+            $query->where('material_flow.mafl_datetime','>=',$params['start_date']);
+        }
+
+        if(!empty($params['end_date'])){
+            $query->where('material_flow.mafl_datetime','<=',$params['end_date'] . ' 23:59:59');
+        }
+
         $total = $query->count();
 
         $query->select([

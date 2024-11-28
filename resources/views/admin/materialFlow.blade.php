@@ -19,6 +19,13 @@
                             </a-select-option>
                         </a-select>
                     </a-form-item>
+                    <a-form-item label="出入库日期">
+                        <a-range-picker
+                            :placeholder="['开始时间', '结束时间']"
+                            @change="dateChange"
+                            :default-value="[defaultDate,defaultDate]"></a-range-picker>
+                    </a-form-item>
+
                     <a-form-item label="确认状态">
                         <a-select v-model="listQuery.status" show-search placeholder="请选择" :max-tag-count="1"
                                   style="width: 200px;" allow-clear  @change="handleFilter">
@@ -183,7 +190,10 @@
                     keyword: "",
                     category_id:'',
                     status:undefined,
+                    start_date:null,
+                    end_date:null,
                 },
+                defaultDate:undefined,
                 listSource: [],
                 listLoading:false,
                 dialogStatus:'新增',
@@ -421,7 +431,12 @@
                     this.inComingUpdateVisible = false;
                     this.$message.success('修改成功');
                     this.getPageList();
-                }
+                },
+                dateChange(value,arr){
+                    this.listQuery.start_date = arr[0];
+                    this.listQuery.end_date = arr[1];
+                    this.handleFilter();
+                },
             },
 
         })
