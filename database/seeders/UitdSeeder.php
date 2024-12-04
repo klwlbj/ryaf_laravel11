@@ -273,13 +273,13 @@ class UitdSeeder extends Seeder
     public function run(): void
     {
         $mainframeId = 61;
-        // smde_extra_remark => 设备注释
         // smde_circuit => 回路
         // smde_point_position => 点位
-        // smde_area_no 区号
-        // smde_building_no 楼号
-        // smde_mafr_id 所属主机
+        // smde_imei=> 用户编码
         // smde_type 设备类型
+        // smde_building_no 楼号
+        // smde_extra_remark => 设备注释
+        // smde_mafr_id 所属主机
 
         foreach ($this->Uitds as $uitd) {
             $data[] = [
@@ -292,6 +292,6 @@ class UitdSeeder extends Seeder
                 'smde_mafr_id'        => $mainframeId,
             ];
         }
-        DB::table('smoke_detector')->insert($data);
+        DB::connection('mysql2')->table('smoke_detector')->insert($data);
     }
 }
