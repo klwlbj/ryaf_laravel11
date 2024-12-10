@@ -1,12 +1,8 @@
 <template>
     <div>
         <a-form-model :loading="loading" :model="formData" ref="dataForm" :label-col="dialogFormLabelCol" :wrapper-col="dialogFormWrapperCol" :rules="formRules">
-            <a-form-model-item label="地区" prop="area">
-                <a-input v-model="formData.area" />
-            </a-form-model-item>
-
-            <a-form-model-item label="区域场所" prop="street">
-                <a-input v-model="formData.street" />
+            <a-form-model-item label="监控中心" prop="street">
+                <node-cascader :default-data="nodeId" @change="nodeChange"></node-cascader>
             </a-form-model-item>
 
             <a-form-model-item label="单位/用户" prop="user_name">
@@ -29,9 +25,6 @@
                 <a-input-number v-model="formData.account_receivable" :step="0.01"/>
             </a-form-model-item>
 
-
-
-
             <a-form-model-item :wrapper-col="{ span: 14, offset: 4 }">
                 <a-button :loading="loading" type="primary" @click="submitData">
                     确认
@@ -49,7 +42,7 @@
 module.exports = {
     name: 'receivableAccountUpdate',
     components: {
-
+        "node-cascader":  httpVueLoader('/statics/components/node/nodeCascader.vue'),
     },
     props: {
         id: {
@@ -69,6 +62,7 @@ module.exports = {
 
             },
             loading :false,
+            nodeId:undefined
         }
     },
     methods: {
@@ -78,6 +72,7 @@ module.exports = {
                 area:'',
                 street:'',
                 user_name:'',
+                node_id:'',
                 user_mobile:'',
                 installation_count:0,
                 given_count:0,
@@ -150,13 +145,19 @@ module.exports = {
                     street:res.data.reac_street,
                     user_name:res.data.reac_user_name,
                     user_mobile:res.data.reac_user_mobile,
+                    node_id:res.data.reac_node_id,
                     installation_count:res.data.reac_installation_count,
                     given_count:res.data.reac_given_count,
-                    account_receivable:res.data.reac_account_receivable,
+                    account_receivable:res.data.reac_account_receivable ? res.data.reac_account_receivable : 0,
                 }
+
+                this.nodeId = res.data.order_node_arr;
             }).catch(error => {
                 this.$message.error('请求失败');
             });
+        },
+        nodeChange(value){
+            this.formData.node_id = value;
         },
     },
     created () {

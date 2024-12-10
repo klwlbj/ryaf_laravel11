@@ -51,6 +51,7 @@ Route::prefix('test')->group(function () {
 });
 
 Route::any('/test', [\App\Http\Controllers\DemoController::class, 'test']);
+Route::any('/test1', [\App\Http\Controllers\DemoController::class, 'test1']);
 Route::any('/importDemo', [\App\Http\Controllers\DemoController::class, 'import']);
 Route::any('/compareDemo', [\App\Http\Controllers\DemoController::class, 'compare']);
 
@@ -215,6 +216,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/delete', [ReceivableAccountController::class, 'delete']);
         Route::post('/import', [ReceivableAccountController::class, 'import']);
         Route::post('/addFlow', [ReceivableAccountController::class, 'addFlow']);
+        Route::post('/batchAddFlow', [ReceivableAccountController::class,'batchAddFlow']);
         Route::post('/getFlow', [ReceivableAccountController::class, 'getFlow']);
         Route::post('/syncOrder', [ReceivableAccountController::class, 'syncOrder']);
     });
@@ -226,5 +228,10 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('maintain')->group(function () {
         Route::post('/placeList', [MaintainController::class,'placeList']);
+        Route::post('/getPlaceInfo', [MaintainController::class,'getPlaceInfo']);
+        Route::post('/getRemarkInfo', [MaintainController::class,'getRemarkInfo']);
+        Route::post('/updatePlace', [MaintainController::class,'updatePlace']);
+        Route::post('/setRemark', [MaintainController::class,'setRemark']);
+        Route::post('/noDataList', [MaintainController::class,'noDataList']);
     });
 });

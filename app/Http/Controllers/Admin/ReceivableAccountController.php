@@ -128,6 +128,34 @@ class ReceivableAccountController
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
+    public function batchAddFlow(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'list_query' => 'required',
+            'datetime' => 'required',
+            'pay_way' => 'required',
+            'funds_type' => 'required',
+        ],[
+            'list_query.required' => '条件不得为空',
+            'datetime.required' => '回款日期不得为空',
+            'pay_way.required' => '支付方式不得为空',
+            'funds_type.required' => '录入类型不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = ReceivableAccountLogic::getInstance()->batchAddFlow($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
     public function getFlow(Request $request)
     {
         $params = $request->all();

@@ -75,6 +75,8 @@ class HuiXiao
         $hex = '8c8c01' . $ipHex . $portHex . '7f';
 
         $message = $this->header . $deviceId . $hex;
+
+        return $this->send($message);
     }
 
     public function sendCommand($deviceId,$command)

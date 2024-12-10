@@ -28,9 +28,18 @@
                 </a-radio-group>
             </a-form-model-item>
 
+            <a-form-model-item label="录入类型" prop="funds_type">
+                <a-radio-group v-model="formData.funds_type" button-style="solid">
+                    <a-radio-button :value="1">金额</a-radio-button>
+                    <a-radio-button :value="2">百分比（推进到xx百分比）</a-radio-button>
+                </a-radio-group>
+            </a-form-model-item>
 
-            <a-form-model-item label="实收款" prop="funds_received">
+            <a-form-model-item v-show="formData.funds_type === 1" label="实收款" prop="funds_received">
                 <a-input-number v-model="formData.funds_received" :step="0.01"/>
+            </a-form-model-item>
+            <a-form-model-item v-show="formData.funds_type === 2" label="百分比" prop="funds_received">
+                <a-input-number v-model="formData.funds_percent" :step="0.01" :formatter="(value)=>{ return value + '%'}"/>
             </a-form-model-item>
 
             <a-form-model-item label="备注" prop="remark">
@@ -60,9 +69,9 @@ module.exports = {
     name: 'receivableAccountFlowAdd',
     components: {},
     props: {
-        id: {
+        listQuery: {
             default:function(){
-                return null
+                return {}
             },
         },
     },
@@ -76,7 +85,7 @@ module.exports = {
             dialogFormWrapperCol: { span: 14 },
             formRules: {
                 datetime: [{ required: true, message: '请输入回款日期', trigger: 'blur' }],
-                funds_received: [{ required: true, message: '请输入回款金额', trigger: 'blur' }],
+                // funds_received: [{ required: true, message: '请输入回款金额', trigger: 'blur' }],
             },
             loading :false,
             cid:undefined
@@ -88,7 +97,9 @@ module.exports = {
             this.formData= {
                 datetime:moment().format('YYYY-MM-DD HH:mm:ss'),
                 pay_way:5,
+                funds_type:1,
                 funds_received:0,
+                funds_percent:0,
                 remark:'',
             };
         },
@@ -96,16 +107,12 @@ module.exports = {
             let that = this;
             this.$refs.dataForm.validate((valid) => {
                 if (valid) {
-                    if(!that.id){
-                        this.$message.error('记录不能为空');
-                        return false;
-                    }
-                    that.formData.receivable_id = that.id;
+                    that.formData.list_query = JSON.stringify(that.listQuery);
 
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/api/receivableAccount/addFlow',
+                        url: '/api/receivableAccount/batchAddFlow',
                         // 传递参数
                         data: that.formData,
                         responseType: 'json',
@@ -120,7 +127,7 @@ module.exports = {
                             return false;
                         }
                         this.initForm();
-                        that.$emit('add');
+                        that.$emit('submit');
                     }).catch(error => {
                         this.$message.error('请求失败');
                     });
@@ -128,63 +135,6 @@ module.exports = {
                     this.$message.error('表单验证失败');
                 }
             })
-        },
-        imageHandleRemove(file){
-            let index = this.imageList.indexOf(file);
-            let newFileList = this.imageList.slice();
-            newFileList.splice(index, 1);
-            this.imageList = newFileList;
-        },
-        imageHandleChange(file){
-            if(file.file.status && file.file.status === 'removed'){
-                return false;
-            }
-
-            const formData = new FormData();
-            formData.append('file', file.file);
-            formData.append('type', 'order_account_flow');
-            // formData.append('oss', 1);
-
-            axios({
-                // 默认请求方式为get
-                method: 'post',
-                url: '/api/upload',
-                // 传递参数
-                data: formData,
-                responseType: 'json',
-                headers:{
-                    'Content-Type': 'multipart/form-data'
-                }
-            }).then(response => {
-                let res = response.data;
-                if(res.code !== 0){
-                    this.$message.error(res.message);
-                    return false;
-                }
-                this.imageList[this.imageList.length - 1].url = res.data.url;
-                this.imageList[this.imageList.length - 1].name = res.data.name;
-                this.imageList[this.imageList.length - 1].ext = res.data.ext;
-            })
-        },
-        imageBeforeUpload(file) {
-            const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg';
-            if (!isJpgOrPng) {
-                this.$message.error('图片格式非法');
-                return false;
-            }
-            const isLt5M = file.size / 1024 / 1024 < 5;
-            if (!isLt5M) {
-                this.$message.error('图片不能超过5M!');
-                return false;
-            }
-
-            this.imageList = [...this.imageList, {
-                url:'',
-                uid:'-1',
-                name: 'image',
-                status: 'done',
-            }];
-            return false;
         },
         dateChange(value,str){
             this.formData.date = str;
@@ -194,7 +144,7 @@ module.exports = {
         this.initForm();
     },
     watch: {
-        id (newData,oldData) {
+        listQuery (newData,oldData) {
             if(newData === oldData){
                 return false
             }

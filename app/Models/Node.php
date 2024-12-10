@@ -31,14 +31,14 @@ class Node extends BaseModel
         return $arr;
     }
 
-    public static function getNodeParent($id)
+    public static function getNodeParent($id,$pid = 4)
     {
         $list = self::query()->where(['node_enabled' => 1])
             ->select(['node_parent_id','node_id'])->get()->pluck('node_parent_id','node_id')->toArray();
 
         $arr = [$id];
 
-        $arr = self::getParents($list,$id,$arr);
+        $arr = self::getParents($list,$id,$arr,$pid);
 
         return array_reverse($arr);
     }
@@ -49,7 +49,7 @@ class Node extends BaseModel
             return $arr;
         }
         $arr[] = $parentId;
-        $arr = self::getParents($list,$parentId,$arr);
+        $arr = self::getParents($list,$parentId,$arr,$pid);
 
         return $arr;
     }

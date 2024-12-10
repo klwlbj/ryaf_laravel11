@@ -125,17 +125,17 @@ class FireAlarmPanelController
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
-    public function operateDetector(Request $request)
+    public function operate(Request $request)
     {
         $params = $request->all();
 
         $validate = Validator::make($params, [
             'id' => 'required',
-            'detector_code' => 'required',
+            'device_code' => 'required',
             'status' => 'required',
         ],[
             'id.required' => '设备ID 不得为空',
-            'detector_code.required' => '传感器编码 不得为空',
+            'device_code.required' => '设备编码 不得为空',
             'status.required' => '开关状态 不得为空',
         ]);
 
@@ -144,7 +144,7 @@ class FireAlarmPanelController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = FireAlarmPanelLogic::getInstance()->operateDetector($params);
+        $res = FireAlarmPanelLogic::getInstance()->operate($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
@@ -171,6 +171,28 @@ class FireAlarmPanelController
         }
 
         $res = FireAlarmPanelLogic::getInstance()->pushData($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function getDeviceList(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+        ],[
+            'id.required' => '设备ID 不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = FireAlarmPanelLogic::getInstance()->getDeviceList($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }

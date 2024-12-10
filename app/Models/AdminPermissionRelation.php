@@ -15,8 +15,9 @@ class AdminPermissionRelation extends BaseModel
     {
         #获取父级菜单
         $ids = self::query()->where(['admin_permission_relation.adpe_admin_id' => $adminId])
+            ->leftJoin('admin_permission', 'admin_permission.adpe_id', '=', 'admin_permission_relation.adpe_permission_id')
             ->select(['adpe_permission_id'])
-            ->orderBy('adpe_permission_id','asc')
+            ->orderBy('admin_permission.adpe_sort','desc')
             ->pluck('adpe_permission_id')->toArray();
 
         $permissionList = AdminPermission::query()

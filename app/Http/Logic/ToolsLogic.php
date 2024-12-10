@@ -112,6 +112,9 @@ class ToolsLogic
 
     public static function convertExcelTime($excelValue)
     {
+        if(empty($excelValue) || !is_numeric($excelValue)){
+            return '';
+        }
         try {
             $fixation = 25569;
             $fixationT = 24 * 60 * 60;

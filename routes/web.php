@@ -91,6 +91,7 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('maintain')->group(function () {
         Route::view('place/view', 'admin.maintainPlace');
+        Route::view('noData/view', 'admin.maintainNoData');
     });
 });
 

@@ -108,12 +108,12 @@ class FireAlarmPanelLogic extends BaseLogic
         return ['result' => $res];
     }
 
-    public function operateDetector($params)
+    public function operate($params)
     {
         $fireAlarmPanel = new HuiXiao();
 
         $commandData = UitdCommand::query()
-            ->where(['uico_master_id' => $params['id'],'uico_detector_code' => $params['detector_code']])
+            ->where(['uico_master_id' => $params['id'],'uico_device_code' => $params['device_code']])
             ->whereIn('uico_type',[5,6])
             ->first();
 
@@ -126,16 +126,48 @@ class FireAlarmPanelLogic extends BaseLogic
         if($params['status'] == 1){
             $commandStr = str_replace(" ", "", $commandData['uico_open_command']);
             $res = $fireAlarmPanel->sendCommand($params['id'], $commandStr);
+            $update = [
+                'uico_status' => 1
+            ];
         }else{
             $commandStr = str_replace(" ", "", $commandData['uico_close_command']);
             $res = $fireAlarmPanel->sendCommand($params['id'], $commandStr);
+            $update = [
+                'uico_status' => 0
+            ];
         }
 
         if(!$res){
             return false;
         }
 
+        UitdCommand::query()->where(['uico_id' => $commandData['uico_id']])->update($update);
+
         return ['result' => $res];
+    }
+
+    public function getDeviceList($params)
+    {
+        $list = UitdCommand::query()
+            ->leftJoin('smoke_detector','smoke_detector.smde_imei','=','uitd_command.uico_device_code')
+            ->where(['uico_master_id' => $params['id']])
+            ->whereIn('uico_type',[5,6])
+            ->select([
+                'uico_master_id as master_id',
+                'uico_device_code as device_code',
+                'uico_name as name',
+                'smde_building_no as position',
+                'uico_status as status'
+            ])
+            ->get()->toArray();
+
+        foreach ($list as $key => &$value){
+            $value['name'] = $value['name'] . '_' . $value['device_code'];
+        }
+
+        unset($value);
+
+        return ['list' => $list];
     }
 
     public function pushData($params)
@@ -150,7 +182,7 @@ class FireAlarmPanelLogic extends BaseLogic
         }
 
         #如果是其他类型  则插入警报表
-        if(!in_array($params['type'],['heartbeat','fire_alert'])){
+        if(!in_array($params['type'],['heartbeat','fire_alert','malfunction'])){
             $insertData = [
                 'iono_body' => $params['data'],
                 'iono_platform' => 'HUIXIAO',
@@ -189,37 +221,52 @@ class FireAlarmPanelLogic extends BaseLogic
                 #更新消控主机主表心跳包时间
                 Mainframe::query()->where(['mafr_id' => $mainId])->update(['mafr_last_heart_beat' => $data['datetime']['value']]);
 
-            }elseif($params['type'] == 'fire_alert'){
-                if($data['status']['value'] == '点型感烟'){
-                    $alertType = 1;
-                }elseif ($data['status']['value'] == '点型感温'){
-                    $alertType = 3;
-                }else{
-                    $alertType = 1;
+            }elseif(in_array($params['type'],['fire_alert','malfunction'])){
+                if($params['type'] == 'fire_alert'){
+                    if($data['status']['value'] == '点型感烟'){
+                        $alertType = 1;
+                    }elseif ($data['status']['value'] == '点型感温'){
+                        $alertType = 3;
+                    }else{
+                        $alertType = 1;
+                    }
+
+                    $imei = $data['probe_code']['value'] ?? '';
+                    if(empty($imei)){
+                        ResponseLogic::setMsg('imei不存在');
+                        return false;
+                    }
+
+                    $smdeId = SmokeDetector::query()
+                        ->where(['smde_mafr_id' => $mainId,'smde_imei' => $imei])->value('smde_id') ?: 0;
+
+                    if(empty($smdeId)){
+                        ResponseLogic::setMsg('设备不存在');
+                        return false;
+                    }
                 }
 
-                $imei = $data['probe_code']['value'] ?? '';
-                if(empty($imei)){
-                    ResponseLogic::setMsg('imei不存在');
-                    return false;
+                if($params['type'] == 'malfunction'){
+                    $imei = $data['probe_code']['value'] ?? '';
+                    if(!empty($imei)){
+                        $smdeId = SmokeDetector::query()
+                            ->where(['smde_mafr_id' => $mainId,'smde_imei' => $imei])->value('smde_id') ?: null;
+                    }else{
+                        $smdeId = null;
+                    }
+
+                    $alertType = 22;
                 }
 
-                $smdeId = SmokeDetector::query()
-                    ->where(['smde_mafr_id' => $mainId,'smde_imei' => $imei])->value('smde_id') ?: 0;
-
-                if(empty($smdeId)){
-                    ResponseLogic::setMsg('设备不存在');
-                    return false;
-                }
 
                 $insertData = [
                     'iono_body' => $params['data'],
                     'iono_platform' => 'HUIXIAO',
                     'iono_msg_at' => strtotime($data['datetime']['value']),
-                    'iono_msg_imei' => $imei,
-                    'iono_type' => $alertType,
-                    'iono_imei' => $imei,
-                    'iono_smde_id' => $smdeId,
+                    'iono_msg_imei' => $imei ?? '',
+                    'iono_type' => $alertType ?? -1,
+                    'iono_imei' => $imei ?? '',
+                    'iono_smde_id' => $smdeId ?? null,
                     'iono_mafr_id' => $mainId
                 ];
 

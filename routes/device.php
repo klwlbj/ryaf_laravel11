@@ -11,8 +11,9 @@ Route::middleware(['checkIp'])->group(function () {
         Route::any('/setTime', [FireAlarmPanelController::class, 'setTime']);
         Route::any('/reset', [FireAlarmPanelController::class, 'reset']);
         Route::any('/setMode', [FireAlarmPanelController::class, 'setMode']);
-        Route::any('/operateDetector', [FireAlarmPanelController::class, 'operateDetector']);
+        Route::any('/operate', [FireAlarmPanelController::class, 'operate']);
         Route::any('/pushData', [FireAlarmPanelController::class, 'pushData']);
+        Route::any('/getDeviceList', [FireAlarmPanelController::class, 'getDeviceList']);
     });
 });
 

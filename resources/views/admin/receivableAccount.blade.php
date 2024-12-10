@@ -6,17 +6,17 @@
         <a-card>
             <div>
                 <a-form layout="inline" >
-                    <a-form-item>
-                        <a-select v-model="listQuery.area" show-search placeholder="区域" :max-tag-count="1"
-                                  style="width: 200px;" allow-clear>
-                            <a-select-option v-for="item in areaArr"  :value="item" >
-                                @{{item}}
-                            </a-select-option>
-                        </a-select>
-                    </a-form-item>
+                    <a-form-model-item>
+                        <node-cascader @change="nodeChange"></node-cascader>
+                    </a-form-model-item>
 
                     <a-form-item>
                         <a-input v-model="listQuery.address" placeholder="地址" style="width: 200px;" />
+                    </a-form-item>
+
+                    <a-form-item>
+                        <span><a-input v-model="listQuery.remark" placeholder="备注" style="width: 200px;" /></span>
+                        <span style="margin-left: 10px"><a-checkbox v-model="listQuery.remark_precise">备注精确匹配</a-checkbox></span>
                     </a-form-item>
                     <a-form-item>
                         <a-input v-model="listQuery.user_keyword" placeholder="用户名/用户手机号" style="width: 200px;" />
@@ -33,17 +33,30 @@
                         </a-select>
                     </a-form-item>
                     <a-form-item>
+                        <a-checkbox v-model="listQuery.has_received">实收大于0</a-checkbox>
+                    </a-form-item>
+                    <a-form-item>
                         <a-range-picker
-                            :placeholder="['开始时间', '结束时间']"
+                            :placeholder="['安装开始时间', '安装结束时间']"
                             @change="dateChange"
                             :default-value="[defaultDate,defaultDate]"></a-range-picker>
-                        </a-form-item>
+                    </a-form-item>
+                    <a-form-item>
+                        <a-range-picker
+                            :placeholder="['收款开始时间', '收款结束时间']"
+                            @change="flowDateChange"
+                            :default-value="[defaultDate,defaultDate]"></a-range-picker>
+                    </a-form-item>
                     <a-form-item>
                         <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                     </a-form-item>
 
                     <a-form-item>
                         <a-button type="primary" icon="sync" v-on:click="syncFormVisible = true">同步订单数据</a-button>
+                    </a-form-item>
+
+                    <a-form-item>
+                        <a-button type="primary" v-on:click="batchAddFlowFormVisible = true">批量添加回款</a-button>
                     </a-form-item>
 
                     <a-form-item>
@@ -194,6 +207,19 @@
             </a-modal>
 
 
+            <a-modal :mask-closable="false" v-model="batchAddFlowFormVisible"
+                     title="批量添加回款"
+                     width="800px" :footer="null">
+                <batch-flow-add
+                    ref="batchFlowAdd"
+                    :list-query="listQuery"
+                        @submit="afterBatchFlowAdd"
+                        @close="batchAddFlowFormVisible = false;"
+                >
+                </batch-flow-add>
+            </a-modal>
+
+
             <a-modal v-model="importVisible" width="800px" title="导入结果" @ok="afterImport">
                 <div style="max-height: 600px;overflow-y: auto">
                     <div>
@@ -228,6 +254,11 @@
                     node_id: '',
                     start_date:null,
                     end_date:null,
+                    flow_start_date:null,
+                    flow_end_date:null,
+                    remark:"",
+                    remark_precise: true,
+                    has_received:false
                 },
                 listSource: [],
                 areaArr : [],
@@ -258,9 +289,9 @@
                         width: 150
                     },
                     {
-                        title: '区域',
+                        title: '监控中心',
                         align: 'center',
-                        dataIndex: 'reac_area'
+                        dataIndex: 'node_name'
                     },
                     {
                         title: '合约类型',
@@ -274,6 +305,11 @@
                         dataIndex: 'address',
                         align: 'center',
                         width: 400
+                    },
+                    {
+                        title: '备注',
+                        align: 'center',
+                        dataIndex: 'reac_remark'
                     },
                     {
                         title: '付款周期',
@@ -326,6 +362,8 @@
                 fileList:[],
                 syncFormVisible:false,
                 syncLoading:false,
+                batchAddFlowFormVisible:false,
+                batchAddFlowLoading:false,
                 labelCol: { span: 4 },
                 wrapperCol: { span: 14 },
                 syncForm:{
@@ -338,7 +376,9 @@
                 this.handleFilter();
             },
             components: {
+                "node-cascader":  httpVueLoader('/statics/components/node/nodeCascader.vue'),
                 "flow-list":  httpVueLoader('/statics/components/receivableAccount/flowList.vue'),
+                "batch-flow-add":  httpVueLoader('/statics/components/receivableAccount/batchFlowAdd.vue'),
                 "flow-add":  httpVueLoader('/statics/components/receivableAccount/flowAdd.vue'),
                 "update":  httpVueLoader('/statics/components/receivableAccount/update.vue'),
             },
@@ -388,8 +428,9 @@
                         let jsonData = [];
                         for (let item of persons){
                             jsonData.push([
-                                item['安装日期'],
+                                item['订单编号'],
                                 item['地区'],
+                                item['安装日期'],
                                 item['客户类型'],
                                 item['区域场所'],
                                 item['单位'],
@@ -401,7 +442,8 @@
                                 item['应收账款'],
                                 item['付款金额'],
                                 item['付款方案'],
-                                item['付款期数'],
+                                item['收款路径'],
+                                item['回款时间'],
                             ])
                         }
                         // console.log(jsonData);
@@ -564,6 +606,10 @@
                     this.listQuery.start_date = arr[0];
                     this.listQuery.end_date = arr[1];
                 },
+                flowDateChange(value,arr){
+                    this.listQuery.flow_start_date = arr[0];
+                    this.listQuery.flow_end_date = arr[1];
+                },
                 nodeChange(value){
                     this.listQuery.node_id = value;
                 },
@@ -578,7 +624,7 @@
                         method: 'post',
                         url: '/api/receivableAccount/syncOrder',
                         // 传递参数
-                        data: this.reportForm,
+                        data: this.syncForm,
                         responseType: 'json',
                         headers:{
                             'Content-Type': 'multipart/form-data'
@@ -590,11 +636,25 @@
                             this.$message.error(res.message);
                             return false;
                         }
+
+                        this.importMsg = res.data.success_count + '条数据导入成功 ;' + res.data.error_arr.length + '条数据导入失败 ；';
+                        this.importErrorArr = [];
+                        if(res.data.error_arr.length > 0){
+                            this.importErrorArr = res.data.error_arr;
+                        }
+                        this.syncFormVisible = false;
+                        this.importVisible = true;
                         this.$message.success('同步成功');
                     }).catch(error => {
                         this.$message.error('请求失败');
                     });
-                }
+                },
+                afterBatchFlowAdd(){
+                    this.batchAddFlowFormVisible = false;
+                    this.reacId = null;
+                    this.$message.success('操作成功');
+                    this.getPageList();
+                },
             },
 
         })
