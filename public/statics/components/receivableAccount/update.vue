@@ -1,40 +1,51 @@
 <template>
     <div>
-        <a-form-model :loading="loading" :model="formData" ref="dataForm" :label-col="dialogFormLabelCol" :wrapper-col="dialogFormWrapperCol" :rules="formRules">
-            <a-form-model-item label="监控中心" prop="street">
-                <node-cascader :default-data="nodeId" @change="nodeChange"></node-cascader>
-            </a-form-model-item>
+        <a-spin tip="加载中" :spinning="loading">
+            <a-form-model :model="formData" ref="dataForm" :label-col="dialogFormLabelCol" :wrapper-col="dialogFormWrapperCol" :rules="formRules">
+                <a-form-model-item label="监控中心" prop="street">
+                    <node-cascader :default-data="nodeId" @change="nodeChange"></node-cascader>
+                </a-form-model-item>
 
-            <a-form-model-item label="单位/用户" prop="user_name">
-                <a-input v-model="formData.user_name" />
-            </a-form-model-item>
+                <a-form-model-item label="单位/用户" prop="user_name">
+                    <a-input v-model="formData.user_name" />
+                </a-form-model-item>
 
-            <a-form-model-item label="联系方式" prop="user_mobile">
-                <a-input v-model="formData.user_mobile" />
-            </a-form-model-item>
+                <a-form-model-item label="联系方式" prop="user_mobile">
+                    <a-input v-model="formData.user_mobile" />
+                </a-form-model-item>
 
-            <a-form-model-item label="安装总数" prop="installation_count">
-                <a-input-number v-model="formData.installation_count" />
-            </a-form-model-item>
+                <a-form-model-item label="安装总数" prop="installation_count">
+                    <a-input-number v-model="formData.installation_count" />
+                </a-form-model-item>
 
-            <a-form-model-item label="赠送台数" prop="given_count">
-                <a-input-number v-model="formData.given_count" />
-            </a-form-model-item>
+                <a-form-model-item label="赠送台数" prop="given_count">
+                    <a-input-number v-model="formData.given_count" />
+                </a-form-model-item>
 
-            <a-form-model-item label="应收款" prop="account_receivable">
-                <a-input-number v-model="formData.account_receivable" :step="0.01"/>
-            </a-form-model-item>
+                <a-form-model-item label="设备应收款（单价）" prop="device_funds">
+                    <a-input-number v-model="formData.device_funds" :step="0.01"/>
+                </a-form-model-item>
 
-            <a-form-model-item :wrapper-col="{ span: 14, offset: 4 }">
-                <a-button :loading="loading" type="primary" @click="submitData">
-                    确认
-                </a-button>
-                <a-button style="margin-left: 10px;" @click="$emit('close')">
-                    取消
-                </a-button>
-            </a-form-model-item>
+                <a-form-model-item label="应收款（单价）" prop="account_receivable">
+                    <a-input-number v-model="formData.account_receivable" :step="0.01"/>
+                </a-form-model-item>
 
-        </a-form-model>
+                <a-form-model-item label="备注" prop="remark">
+                    <a-textarea v-model="formData.remark" placeholder="备注" :rows="3" />
+                </a-form-model-item>
+
+
+                <a-form-model-item :wrapper-col="{ span: 14, offset: 4 }">
+                    <a-button :loading="loading" type="primary" @click="submitData">
+                        确认
+                    </a-button>
+                    <a-button style="margin-left: 10px;" @click="$emit('close')">
+                        取消
+                    </a-button>
+                </a-form-model-item>
+
+            </a-form-model>
+        </a-spin>
     </div>
 </template>
 
@@ -76,7 +87,9 @@ module.exports = {
                 user_mobile:'',
                 installation_count:0,
                 given_count:0,
-                account_receivable:0
+                account_receivable:0,
+                device_funds:0,
+                remark:'',
             };
         },
         submitData(){
@@ -140,6 +153,7 @@ module.exports = {
                     this.$message.error(res.message);
                     return false;
                 }
+
                 this.formData = {
                     area:res.data.reac_area,
                     street:res.data.reac_street,
@@ -148,7 +162,9 @@ module.exports = {
                     node_id:res.data.reac_node_id,
                     installation_count:res.data.reac_installation_count,
                     given_count:res.data.reac_given_count,
-                    account_receivable:res.data.reac_account_receivable ? res.data.reac_account_receivable : 0,
+                    remark:res.data.reac_remark,
+                    device_funds:res.data.reac_singal_device_funds ? res.data.reac_singal_device_funds : 120,
+                    account_receivable:res.data.reac_singal_account_receivable ? res.data.reac_singal_account_receivable : 0,
                 }
 
                 this.nodeId = res.data.order_node_arr;

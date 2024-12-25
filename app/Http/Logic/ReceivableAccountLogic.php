@@ -2,6 +2,7 @@
 
 namespace App\Http\Logic;
 
+use App\Http\Logic\Excel\ExportLogic;
 use App\Models\Node;
 use App\Models\Order;
 use App\Models\Place;
@@ -66,8 +67,8 @@ class ReceivableAccountLogic extends BaseLogic
             DB::raw("count(1) as count"),
             DB::raw("COALESCE(sum(reac_account_receivable),0) as account_receivable"),
             DB::raw("COALESCE(sum(reac_funds_received),0) as funds_received"),
+            DB::raw("COALESCE(sum(reac_installation_count),0) as reac_installation_count"),
         ])->first();
-
 
         $list = $query
             ->select([
@@ -78,6 +79,7 @@ class ReceivableAccountLogic extends BaseLogic
                 'reac_user_name',
                 'reac_user_mobile',
                 'reac_installation_count',
+                'reac_device_funds',
                 'reac_given_count',
                 'reac_account_receivable',
                 'reac_funds_received',
@@ -157,10 +159,17 @@ class ReceivableAccountLogic extends BaseLogic
         if(!empty($params['flow_start_date']) && !empty($params['flow_end_date'])){
             $ids = ReceivableAccountFlow::query()
                 ->where('reac_datetime','>=',$params['flow_start_date'])
-                ->where('reac_datetime','<=',$params['flow_start_date'] . ' 23:59:59')
+                ->where('reac_datetime','<=',$params['flow_end_date'] . ' 23:59:59')
                 ->select(['reac_account_id'])->pluck('reac_account_id')->toArray();
 
             $query->whereIn('reac_id',$ids ?: [0]);
+        }
+
+        if(isset($params['flow_type']) && !empty($params['flow_type'])){
+            $ids = ReceivableAccountFlow::query()
+                ->where('reac_type','=',$params['flow_type'])
+                ->select(['reac_account_id'])->pluck('reac_account_id')->toArray();
+            $query->whereIn('reac_id',$ids);
         }
 
 
@@ -186,6 +195,22 @@ class ReceivableAccountLogic extends BaseLogic
             }
         }
 
+        if(!empty($params['flow_remark'])){
+            if(!empty($params['flow_remark_precise'])  && $params['flow_remark_precise'] == 'true'){
+                $ids = ReceivableAccountFlow::query()
+                    ->where('reac_remark' , '=',$params['flow_remark'])
+                    ->select(['reac_account_id'])->pluck('reac_account_id')->toArray();
+
+//                print_r($ids);die;
+                $query->whereIn('reac_id',$ids);
+            }else{
+                $ids = ReceivableAccountFlow::query()
+                    ->where('reac_remark' , 'like',"%" . $params['flow_remark'] . "%")
+                    ->select(['reac_account_id'])->pluck('reac_account_id')->toArray();
+                $query->whereIn('reac_id',$ids);
+            }
+        }
+
         if(!empty($params['has_received']) && $params['has_received'] == 'true'){
             $query->where('reac_funds_received' , '>','0');
         }
@@ -204,6 +229,9 @@ class ReceivableAccountLogic extends BaseLogic
 
         $orderData = $orderData->toArray();
         $orderData['order_node_arr'] = Node::getNodeParent($orderData['reac_node_id']);
+        $orderData['reac_singal_account_receivable'] = bcdiv($orderData['reac_account_receivable'],$orderData['reac_installation_count'] - $orderData['reac_given_count'],2);
+
+        $orderData['reac_singal_device_funds'] = bcdiv($orderData['reac_device_funds'],$orderData['reac_installation_count'] - $orderData['reac_given_count'],2);
 
         return $orderData;
     }
@@ -240,11 +268,27 @@ class ReceivableAccountLogic extends BaseLogic
             $update['reac_given_count'] = $params['given_count'];
         }
 
-        if(!empty($params['account_receivable'])){
-            $update['reac_account_receivable'] = $params['account_receivable'];
+        if(isset($params['account_receivable']) && $params['account_receivable'] !== ''){
+            if(!empty($params['installation_count'])){
+                $update['reac_account_receivable'] = bcmul($params['installation_count'] - ($params['given_count'] ?? 0),$params['account_receivable'],2);
+            }else{
+                $update['reac_account_receivable'] = DB::raw("(reac_installation_count-reac_given_count)*".$params['account_receivable']);
+            }
+        }
+
+        if(isset($params['device_funds']) && $params['device_funds'] !== ''){
+            if(!empty($params['installation_count'])){
+                $update['reac_device_funds'] = bcmul($params['installation_count'] - ($params['given_count'] ?? 0),$params['device_funds'],2);
+            }else{
+                $update['reac_device_funds'] = DB::raw("(reac_installation_count-reac_given_count)*".$params['device_funds']);
+            }
         }
 
 
+        if(!empty($params['remark'])){
+            $update['reac_remark'] = $params['remark'];
+        }
+//        print_r($update);die;
         if(!empty($update)){
             if(ReceivableAccount::query()->where(['reac_id' => $params['receivable_id']])->update($update) === false){
                 ResponseLogic::setMsg('更新记录失败');
@@ -254,6 +298,64 @@ class ReceivableAccountLogic extends BaseLogic
 
         return [];
     }
+
+    public function batchUpdate($params)
+    {
+
+        $listQuery = ToolsLogic::jsonDecode($params['list_query']);
+        $query = $this->getReceivableQuery($listQuery);
+
+        $update = [];
+
+
+//        if(!empty($params['node_id'])){
+//            $update['reac_node_id'] = $params['node_id'];
+//        }
+//
+//        if(!empty($params['user_name'])){
+//            $update['reac_user_name'] = $params['user_name'];
+//        }
+//
+//        if(!empty($params['user_mobile'])){
+//            $update['reac_user_mobile'] = $params['user_mobile'];
+//        }
+
+        if(!empty($params['installation_count'])){
+            $update['reac_installation_count'] = $params['installation_count'];
+        }
+
+        if(!empty($params['given_count'])){
+            $update['reac_given_count'] = $params['given_count'];
+        }
+
+        if(isset($params['account_receivable']) && $params['account_receivable'] !== ''){
+            if(!empty($params['installation_count'])){
+                $update['reac_account_receivable'] = bcmul($params['installation_count'] - ($params['given_count'] ?? 0),$params['account_receivable'],2);
+            }else{
+                $update['reac_account_receivable'] = DB::raw("(reac_installation_count-reac_given_count)*".$params['account_receivable']);
+            }
+
+        }
+
+        if(isset($params['device_funds']) && $params['device_funds'] !== ''){
+            if(!empty($params['installation_count'])){
+                $update['reac_device_funds'] = bcmul($params['installation_count'] - ($params['given_count'] ?? 0),$params['device_funds'],2);
+            }else{
+                $update['reac_device_funds'] = DB::raw("(reac_installation_count-reac_given_count)*".$params['device_funds']);
+            }
+        }
+
+
+        if(!empty($update)){
+            if($query->update($update) === false){
+                ResponseLogic::setMsg('更新记录失败');
+                return false;
+            }
+        }
+
+        return [];
+    }
+
 
     public function delete($params)
     {
@@ -328,6 +430,8 @@ class ReceivableAccountLogic extends BaseLogic
                 DB::raw("CONCAT(receivable_account.reac_installation_date,'_',receivable_account.reac_user_mobile,'_',receivable_account.reac_installation_count,'_',receivable_account_address.reac_address) as str")
             ])->pluck('str')->toArray();
 
+        $errorData = [];
+
         foreach ($sheetData as $key => $value){
 //            if($key == 0){
 //                continue;
@@ -380,12 +484,20 @@ class ReceivableAccountLogic extends BaseLogic
                 $nodeId = $nodeArr[$street] ?? '';
 
                 if(empty($nodeId)){
-                    $nodeId = self::$nodeRelationArr[$area];
+                    $errorArr[] = '行' . ($key + 2) . '监控中心不存在  用户：' . $userName;
+
+                    $value[] = '监控中心不存在';
+                    $errorData[] = $value;
+                    continue;
+//                    $nodeId = self::$nodeRelationArr[$area];
                 }
 
 
                 if($installationDate == '1970-01-01'){
                     $errorArr[] = '行' . ($key + 2) . '记录安装时间异常  用户：' . $userName;
+
+                    $value[] = '记录安装时间异常';
+                    $errorData[] = $value;
                     continue;
                 }
 
@@ -393,11 +505,17 @@ class ReceivableAccountLogic extends BaseLogic
                 if(!empty($orderSn)){
                     if(in_array($orderSn,$existSn)){
                         $errorArr[] = '行' . ($key + 2) . '的记录已存在  订单编号：' . $orderSn;
+
+                        $value[] = '记录已存在';
+                        $errorData[] = $value;
                         continue;
                     }
 
                     if(ReceivableAccount::query()->where(['reac_relation_sn' => $orderSn,'reac_type' => 1])->exists()){
                         $errorArr[] = '行' . ($key + 2) . '的记录已存在  订单编号：' . $orderSn;
+
+                        $value[] = '记录已存在';
+                        $errorData[] = $value;
                         continue;
                     }
 
@@ -408,8 +526,12 @@ class ReceivableAccountLogic extends BaseLogic
                     #判断是否已存在记录
                     if(in_array($existKey, $existArr)){
                         $errorArr[] = '行' . ($key + 2) . '的记录已存在  用户：' . $userName . '(' . $userMobile . ')' . ' 安装日期：'.$installationDate . ' 安装台数：' . $installationCount . ' 安装地址：' . $address[0];
+
+                        $value[] = '记录已存在';
+                        $errorData[] = $value;
                         continue;
                     }
+
                     $existArr[] = $existKey;
                 }
 
@@ -426,6 +548,7 @@ class ReceivableAccountLogic extends BaseLogic
                     'reac_installation_count' => $installationCount,
                     'reac_given_count' => $givenCount,
                     'reac_account_receivable' => $accountReceivable,
+                    'reac_device_funds' => 120*($installationCount-$givenCount),
                     'reac_funds_received' => $fundsReceived,
                     'reac_pay_cycle' => $cycle,
                     'reac_status' => 1,
@@ -469,15 +592,11 @@ class ReceivableAccountLogic extends BaseLogic
                         ReceivableAccountFlow::query()->insert($flowInsert);
                         $flowInsert = [];
                     }
-
-
                 }
             } catch (\Exception $e) {
                 $errorArr[] = '行' . ($key + 2) . '的记录异常：' . $e->getMessage();
                 continue;
             }
-
-
         }
 
         if(!empty($addressInsert)){
@@ -490,9 +609,58 @@ class ReceivableAccountLogic extends BaseLogic
             $flowInsert = [];
         }
 
+        if(!empty($errorData)){
+            $title = ['地区','订单编号','安装日期','客户类型','区域场所','单位','联系方式','地址','安装总数','赠送台数','备注（完成情况）','应收账款','是否付款','付款金额','未付金额','付款方案','收款路径','回款时间','错误信息'];
+
+            $exportData = [];
+
+            $width = [];
+            foreach ($title as $key => $value){
+                $width[chr(65 + $key)] = 30;
+            }
+
+            $config = [
+                'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . '1' => true],
+                'width' => $width
+            ];
+            $row = 2;
+            foreach ($errorData as $key => $value){
+                $exportData[] = [
+                    $value[1],
+                    $value[0],
+                    $value[2],
+                    $value[3],
+                    $value[4],
+                    $value[5],
+                    $value[6],
+                    $value[7],
+                    $value[8],
+                    $value[9],
+                    $value[10],
+                    $value[11],
+                    '',
+                    $value[12],
+                    '',
+                    $value[13],
+                    $value[14],
+                    $value[15],
+                    $value[16],
+                ];
+
+                $row++;
+            }
+            $config['horizontal_center'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true];
+            $config['wrap_text'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true];
+
+            $exportReturn = ExportLogic::getInstance()->export($title,$exportData,'应收款导入失败数据',$config);
+            $url = $exportReturn['url'];
+        }else{
+            $url = '';
+        }
+
         $errorCount = count($errorArr);
 
-        return ['success_count' => $sucCount,'error_count' => $errorCount,'error_arr' => $errorArr];
+        return ['success_count' => $sucCount,'error_count' => $errorCount,'error_arr' => $errorArr ,'error_url' => $url];
     }
 
     public function addFlow($params)
@@ -631,6 +799,39 @@ class ReceivableAccountLogic extends BaseLogic
         return [];
     }
 
+    public function deleteFlow($params)
+    {
+        ToolsLogic::writeLog('deleteFlow','receivable_account',$params);
+        $data = ReceivableAccountFlow::query()->where(['reac_id' => $params['flow_id']])->first();
+
+        if(!$data){
+            ResponseLogic::setMsg('记录不存在');
+            return false;
+        }
+
+        $data = $data->toArray();
+
+        DB::beginTransaction();
+
+        #回退实收
+        if(ReceivableAccount::query()->where(['reac_id' => $data['reac_account_id']])->update(['reac_funds_received' => DB::raw("reac_funds_received-".$data['reac_funds_received'])]) === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('回退记录实收数据失败');
+            return false;
+        }
+
+        #删除记录
+        if(ReceivableAccountFlow::query()->where(['reac_id' => $params['flow_id']])->delete() === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('删除流水数据失败');
+            return false;
+        }
+
+        DB::commit();
+
+        return [];
+    }
+
     public function getFlow($params)
     {
         $data = ReceivableAccount::query()->where(['reac_id' => $params['receivable_id']])->first();
@@ -673,6 +874,7 @@ class ReceivableAccountLogic extends BaseLogic
 //            ->leftJoin('receivable_account','receivable_account.reac_relation_id','=',DB::raw("order.order_id and receivable_account.reac_type = 2"))
             ->where('order.order_actual_delivery_date','>=',$params['start_date'])
             ->where('order.order_actual_delivery_date','<=',$params['end_date'])
+//            ->where('order_status','=','交付完成')
 //            ->where('order.order_account_receivable','>',0)
             ->select([
                 'order.order_id',
@@ -683,6 +885,7 @@ class ReceivableAccountLogic extends BaseLogic
                 'order.order_pay_cycle',
                 'order.order_pay_way',
                 'order_remark',
+                'order_device_funds',
                 'order_account_receivable',
                 'order_funds_received',
                 'order_crt_time',
@@ -711,6 +914,10 @@ class ReceivableAccountLogic extends BaseLogic
                 DB::raw('count(smde_order_id) as count'),
             ])->groupBy(['smde_order_id'])->get()->pluck('count','smde_order_id')->toArray();
 
+        $existOrderIds = ReceivableAccount::query()
+            ->whereIn('reac_relation_id',$orderIds)
+            ->where(['reac_type' => 2])->select(['reac_relation_id'])->pluck('reac_relation_id')->toArray();
+
 //        print_r($placeGroup);die;
         $addressInsert = [];
         $flowInsert = [];
@@ -720,7 +927,7 @@ class ReceivableAccountLogic extends BaseLogic
             $value = (array)$value;
 
             //订单已存在
-            if(ReceivableAccount::query()->where(['reac_type' => 2,'reac_relation_id' => $value['order_id']])->exists()){
+            if(in_array($value['order_id'],$existOrderIds)){
                 $errorArr[] = '订单记录已存在  订单编号：' . $value['order_iid'];
                 continue;
             }
@@ -741,7 +948,8 @@ class ReceivableAccountLogic extends BaseLogic
                 'reac_user_mobile' => $value['order_user_mobile'],
                 'reac_installation_count' => $deviceCountArr[$value['order_id']] ?? 0,
                 'reac_given_count' => 0,
-                'reac_account_receivable' => $value['order_account_receivable'] ?: 0,
+                'reac_account_receivable' => ($value['order_account_receivable'] > 0) ? $value['order_account_receivable'] : ($deviceCountArr[$value['order_id']] ?? 0) * 240,
+                'reac_device_funds' => ($value['order_device_funds'] > 0) ? $value['order_device_funds'] : ($deviceCountArr[$value['order_id']] ?? 0) * 120,
                 'reac_funds_received' => $value['order_funds_received'] ?: 0,
                 'reac_pay_cycle' => $value['order_pay_cycle'] ?: 1,
                 'reac_status' => 1,
@@ -750,7 +958,7 @@ class ReceivableAccountLogic extends BaseLogic
             ];
 
             $id = ReceivableAccount::query()->insertGetId($insertData);
-
+            $existOrderIds[] = $value['order_id'];
             foreach ($addressList as $addressItem){
                 $addressItem = (array)$addressItem;
                 $addressInsert[] = [
@@ -799,5 +1007,94 @@ class ReceivableAccountLogic extends BaseLogic
         $count = count($orderList);
 
         return ['success_count' => $count - $errorCount,'error_count' => $errorCount,'error_arr' => $errorArr];
+    }
+
+    public function exportFinance($params)
+    {
+        $query = $this->getReceivableQuery($params);
+
+        $list = $query->select(['reac_id','reac_installation_date','reac_user_name','reac_user_mobile','reac_user_type','reac_node_id','reac_installation_count','reac_given_count','reac_account_receivable','reac_device_funds','reac_funds_received','reac_remark'])->get()->toArray();
+
+        $receivableIds = array_column($list,'reac_id');
+
+        $addressGroup = ReceivableAccountAddress::query()->whereIn('reac_account_id',$receivableIds)->select([
+            'reac_account_id',
+            'reac_address'
+        ])->get()->groupBy('reac_account_id')->toArray();
+
+        $flowGroup = ReceivableAccountFlow::query()->whereIn('reac_account_id',$receivableIds)->select([
+            'reac_account_id',
+            'reac_datetime',
+            'reac_pay_way'
+        ])->get()->groupBy('reac_account_id')->toArray();
+
+        $nodeArr = Node::query()->select(['node_name','node_id'])->pluck('node_name','node_id')->toArray();
+
+        $nodeStreetArr = Node::getNodeStreet();
+
+
+        $title = ['序号','安装日期','单位名称/个人','联系方式','详细地址','街道办','收费日期','收入项目','收款项目','台数','赠送台数','应收金额(烟感设备120元/台)','应收金额(元)服务费','应收金额(元)','实收金额(元)','收款方式明细','备注','监控中心','客户类型'];
+
+        $width = [];
+        foreach ($title as $key => $value){
+            if($value == '详细地址'){
+                $width[chr(65 + $key)] = 40;
+            }else{
+                $width[chr(65 + $key)] = 20;
+            }
+
+        }
+
+        $exportData = [];
+        $config = [
+            'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . '1' => true],
+            'width' => $width,
+            'freeze_pane' => ['A2' => true],
+        ];
+
+        $row = 2;
+
+        foreach ($list as $key => $value){
+            $addressList = $addressGroup[$value['reac_id']] ?? [];
+            $flowList = $flowGroup[$value['reac_id']] ?? [];
+            $payWayArr = [];
+            $flowInfoArr = [];
+
+            foreach ($flowList as $flowItem){
+                $flowInfoArr[] = $flowItem['reac_datetime'] . " " . ReceivableAccountFlow::payWayMsg($flowItem['reac_pay_way']);
+                $payWayArr[] = ReceivableAccountFlow::payWayMsg($flowItem['reac_pay_way']);
+            }
+
+//            $flowDateArr = array_column($flowList,'reac_datetime');
+            $exportData[] = [
+                $key + 1,
+                $value['reac_installation_date'],
+                $value['reac_user_name'],
+                $value['reac_user_mobile'],
+                implode("\n",array_column($addressList,'reac_address')),
+                $nodeStreetArr[$value['reac_node_id']]['node_name'] ?? '',
+                $value['reac_installation_date'],
+                '烟感',
+                $payWayArr[0] ?? '应收账款',
+                $value['reac_installation_count'],
+                $value['reac_given_count'],
+                $value['reac_device_funds'],
+                bcsub($value['reac_account_receivable'],$value['reac_device_funds'],2),
+                $value['reac_account_receivable'],
+                $value['reac_funds_received'],
+                implode("\n",$flowInfoArr),
+                $value['reac_remark'],
+                $nodeArr[$value['reac_node_id']] ?? '',
+                ($value['reac_user_type'] == 1) ? '2B' : '2C',
+            ];
+
+            $row++;
+        }
+
+        $config['horizontal_center'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true];
+
+        $config['wrap_text'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true];
+
+        return ExportLogic::getInstance()->export($title,$exportData,'财务解缴表',$config);
     }
 }

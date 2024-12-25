@@ -10,7 +10,9 @@ class Node extends BaseModel
 
     public static function getNodeChild($id,$getSelf = true)
     {
-        $list = self::query()->where(['node_enabled' => 1])->select(['node_parent_id','node_id'])->get()->toArray();
+        $list = self::query()
+//            ->where(['node_enabled' => 1])
+            ->select(['node_parent_id','node_id'])->get()->toArray();
         $arr = [];
         if($getSelf){
             $arr[] = $id;
@@ -33,7 +35,8 @@ class Node extends BaseModel
 
     public static function getNodeParent($id,$pid = 4)
     {
-        $list = self::query()->where(['node_enabled' => 1])
+        $list = self::query()
+//            ->where(['node_enabled' => 1])
             ->select(['node_parent_id','node_id'])->get()->pluck('node_parent_id','node_id')->toArray();
 
         $arr = [$id];
@@ -52,6 +55,39 @@ class Node extends BaseModel
         $arr = self::getParents($list,$parentId,$arr,$pid);
 
         return $arr;
+    }
+
+    public static function getNodeStreet()
+    {
+        $list = self::query()->select(['node_parent_id','node_type','node_id','node_name'])
+            ->get()->toArray();
+
+        $arr = [];
+
+        foreach ($list as $key => $value){
+            $info = self::getStreetInfo($list,$value,$value['node_parent_id']);
+            $arr[$value['node_id']] = $info;
+        }
+
+        return $arr;
+    }
+
+    public static function getStreetInfo($list,$info,$parentId = 0,)
+    {
+        if($parentId == 0){
+            return $info;
+        }
+        foreach ($list as $key =>$value){
+            if($parentId === $value['node_id']){
+                if($value['node_type'] === '街道办'){
+                    return $value;
+                }
+
+                return self::getStreetInfo($list,$info,$value['node_parent_id']);
+            }
+        }
+
+        return $info;
     }
 
 

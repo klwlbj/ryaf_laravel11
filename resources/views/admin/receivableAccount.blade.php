@@ -16,7 +16,11 @@
 
                     <a-form-item>
                         <span><a-input v-model="listQuery.remark" placeholder="备注" style="width: 200px;" /></span>
-                        <span style="margin-left: 10px"><a-checkbox v-model="listQuery.remark_precise">备注精确匹配</a-checkbox></span>
+                        <span style="margin-left: 10px"><a-checkbox v-model="listQuery.remark_precise">精确匹配</a-checkbox></span>
+                    </a-form-item>
+                    <a-form-item>
+                        <span><a-input v-model="listQuery.flow_remark" placeholder="流水备注" style="width: 200px;" /></span>
+                        <span style="margin-left: 10px"><a-checkbox v-model="listQuery.flow_remark_precise">精确匹配</a-checkbox></span>
                     </a-form-item>
                     <a-form-item>
                         <a-input v-model="listQuery.user_keyword" placeholder="用户名/用户手机号" style="width: 200px;" />
@@ -47,16 +51,37 @@
                             @change="flowDateChange"
                             :default-value="[defaultDate,defaultDate]"></a-range-picker>
                     </a-form-item>
+
+                    <a-form-item>
+                        <a-select v-model="listQuery.flow_type" show-search placeholder="回款类型" :max-tag-count="1"
+                                  style="width: 200px;" allow-clear>
+                            <a-select-option :value="1">
+                                收回当期
+                            </a-select-option>
+                            <a-select-option :value="2">
+                                收回前期
+                            </a-select-option>
+                        </a-select>
+                    </a-form-item>
+
                     <a-form-item>
                         <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                     </a-form-item>
 
-                    <a-form-item>
+                    <a-form-item v-if="$checkPermission('/api/receivableAccount/syncOrder')">
                         <a-button type="primary" icon="sync" v-on:click="syncFormVisible = true">同步订单数据</a-button>
                     </a-form-item>
 
-                    <a-form-item>
+                    <a-form-item v-if="$checkPermission('/api/receivableAccount/update')">
                         <a-button type="primary" v-on:click="batchAddFlowFormVisible = true">批量添加回款</a-button>
+                    </a-form-item>
+
+                    <a-form-item>
+                        <a-button :loading="exportFinanceLoading" icon="download" @click="exportFinance">导出解缴表</a-button>
+                    </a-form-item>
+
+                    <a-form-item v-if="$checkPermission('/api/receivableAccount/update')">
+                        <a-button style="background: green;color:white" v-on:click="batchUpdateFormVisible = true">批量修改信息</a-button>
                     </a-form-item>
 
                     <a-form-item>
@@ -79,7 +104,7 @@
                 </a-form>
 
                 <div style="color:red">
-                    <span>记录数：@{{statistics.count}}</span> <span style="margin-left: 10px">应收：@{{ statistics.account_receivable }}</span> <span style="margin-left: 10px">实收：@{{ statistics.funds_received }}</span>
+                    <span>记录数：@{{statistics.count}}</span> <span style="margin-left: 10px">应收：@{{ statistics.account_receivable }}</span> <span style="margin-left: 10px">实收：@{{ statistics.funds_received }}</span> <span style="margin-left: 10px">安装数量：@{{ statistics.reac_installation_count }}</span>
                 </div>
 
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
@@ -94,12 +119,21 @@
                     <div slot="reac_user_name" slot-scope="text, record">
                         <div>@{{ record.reac_user_name }}</div>
                         <div>@{{ record.reac_user_mobile }}</div>
+                        <div>
+                            <span v-if="record.reac_user_type == 1">2B</span>
+                            <span v-else>2C</span>
+                        </div>
                     </div>
 
-                    <div slot="reac_user_type" slot-scope="text, record">
-                        <span v-if="record.reac_user_type == 1">2B</span>
-                        <span v-else>2C</span>
+                    <div slot="reac_installation_count" slot-scope="text, record">
+                        <div>@{{ record.reac_installation_count }} / @{{ record.reac_given_count }}</div>
                     </div>
+
+
+{{--                    <div slot="reac_user_type" slot-scope="text, record">--}}
+{{--                        <span v-if="record.reac_user_type == 1">2B</span>--}}
+{{--                        <span v-else>2C</span>--}}
+{{--                    </div>--}}
 
                     <div slot="reac_pay_cycle" slot-scope="text, record">
                         <span v-if="record.reac_pay_cycle == 1">一次性付款</span>
@@ -186,6 +220,17 @@
                 </update>
             </a-modal>
 
+            <a-modal :mask-closable="false" v-model="batchUpdateFormVisible"
+                     title="批量编辑"
+                     width="800px" :footer="null">
+                <batch-update ref="batchUpdate"
+                        :list-query="listQuery"
+                        @update="afterBatchUpdate"
+                        @close="batchUpdateFormVisible = false;"
+                >
+                </batch-update>
+            </a-modal>
+
             <a-modal :mask-closable="false" v-model="syncFormVisible"
                      title="同步订单"
                      width="800px" :footer="null">
@@ -230,9 +275,10 @@
                         @{{ item }}
                     </div>
                 </div>
+                <div v-if="exportErrorUrl" style="text-align: center">
+                    <a-button type="primary" @click="exportError(exportErrorUrl)">导出有误数据</a-button>
+                </div>
             </a-modal>
-
-
 
         </a-card>
     </div>
@@ -256,8 +302,11 @@
                     end_date:null,
                     flow_start_date:null,
                     flow_end_date:null,
+                    flow_type:undefined,
                     remark:"",
+                    flow_remark:"",
                     remark_precise: true,
+                    flow_remark_precise: true,
                     has_received:false
                 },
                 listSource: [],
@@ -293,12 +342,12 @@
                         align: 'center',
                         dataIndex: 'node_name'
                     },
-                    {
-                        title: '合约类型',
-                        scopedSlots: { customRender: 'reac_user_type' },
-                        align: 'center',
-                        dataIndex: 'reac_user_type'
-                    },
+                    // {
+                    //     title: '合约类型',
+                    //     scopedSlots: { customRender: 'reac_user_type' },
+                    //     align: 'center',
+                    //     dataIndex: 'reac_user_type'
+                    // },
                     {
                         title: '安装地址',
                         scopedSlots: { customRender: 'address' },
@@ -318,14 +367,15 @@
                         dataIndex: 'reac_pay_cycle'
                     },
                     {
-                        title: '安装数量',
+                        title: '安装数量/赠送数量',
                         align: 'center',
+                        scopedSlots: { customRender: 'reac_installation_count' },
                         dataIndex: 'reac_installation_count'
                     },
                     {
-                        title: '赠送数量',
+                        title: '设备应收款',
                         align: 'center',
-                        dataIndex: 'reac_given_count'
+                        dataIndex: 'reac_device_funds'
                     },
                     {
                         title: '应收款',
@@ -349,6 +399,7 @@
                 importVisible:false,
                 importMsg:'',
                 importErrorArr:[],
+                exportErrorUrl:'',
                 statistics:{
                     count:0,
                     account_receivable:0,
@@ -364,6 +415,9 @@
                 syncLoading:false,
                 batchAddFlowFormVisible:false,
                 batchAddFlowLoading:false,
+                batchUpdateFormVisible:false,
+                batchUpdateFormLoading:false,
+                exportFinanceLoading:false,
                 labelCol: { span: 4 },
                 wrapperCol: { span: 14 },
                 syncForm:{
@@ -379,6 +433,7 @@
                 "node-cascader":  httpVueLoader('/statics/components/node/nodeCascader.vue'),
                 "flow-list":  httpVueLoader('/statics/components/receivableAccount/flowList.vue'),
                 "batch-flow-add":  httpVueLoader('/statics/components/receivableAccount/batchFlowAdd.vue'),
+                "batch-update":  httpVueLoader('/statics/components/receivableAccount/batchUpdate.vue'),
                 "flow-add":  httpVueLoader('/statics/components/receivableAccount/flowAdd.vue'),
                 "update":  httpVueLoader('/statics/components/receivableAccount/update.vue'),
             },
@@ -468,6 +523,7 @@
                             }
                             that.importMsg = res.data.success_count + '条数据导入成功 ;' + res.data.error_arr.length + '条数据导入失败 ；';
                             that.importErrorArr = [];
+                            that.exportErrorUrl = res.data.error_url;
                             if(res.data.error_arr.length > 0){
                                 that.importErrorArr = res.data.error_arr;
                             }
@@ -500,6 +556,9 @@
                     //     }
                     //     this.importVisible = true;
                     // })
+                },
+                exportError(url){
+                    window.location.href = url;
                 },
                 fileBeforeUpload(file) {
                     // this.fileList = [...this.fileList, {
@@ -569,7 +628,12 @@
                 afterUpdate(){
                     this.updateFormVisible = false;
                     this.$message.success('更新成功');
-                    this.updateOrderId = null;
+                    this.updateId = null;
+                    this.getPageList();
+                },
+                afterBatchUpdate(){
+                    this.batchUpdateFormVisible = false;
+                    this.$message.success('更新成功');
                     this.getPageList();
                 },
                 // 刷新列表
@@ -639,6 +703,7 @@
 
                         this.importMsg = res.data.success_count + '条数据导入成功 ;' + res.data.error_arr.length + '条数据导入失败 ；';
                         this.importErrorArr = [];
+                        this.exportErrorUrl = '';
                         if(res.data.error_arr.length > 0){
                             this.importErrorArr = res.data.error_arr;
                         }
@@ -655,8 +720,56 @@
                     this.$message.success('操作成功');
                     this.getPageList();
                 },
+                exportFinance(){
+                    this.exportFinanceLoading = true;
+                    let formData = JSON.parse(JSON.stringify(this.listQuery));
+                    axios({
+                        // 默认请求方式为get
+                        method: 'post',
+                        url: '/api/receivableAccount/exportFinance',
+                        // 传递参数
+                        data: formData,
+                        responseType: 'json',
+                        headers:{
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }).then(response => {
+                        this.exportFinanceLoading = false;
+                        let res = response.data;
+                        if(res.code !== 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
+
+                        // window.location.href = res.data.url
+                        const today = new Date();
+                        const year = today.getFullYear();
+                        const month = today.getMonth() + 1;  // 月份从0开始，所以要加1
+                        const day = today.getDate();
+                        this.download(res.data.url,'解缴表'+ year + '-' + month + '-' + day);
+                    }).catch(error => {
+                        this.$message.error('请求失败');
+                    });
+                },
+                download(url,name) {
+                    const link = document.createElement('a');
+                    link.style.display = 'none';
+                    // 设置下载地址
+                    link.setAttribute('href', url);
+                    // 设置文件名
+                    link.setAttribute('download', name);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                },
             },
 
         })
     </script>
+
+    <style>
+        .ant-table-tbody tr:nth-child(2n){
+            background: #f1f1f1;
+        }
+    </style>
 @endsection

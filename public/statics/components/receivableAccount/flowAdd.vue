@@ -2,7 +2,7 @@
     <div>
         <a-form-model :loading="loading" :model="formData" ref="dataForm" :label-col="dialogFormLabelCol" :wrapper-col="dialogFormWrapperCol" :rules="formRules">
             <a-form-model-item label="回款时间" prop="datetime">
-                <a-date-picker @change="dateChange" show-time format="YYYY-MM-DD HH:mm:ss" :default-value="moment().format('YYYY-MM-DD HH:mm:ss')"/>
+                <a-date-picker @change="dateChange" show-time format="YYYY-MM-DD HH:mm:ss" :value="formData.datetime"/>
             </a-form-model-item>
 
             <a-form-model-item label="付款方式" prop="pay_way">
@@ -21,9 +21,6 @@
                     </a-radio>
                     <a-radio :value="5">
                         二维码
-                    </a-radio>
-                    <a-radio :value="6">
-                        对公
                     </a-radio>
                 </a-radio-group>
             </a-form-model-item>
@@ -79,17 +76,19 @@ module.exports = {
                 funds_received: [{ required: true, message: '请输入回款金额', trigger: 'blur' }],
             },
             loading :false,
-            cid:undefined
         }
     },
     methods: {
         moment,
         initForm(){
+            // this.formData.pay_way = 5;
+            // this.formData.funds_received = 0;
+            // this.remark = '';
             this.formData= {
-                datetime:moment().format('YYYY-MM-DD HH:mm:ss'),
-                pay_way:5,
-                funds_received:0,
-                remark:'',
+                datetime : moment().format('YYYY-MM-DD HH:mm:ss'),
+                pay_way : 5,
+                funds_received : 0,
+                remark : '',
             };
         },
         submitData(){
@@ -100,6 +99,7 @@ module.exports = {
                         this.$message.error('记录不能为空');
                         return false;
                     }
+
                     that.formData.receivable_id = that.id;
 
                     axios({
@@ -187,7 +187,7 @@ module.exports = {
             return false;
         },
         dateChange(value,str){
-            this.formData.date = str;
+            this.formData.datetime = str;
         }
     },
     created () {

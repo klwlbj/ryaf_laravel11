@@ -54,13 +54,14 @@ class MaintainLogic extends BaseLogic
         if(isset($params['expired_day']) && $params['expired_day'] !== ''){
             $query->whereRaw('order_service_date < (NOW() - INTERVAL ' . $params['expired_day'] . ' DAY)');
         }
-
+        $nodeStreetArr = Node::getNodeStreet();
         if(!empty($params['export'])){
             ini_set( 'max_execution_time', 72000 );
             ini_set( 'memory_limit', '2048M' );
             $list = $query->select([
                 'plac_name',
                 'place.plac_address',
+                'node.node_id',
                 'node.node_name',
                 'user_name',
                 'user_mobile',
@@ -76,7 +77,7 @@ class MaintainLogic extends BaseLogic
             ])->orderBy('order_actual_delivery_date','desc')->get()->toArray();
 
 
-            $title = ['imei','型号','监控中心','单位名称','安装地址','用户名称','用户联系方式','交付人员','交付时间','最近心跳包','最近电量','最近信号强度','服务期限','标注'];
+            $title = ['imei','型号','街道','监控中心','单位名称','安装地址','用户名称','用户联系方式','交付人员','交付时间','最近心跳包','最近电量','最近信号强度','服务期限','标注'];
 
             $exportData = [];
             $config = [
@@ -89,6 +90,7 @@ class MaintainLogic extends BaseLogic
                 $exportData[] = [
                     $value['smde_imei'] . "\t",
                     $value['smde_model_name'],
+                    $nodeStreetArr[$value['node_id']]['node_name'] ?? '',
                     $value['node_name'],
                     $value['plac_name'],
                     $value['plac_address'],
@@ -327,6 +329,7 @@ class MaintainLogic extends BaseLogic
             ResponseLogic::setMsg('更新订单单位信息失败');
             return false;
         }
+
         DB::commit();
 
         return [];

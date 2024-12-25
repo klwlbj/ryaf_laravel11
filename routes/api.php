@@ -55,9 +55,11 @@ Route::any('/test1', [\App\Http\Controllers\DemoController::class, 'test1']);
 Route::any('/importDemo', [\App\Http\Controllers\DemoController::class, 'import']);
 Route::any('/compareDemo', [\App\Http\Controllers\DemoController::class, 'compare']);
 
+//标准地址
+Route::any('address/getStandardAddress', [AddressController::class, 'getStandardAddress']);
+
 Route::middleware(['login'])->group(function () {
-    //标准地址
-    Route::any('address/getStandardAddress', [AddressController::class, 'getStandardAddress']);
+
     //管理员
     Route::prefix('admin')->group(function () {
         Route::post('/getList', [AdminController::class, 'getList']);
@@ -213,12 +215,15 @@ Route::middleware(['login'])->group(function () {
         Route::post('/getList', [ReceivableAccountController::class, 'getList']);
         Route::post('/getInfo', [ReceivableAccountController::class, 'getInfo']);
         Route::post('/update', [ReceivableAccountController::class, 'update']);
+        Route::post('/batchUpdate', [ReceivableAccountController::class, 'batchUpdate']);
         Route::post('/delete', [ReceivableAccountController::class, 'delete']);
         Route::post('/import', [ReceivableAccountController::class, 'import']);
         Route::post('/addFlow', [ReceivableAccountController::class, 'addFlow']);
         Route::post('/batchAddFlow', [ReceivableAccountController::class,'batchAddFlow']);
+        Route::post('/deleteFlow', [ReceivableAccountController::class,'deleteFlow']);
         Route::post('/getFlow', [ReceivableAccountController::class, 'getFlow']);
         Route::post('/syncOrder', [ReceivableAccountController::class, 'syncOrder']);
+        Route::post('/exportFinance', [ReceivableAccountController::class, 'exportFinance']);
     });
 
     Route::prefix('test')->group(function () {

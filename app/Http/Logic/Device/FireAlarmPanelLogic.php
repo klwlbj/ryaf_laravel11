@@ -273,6 +273,7 @@ class FireAlarmPanelLogic extends BaseLogic
                 $ionoId = IotNotification::query()->insertGetId($insertData);
 
                 $insertData['iono_id'] = $ionoId;
+                $insertData['iono_status'] = '待处理';
 
                 IotNotificationAlert::query()->insert($insertData);
             }

@@ -8,7 +8,9 @@ class NodeLogic extends BaseLogic
 {
     public function getAllList($params)
     {
-        $query = Node::query()->where(['node_enabled' => 1]);
+        $query = Node::query()
+//            ->where(['node_enabled' => 1])
+        ;
 
         if(!empty($params['type'])){
             $query->where(['node_type' => $params['type']]);
@@ -24,7 +26,9 @@ class NodeLogic extends BaseLogic
 
     public function getTreeList($params)
     {
-        $query = Node::query()->where(['node_enabled' => 1]);
+        $query = Node::query()
+//            ->where(['node_enabled' => 1])
+        ;
 
         if(!empty($params['type'])){
             $query->where(['node_type' => $params['type']]);

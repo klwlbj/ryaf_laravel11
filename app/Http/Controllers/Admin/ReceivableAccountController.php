@@ -78,6 +78,28 @@ class ReceivableAccountController
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
+    public function batchUpdate(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'list_query' => 'required',
+        ],[
+            'list_query.required' => '筛选条件不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = ReceivableAccountLogic::getInstance()->batchUpdate($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
     public function delete(Request $request)
     {
         $params = $request->all();
@@ -156,6 +178,28 @@ class ReceivableAccountController
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
+    public function deleteFlow(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'flow_id' => 'required',
+        ],[
+            'flow_id.required' => '订单id不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = ReceivableAccountLogic::getInstance()->deleteFlow($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
     public function getFlow(Request $request)
     {
         $params = $request->all();
@@ -218,6 +262,28 @@ class ReceivableAccountController
         }
 
         $res = ReceivableAccountLogic::getInstance()->syncOrder($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function exportFinance(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+
+        ],[
+
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = ReceivableAccountLogic::getInstance()->exportFinance($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }

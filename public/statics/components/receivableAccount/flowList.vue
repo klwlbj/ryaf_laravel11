@@ -16,6 +16,21 @@
                 <span v-else style="color:green">{{ record.reac_funds_received }}</span>
             </div>
 
+            <div slot="action" slot-scope="text, record">
+                <div>
+                    <a-popconfirm
+                        title="是否确定删除记录?"
+                        ok-text="确认"
+                        cancel-text="取消"
+                        @confirm="onDel(record)"
+                    >
+                        <a style="margin-right: 8px">
+                            删除
+                        </a>
+                    </a-popconfirm>
+                </div>
+            </div>
+
         </a-table>
     </div>
 </template>
@@ -98,14 +113,16 @@ module.exports = {
                 this.$message.error('请求失败');
             });
         },
-        onApprove(row){
+        onDel(row){
             this.listLoading = true
             axios({
                 // 默认请求方式为get
                 method: 'post',
-                url: '/api/order/approveAccountFlow',
+                url: '/api/receivableAccount/deleteFlow',
                 // 传递参数
-                data: {id : row.orac_id},
+                data: {
+                    flow_id:row.reac_id
+                },
                 responseType: 'json',
                 headers:{
                     'Content-Type': 'multipart/form-data'
@@ -117,7 +134,7 @@ module.exports = {
                     this.$message.error(res.message);
                     return false;
                 }
-                this.$emit('approve');
+                this.$message.success('删除成功');
                 this.getPageList(this.id);
             }).catch(error => {
                 this.$message.error('请求失败');
