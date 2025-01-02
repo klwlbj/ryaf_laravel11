@@ -3,7 +3,7 @@
         v-model="id"
         show-search
         placeholder="输入关键字"
-        style="width: 400px"
+        :style="{'width': width}"
         :default-active-first-option="false"
         :show-arrow="false"
         :filter-option="false"
@@ -27,6 +27,11 @@ module.exports = {
                 return 'default'
             },
         },
+      width: {
+        default:function(){
+          return '400px'
+        },
+      },
         defaultData: {
             default:function(){
                 return undefined

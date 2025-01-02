@@ -8,7 +8,6 @@
             <a-form-model-item label="详细地址" prop="address">
                 <a-input v-model="formData.address" />
             </a-form-model-item>
-
             <a-form-model-item label="名称" prop="name">
                 <a-input v-model="formData.name"/>
             </a-form-model-item>

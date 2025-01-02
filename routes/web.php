@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 //Route::get('/', function () {
 //    return view('welcome');
@@ -10,8 +11,15 @@ use Illuminate\Support\Facades\Route;
 //Route::get('/myCommand', function () {
 //    print_r(Artisan::call('config:cache'));die;
 //});
-Route::view('/login', 'admin.login');
 
+Route::get('/storageLink', function () {
+   Artisan::call('storage:link');
+   dd(Artisan::output());
+});
+Route::view('/login', 'admin.login');
+Route::prefix('preInstallation')->group(function () {
+    Route::view('/view', 'admin.preInstallation');
+});
 Route::middleware(['login'])->group(function () {
     Route::view('/', 'admin.index');
 
@@ -92,6 +100,9 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('maintain')->group(function () {
         Route::view('place/view', 'admin.maintainPlace');
         Route::view('noData/view', 'admin.maintainNoData');
+    });
+    Route::prefix('preInstallationList')->group(function () {
+        Route::view('/view', 'admin.preInstallationList');
     });
 });
 
