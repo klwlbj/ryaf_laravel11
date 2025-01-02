@@ -59,7 +59,7 @@
                             v-model="form.number"
                             placeholder="数量"
                             @keyup.enter="handleSubmit"
-                            :min="1" :max="10"
+                            :min="1" :max="20000"
                     >
                         <a-icon slot="prefix" type="number" style="color: rgba(0,0,0,.25)"/>
                     </a-input-number>

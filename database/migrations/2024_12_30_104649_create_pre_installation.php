@@ -20,6 +20,7 @@ return new class () extends Migration {
             $table->string('handwritten_address')->default('');
             $table->string('address_code', 30);
             $table->ipAddress('ip_address');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

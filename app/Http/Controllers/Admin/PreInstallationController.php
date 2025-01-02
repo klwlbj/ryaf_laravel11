@@ -21,6 +21,11 @@ class PreInstallationController extends BaseController
         return $this->baseMethod($request, []);
     }
 
+    public function delete(Request $request)
+    {
+        return $this->baseMethod($request, []);
+    }
+
     public function add(Request $request)
     {
         $params = $request->all();
