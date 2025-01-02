@@ -186,7 +186,7 @@ module.exports = {
                     let params = {
                         detail:JSON.stringify(that.formData.detail),
                     }
-                  // this.id = 2111
+                    // this.id = 2111
                     params.id = this.id;
                     axios({
                         // 默认请求方式为get

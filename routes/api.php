@@ -1,15 +1,15 @@
 <?php
 
-use App\Http\Controllers\Admin\MaintainController;
+use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckIpMiddleware;
 use App\Http\Middleware\SignatureMiddleware;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AreaController;
 use App\Http\Controllers\Admin\NodeController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\UploadController;
 use App\Http\Controllers\Admin\AddressController;
+use App\Http\Controllers\Admin\MaintainController;
 use App\Http\Controllers\Admin\MaterialController;
 use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\WarehouseController;
@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\MaterialFlowController;
 use App\Http\Controllers\Admin\AdvancedOrderController;
 use App\Http\Controllers\Admin\AdminPermissionController;
 use App\Http\Controllers\Admin\FinancialIncomeController;
+use App\Http\Controllers\Admin\PreInstallationController;
 use App\Http\Controllers\Admin\MaterialCategoryController;
 use App\Http\Controllers\Admin\MaterialPurchaseController;
 use App\Http\Controllers\Admin\ReceivableAccountController;
@@ -33,17 +34,19 @@ Route::any('/pushUnits', [\App\Http\Controllers\ScriptController::class, 'pushUn
 
 Route::any('/login', [AdminController::class, 'login']);
 
+Route::post('/addPreInstallation', [PreInstallationController::class, 'add']);
+
 Route::prefix('security')
-    ->middleware([SignatureMiddleware::class,CheckIpMiddleware::class])
+    ->middleware([SignatureMiddleware::class, CheckIpMiddleware::class])
     ->group(function () {
-    Route::any('/total', [SecurityController::class, 'total']);
-    Route::any('/unitTotal', [SecurityController::class, 'unitTotal']);
-    Route::any('/list', [SecurityController::class, 'list']);
-    Route::any('/alertTotal', [SecurityController::class, 'alertTotal']);
-    Route::any('/unitAlertTotal', [SecurityController::class, 'unitAlertTotal']);
-    Route::any('/alertList', [SecurityController::class, 'alertList']);
-    Route::get('/getGuangzhouList', [AreaController::class, 'getList2']);
-});
+        Route::any('/total', [SecurityController::class, 'total']);
+        Route::any('/unitTotal', [SecurityController::class, 'unitTotal']);
+        Route::any('/list', [SecurityController::class, 'list']);
+        Route::any('/alertTotal', [SecurityController::class, 'alertTotal']);
+        Route::any('/unitAlertTotal', [SecurityController::class, 'unitAlertTotal']);
+        Route::any('/alertList', [SecurityController::class, 'alertList']);
+        Route::get('/getGuangzhouList', [AreaController::class, 'getList2']);
+    });
 
 Route::prefix('test')->group(function () {
     Route::get('/getList', [\App\Http\Controllers\Admin\TestController::class, 'getList']);
@@ -59,7 +62,6 @@ Route::any('/compareDemo', [\App\Http\Controllers\DemoController::class, 'compar
 Route::any('address/getStandardAddress', [AddressController::class, 'getStandardAddress']);
 
 Route::middleware(['login'])->group(function () {
-
     //管理员
     Route::prefix('admin')->group(function () {
         Route::post('/getList', [AdminController::class, 'getList']);
@@ -216,28 +218,28 @@ Route::middleware(['login'])->group(function () {
         Route::post('/getList', [ReceivableAccountController::class, 'getList']);
         Route::post('/getInfo', [ReceivableAccountController::class, 'getInfo']);
         Route::post('/update', [ReceivableAccountController::class, 'update']);
-        Route::post('/batchUpdate', [ReceivableAccountController::class, 'batchUpdate']);
         Route::post('/delete', [ReceivableAccountController::class, 'delete']);
         Route::post('/import', [ReceivableAccountController::class, 'import']);
         Route::post('/addFlow', [ReceivableAccountController::class, 'addFlow']);
-        Route::post('/batchAddFlow', [ReceivableAccountController::class,'batchAddFlow']);
-        Route::post('/deleteFlow', [ReceivableAccountController::class,'deleteFlow']);
         Route::post('/getFlow', [ReceivableAccountController::class, 'getFlow']);
         Route::post('/syncOrder', [ReceivableAccountController::class, 'syncOrder']);
-        Route::post('/exportFinance', [ReceivableAccountController::class, 'exportFinance']);
     });
 
     Route::prefix('test')->group(function () {
         Route::get('/getList', [\App\Http\Controllers\Admin\TestController::class, 'getList']);
     });
 
-
     Route::prefix('maintain')->group(function () {
-        Route::post('/placeList', [MaintainController::class,'placeList']);
-        Route::post('/getPlaceInfo', [MaintainController::class,'getPlaceInfo']);
-        Route::post('/getRemarkInfo', [MaintainController::class,'getRemarkInfo']);
-        Route::post('/updatePlace', [MaintainController::class,'updatePlace']);
-        Route::post('/setRemark', [MaintainController::class,'setRemark']);
-        Route::post('/noDataList', [MaintainController::class,'noDataList']);
+        Route::post('/placeList', [MaintainController::class, 'placeList']);
+        Route::post('/placeList', [MaintainController::class, 'placeList']);
+        Route::post('/getPlaceInfo', [MaintainController::class, 'getPlaceInfo']);
+        Route::post('/getRemarkInfo', [MaintainController::class, 'getRemarkInfo']);
+        Route::post('/updatePlace', [MaintainController::class, 'updatePlace']);
+        Route::post('/setRemark', [MaintainController::class, 'setRemark']);
+        Route::post('/noDataList', [MaintainController::class, 'noDataList']);
+    });
+
+    Route::prefix('preInstallation')->group(function () {
+        Route::post('/getList', [PreInstallationController::class, 'getList']);
     });
 });

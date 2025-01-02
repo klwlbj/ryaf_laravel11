@@ -26,17 +26,17 @@
             </a-form-model-item>
 
             <a-form-model-item label="预付金额" prop="funds_received">
-              <a-input-number v-model="formData.funds_received"  :step="0.01"/>
+                <a-input-number v-model="formData.funds_received"  :step="0.01"/>
             </a-form-model-item>
 
             <a-form-model-item label="收款方式" prop="pay_way">
                 <a-radio-group v-model="formData.pay_way">
-<!--                    <a-radio :value="1">-->
-<!--                        微信-->
-<!--                    </a-radio>-->
-<!--                    <a-radio :value="2">-->
-<!--                        支付宝-->
-<!--                    </a-radio>-->
+                    <!--                    <a-radio :value="1">-->
+                    <!--                        微信-->
+                    <!--                    </a-radio>-->
+                    <!--                    <a-radio :value="2">-->
+                    <!--                        支付宝-->
+                    <!--                    </a-radio>-->
                     <a-radio :value="3">
                         银行
                     </a-radio>

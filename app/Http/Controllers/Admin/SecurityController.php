@@ -33,6 +33,7 @@ class SecurityController
         $query = SmokeDetector::select(DB::raw('count(*) as count, sum(smde_online = "1") as online_count, sum(smde_online = "0") as offline_count'))
             ->where('smde_place_id', "!=", 0)
             ->where('plac_user_ids', 'like', ',1345,%')
+            // ->where('smde_user_ids', 'like', ',1345,%')
             ->whereNotNull('smde_place_id')
             ->leftJoin('place', 'plac_id', '=', 'smde_place_id')
             ->when(isset($params['node_id']), function ($query) use ($params) {
