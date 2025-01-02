@@ -48,7 +48,7 @@ class DeviceImport extends Command
 
 //        $appKey = 'dZxzhRw8Uw4'; $appSecret = 'cGG8G1Enjl'; $oneNetUserId = '380729';$oneNetAccessKey = 'a1Ygz82hVkzOHUIfF1c0LfLTr41prJZpKq4EfeEEGXhUfCSVMPdhlScKa23xW4/gR9VDiyX4Lzxvc4eAN6i2IA=='; //本地
 
-        //$aep_product_id = "15599428"; $aep_master_key = "08d3fbc2c028477c8afc3e9ce60d714d"; //平安穗粤-海曼HM608NB      //温感
+        //$aep_product_id = "15599428"; $aep_master_key = "08d3fbc2c028477c8afc3e9ce60d714d"; $oneNetProductId = '407478'; //平安穗粤-海曼HM608NB      //温感
         $aep_product_id = "16922967"; $aep_master_key = "0434f19136324920a51ba7287fffb667"; $oneNetProductId = '407478'; //平安穗粤-海曼HM608/618NB透传版
         //$aep_product_id = "17085637"; $aep_master_key = "9c6f31f078024c0c8ab9d288eeaec206"; $oneNetProductId = '407478'; //平安穗粤-六瑞-SA-JTY-GD02C
 //        $aep_product_id = "17102042"; $aep_master_key = "3859262b741f40d0a0c3bd8d64a5cebe"; $oneNetProductId = 'HzFl9NvY5q'; //平安穗粤-源流-YL-IOT-YW03（源流Y3_4G_烟感MQTT）
