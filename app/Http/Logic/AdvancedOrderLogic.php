@@ -2,9 +2,13 @@
 
 namespace App\Http\Logic;
 
+use App\Models\AdvancedRelation;
+use App\Models\Node;
 use App\Models\Order;
 use App\Models\AdvancedOrder;
 use App\Http\Logic\Excel\ExcelGenerator;
+use App\Models\ReceivableAccount;
+use Illuminate\Database\Eloquent\Builder;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
 class AdvancedOrderLogic extends ExcelGenerator
@@ -100,65 +104,57 @@ class AdvancedOrderLogic extends ExcelGenerator
         $pageSize = $params['page_size'] ?? 10;
         $offset   = ($page - 1) * $pageSize;
 
-        $query = AdvancedOrder::query();
+        $query = AdvancedOrder::query()
+            ->leftJoin('node', 'node.node_id', '=', 'advanced_order.ador_node_id');
 
-        $queryConditions = ['name', 'street_id', 'address', 'phone', 'customer_type', 'payment_type', 'pay_way', 'remark'];
+        if(isset($params['user_keyword']) && !empty($params['user_keyword'])) {
+            $query->where(function (Builder $q) use ($params) {
+                $q->orWhere('reac_user_name', 'like', "%{$params['user_keyword']}%")
+                    ->orWhere('reac_user_mobile', 'like', "%{$params['user_keyword']}%");
+            });
+        }
 
-        foreach ($queryConditions as $queryCondition) {
-            switch ($queryCondition) {
-                case 'address':
-                case 'name':
-                case 'remark':
-                case 'phone':
-                    if (!empty($params[$queryCondition])) {
-                        $query->where($queryCondition, 'like', '%' . $params[$queryCondition] . '%');
-                    }
-                    break;
-                case 'street_id':
-                    if (!empty($params['street_id_0'])) {
-                        $query->where('area_id', 'like', $params['street_id_0'] . '%');
-                    }
-                    if (!empty($params['street_id_1'])) {
-                        $query->where('area_id', 'like', $params['street_id_1'] . '%');
-                    }
-                    if (!empty($params['street_id_2'])) {
-                        $query->where('area_id', $params['street_id_2']);
-                    }
-                    break;
-                case 'customer_type':
-                case 'payment_type':
-                case 'pay_way':
-                    if (!empty($params[$queryCondition])) {
-                        $query->where($queryCondition, $params[$queryCondition]);
-                    }
-                    break;
-            }
+        if(isset($params['node_id']) && !empty($params['node_id'])) {
+            $nodeIds = Node::getNodeChild($params['node_id']);
+            $query->whereIn('ador_node_id', $nodeIds);
         }
 
         if (!empty($params['start_date'])) {
-            $query->where('created_at', '>=', $params['start_date']);
+            $query->where('ador_pay_date', '>=', $params['start_date']);
         }
 
         if (!empty($params['end_date'])) {
-            $query->where('created_at', '<=', $params['end_date']);
+            $query->where('ador_pay_date', '<=', $params['end_date']);
         }
 
         $total = $query->count();
 
-        $list = $query->with(['area', 'area.parentArea', 'area.parentArea.parentArea'])
-            ->when(!isset($params['export']), function ($query) use ($offset, $pageSize) {
-                return $query->orderBy('created_at', 'desc')
-                ->offset($offset)->limit($pageSize)
-                ->get()
-                ->map(function ($item) {
-                    return $this->handleRow($item);
-                });
-            });
+        $list = $query
+            ->select([
+                'ador_id',
+                'ador_sn',
+                'node_name',
+                'ador_installation_date',
+                'ador_pay_date',
+                'ador_user_name',
+                'ador_user_phone',
+                'ador_installation_count',
+                'ador_funds_received',
+                'ador_pay_way',
+                'ador_status',
+                'ador_remark',
+            ])->offset($offset)->limit($pageSize)->get()->toArray();
 
-        if (isset($params['export'])) {
-            $list = Order::getCursorSortById($list);
-            return $this->export($list, $params, $total);
+        foreach ($list as $key => &$value) {
+            $value['ador_pay_way_msg'] = AdvancedOrder::$payWayArr[$value['ador_pay_way']] ?? '';
         }
+
+        unset($value);
+        //
+        //        if (isset($params['export'])) {
+        //            $list = Order::getCursorSortById($list);
+        //            return $this->export($list, $params, $total);
+        //        }
 
         return [
             'total' => $total,
@@ -169,29 +165,18 @@ class AdvancedOrderLogic extends ExcelGenerator
     public function getInfo($params)
     {
         $data = AdvancedOrder::query()
-            ->with(['area', 'area.parentArea', 'area.parentArea.parentArea'])
-            ->where(['ador_id' => $params['id']])
-            ->first();
-
-        $area                 = $data->area;
-        $data->community_id   = $area?->id;
-        $data->community_name = $area?->name;
-        // 访问上级
-        $parentArea        = $area?->parentArea;
-        $data->street_id   = $parentArea?->id;
-        $data->street_name = $parentArea?->name;
-        // 访问上上级
-        $grandParentArea     = $parentArea?->parentArea;
-        $data->district_id   = $grandParentArea?->id;
-        $data->district_name = $grandParentArea?->name;
-
-        $data->area_all_id = [$data->district_id, $data->street_id, $data->community_id];
+            ->leftJoin('node', 'node_id', '=', 'ador_node_id')
+            ->select([
+                'advanced_order.*',
+                'node.node_name',
+            ])->first();
 
         if (!$data) {
             ResponseLogic::setMsg('记录不存在');
             return false;
         }
-
+        $data                  = $data->toArray();
+        $data['ador_node_arr'] = Node::getNodeParent($data['ador_node_id']);
         return $data;
     }
 
@@ -209,41 +194,52 @@ class AdvancedOrderLogic extends ExcelGenerator
     public function addOrUpdate($params)
     {
         $insertData = [
-            'area_id'                  => $params['street_id_2'],
-            'address'                  => $params['address'] ?? '',
-            'name'                     => $params['name'] ?? '',
-            'phone'                    => $params['phone'] ?? '',
-            'remark'                   => $params['remark'] ?? '',
-            'advanced_amount'          => $params['advanced_amount'] ?? '',
-            'customer_type'            => $params['customer_type'] ?? '',
-            'advanced_total_installed' => $params['advanced_total_installed'] ?? '',
-            'payment_type'             => $params['payment_type'] ?? '',
-            'pay_way'                  => $params['pay_way'] ?? '',
-            'operator_user_id'         => AuthLogic::$userId ?? 0,
+            'ador_node_id'            => $params['node_id'],
+            'ador_installation_date'  => $params['installation_date'] ?? '',
+            'ador_pay_date'           => $params['pay_date'] ?? '',
+            'ador_user_name'          => $params['user_name'] ?? '',
+            'ador_user_phone'         => $params['user_phone'] ?? '',
+            'ador_installation_count' => $params['installation_count'] ?? '',
+            'ador_funds_received'     => $params['funds_received'],
+            'ador_pay_way'            => $params['pay_way'] ?? '',
+            'ador_remark'             => $params['remark'] ?? '',
+            'ador_operator_id'        => AuthLogic::$userId ?? 0,
         ];
 
-        $res = isset($params['id']) ? AdvancedOrder::where(['ador_id' => $params['id']])->update($insertData) : AdvancedOrder::insert($insertData);
-        if ($res === false) {
-            ResponseLogic::setMsg('添加或更新失败');
-            return false;
+        if(isset($params['id']) && !empty($params['id'])) {
+            if(AdvancedOrder::query()->where(['ador_id' => $params['id']])->update($insertData) === false){
+                ResponseLogic::setMsg('更新失败');
+                return false;
+            }
+        }else{
+            $insertData['ador_sn'] = 'AD'. date('YmdHis') . rand(1000,9999);
+            $insertData['ador_status'] = 1;
+            if(AdvancedOrder::query()->insert($insertData) === false){
+                ResponseLogic::setMsg('添加失败');
+                return false;
+            }
         }
 
-        return ['id' => $res];
+        return [];
     }
 
-    public function linkOrder($params)
+    public function link($params)
     {
-        $arrayData = json_decode($params['detail'], true); // 将 JSON 数据转换为 PHP 数组
-        $detail    = collect($arrayData); // 将数组转换为集合
-        $res       = Order::whereIn('order_iid', $detail->pluck('orderId'))->update([
-            'advanced_order_id' => $params['id'],
-        ]);
-        if ($res === false) {
-            ResponseLogic::setMsg('更新失败');
+        $receivableData = ReceivableAccount::query()->where(['reac_id' => $params['receivable_id']])->first();
+
+        if(!$receivableData){
+            ResponseLogic::setMsg('应收款数据不存在');
             return false;
         }
 
-        return ['id' => $res];
+        $receivableData->toArray();
+
+        if(AdvancedRelation::query()->where(['adre_reac_id' => $params['receivable_id'],'adre_ador_id' => $params['advanced_id']])->exists()){
+            ResponseLogic::setMsg('订单已被绑定');
+            return false;
+        }
+
+        return [];
     }
 
     public function delete($params)
@@ -252,24 +248,24 @@ class AdvancedOrderLogic extends ExcelGenerator
         return [];
     }
 
-     protected function handleRow($item, $params = [])
-     {
-         $item->pay_way_name       = AdvancedOrder::$formatPayWayMaps[$item->pay_way] ?? '';
-         $item->customer_type_name = AdvancedOrder::$formatCustomerTypeMaps[$item->customer_type] ?? '';
-         $item->payment_type_name  = AdvancedOrder::$formatPaymentTypeMaps[$item->payment_type] ?? '';
+    protected function handleRow($item, $params = [])
+    {
+        $item->pay_way_name       = AdvancedOrder::$formatPayWayMaps[$item->pay_way] ?? '';
+        $item->customer_type_name = AdvancedOrder::$formatCustomerTypeMaps[$item->customer_type] ?? '';
+        $item->payment_type_name  = AdvancedOrder::$formatPaymentTypeMaps[$item->payment_type] ?? '';
 
-         $area                 = $item->area;
-         $item->community_name = $area?->name;
-         // 访问上级
-         $parentArea        = $area?->parentArea;
-         $item->street_name = $parentArea?->name;
-         // 访问上上级
-         $grandParentArea     = $parentArea?->parentArea;
-         $item->district_name = $grandParentArea?->name;
-         return $item;
-     }
+        $area                 = $item->area;
+        $item->community_name = $area?->name;
+        // 访问上级
+        $parentArea        = $area?->parentArea;
+        $item->street_name = $parentArea?->name;
+        // 访问上上级
+        $grandParentArea     = $parentArea?->parentArea;
+        $item->district_name = $grandParentArea?->name;
+        return $item;
+    }
 
-     protected function handleLastRow($sheet, int $lastRow, array $lastRowTotal = [])
-     {
-     }
+    protected function handleLastRow($sheet, int $lastRow, array $lastRowTotal = [])
+    {
+    }
 }

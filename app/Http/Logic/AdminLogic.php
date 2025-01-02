@@ -131,7 +131,12 @@ class AdminLogic extends BaseLogic
             return false;
         }
 
-        $permissionArr = explode(',',$params['permission']);
+        if(!empty($params['permission'])){
+            $permissionArr = explode(',',$params['permission']);
+        }else{
+            $permissionArr = [];
+        }
+
 
         DB::beginTransaction();
         $id = Admin::query()->insertGetId($insertData);
@@ -149,10 +154,12 @@ class AdminLogic extends BaseLogic
             ];
         }
 
-        if(AdminPermissionRelation::query()->insert($permissionInsertData) === false){
-            DB::rollBack();
-            ResponseLogic::setMsg('添加权限失败');
-            return false;
+        if(!empty($permissionInsertData)){
+            if(AdminPermissionRelation::query()->insert($permissionInsertData) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('添加权限失败');
+                return false;
+            }
         }
 
         DB::commit();

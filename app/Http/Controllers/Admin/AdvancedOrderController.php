@@ -30,35 +30,25 @@ class AdvancedOrderController extends BaseController
     public function link(Request $request)
     {
         return $this->baseMethod($request, [
-            'id'     => 'required',
-            'detail' => 'required',
+            'advanced_id'     => 'required',
+            'receivable_id' => 'required',
         ]);
     }
 
     public function add(Request $request)
     {
         return $this->baseMethod($request, [
-            'name'                     => 'required',
-            'address'                  => 'required',
-            'phone'                    => 'required',
-            'advanced_amount'          => 'required|numeric',
-            'advanced_total_installed' => 'required|int',
-            'payment_type'             => 'required|int',
-            'pay_way'                  => 'required|int',
+            'funds_received' => 'required',
+            'node_id' => 'required',
         ], 'addOrUpdate');
     }
 
     public function update(Request $request)
     {
         return $this->baseMethod($request, [
-            'id'                       => 'required|string|exists:advanced_order,ador_id',
-            'name'                     => 'required',
-            'address'                  => 'required',
-            'phone'                    => 'required',
-            'advanced_amount'          => 'required|numeric',
-            'advanced_total_installed' => 'required|int',
-            'payment_type'             => 'required|int',
-            'pay_way'                  => 'required|int',
+            'id'             => 'required|string|exists:advanced_order,ador_id',
+            'funds_received' => 'required',
+            'node_id' => 'required',
         ], 'addOrUpdate');
     }
 

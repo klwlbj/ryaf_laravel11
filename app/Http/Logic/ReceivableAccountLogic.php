@@ -184,7 +184,6 @@ class ReceivableAccountLogic extends BaseLogic
             if($params['is_debt'] == 2){
                 $query->where('reac_account_receivable' , '<=',DB::raw("reac_funds_received"));
             }
-
         }
 
         if(!empty($params['remark'])){
@@ -396,21 +395,6 @@ class ReceivableAccountLogic extends BaseLogic
         ini_set( 'max_execution_time', 7200 );
         ini_set( 'memory_limit', '512M' );
 
-//        $filename= $params['file']->getRealPath();
-//
-//        $inputFileType=  IOFactory::identify($filename);
-//
-//        $reader= IOFactory::createReader($inputFileType);
-
-//        $spreadsheet=$reader->load($filename);
-
-
-//        $spreadsheet = IOFactory::load($params['file']);
-//
-//        $sheetData = $spreadsheet->getSheet(0)->toArray(null, true, true, true);
-//
-//        print_r($sheetData);die;
-//        $sheetData = array_values($sheetData);
         $sheetData = ToolsLogic::jsonDecode($params['data']);
 
         $addressInsert = [];
@@ -661,6 +645,109 @@ class ReceivableAccountLogic extends BaseLogic
         $errorCount = count($errorArr);
 
         return ['success_count' => $sucCount,'error_count' => $errorCount,'error_arr' => $errorArr ,'error_url' => $url];
+    }
+
+    public function importReceipt($params)
+    {
+        ini_set( 'max_execution_time', 7200 );
+        ini_set( 'memory_limit', '512M' );
+
+        $sheetData = ToolsLogic::jsonDecode($params['data']);
+
+        $addressInsert = [];
+        $flowInsert = [];
+        $errorArr = [];
+
+        $sucCount = 0;
+
+        $snArr = $filtered_array = array_filter(array_column($sheetData,'0'), function($value) {
+            // 返回true保留元素，返回false移除元素
+            return (string)$value !== '';
+        });
+
+        $nodeArr = Node::query()->select(['node_id','node_name'])->pluck('node_id','node_name')->toArray();
+
+        $existList = ReceivableAccount::query()->where(['reac_type' => 2])
+            ->whereIn('reac_relation_sn',$snArr)
+            ->get()->keyBy('reac_relation_sn')->toArray();
+
+        foreach ($sheetData as $key => $value) {
+//            if($key == 0){
+//                continue;
+//            }
+//            print_r($value);die;
+            try {
+                $value = array_values($value);
+                $value[2] = ToolsLogic::convertExcelTime($value[2]);
+                $value[15] = ToolsLogic::convertExcelTime($value[15]);
+//            print_r($value);die;
+                $area = $value[1];
+                $orderSn = $value[0];
+                $installationDate = date('Y-m-d', strtotime($value[2]));
+                $userType = ($value[3] == '2C') ? 2 : 1;
+                $street = $value[4];
+                $userName = $value[5];
+                $userMobile = $value[6];
+                $address = explode("\n", $value[7]);
+                $installationCount = $value[8] ?: 0;
+                $givenCount = is_numeric($value[9]) ? $value[8] : 0;
+                $remark = $value[10] ?? '';
+                $accountReceivable = $value[11] ?? 0;
+                $fundsReceived = $value[12] ?? 0;
+                $cycleType = $value[13];
+                if (in_array($cycleType, ['一次性付款', '未确定'])) {
+                    $cycle = 1;
+                } else {
+                    $cycle = 36;
+                }
+
+                $receivedWay = $value[14] ?: '二维码';
+                if ($receivedWay == '对公') {
+                    $payWay = 6;
+                } else {
+                    $payWay = 5;
+                }
+
+                $payData = $value[15];
+
+
+                if (empty($userName)) {
+                    $errorArr[] = '行' . ($key + 2) . '用户名为空';
+
+                    $value[] = '用户名为空';
+                    $errorData[] = $value;
+                    continue;
+                }
+
+                #如果应收少于等于0  直接跳过
+                if ($accountReceivable <= 0) {
+                    $errorArr[] = '行' . ($key + 2) . '应收少于等于0  用户：' . $userName;
+
+                    $value[] = '应收少于等于0';
+                    $errorData[] = $value;
+                    continue;
+                }
+
+
+                if ($installationDate == '1970-01-01') {
+                    $errorArr[] = '行' . ($key + 2) . '记录安装时间异常  用户：' . $userName;
+
+                    $value[] = '记录安装时间异常';
+                    $errorData[] = $value;
+                    continue;
+                }
+
+                #如果存在订单编号 判断订单号唯一性
+                if (!empty($orderSn)) {
+
+                } else {
+
+                }
+            } catch (\Exception $e) {
+                $errorArr[] = '行' . ($key + 2) . '的记录异常：' . $e->getMessage();
+                continue;
+            }
+        }
     }
 
     public function addFlow($params)

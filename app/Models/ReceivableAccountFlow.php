@@ -13,7 +13,6 @@ class ReceivableAccountFlow extends BaseModel
         '3' => '银行',
         '4' => '现金',
         '5' => '二维码',
-        '6' => '对公',
     ];
 
     public static $typeArr = [

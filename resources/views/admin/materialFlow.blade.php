@@ -122,6 +122,19 @@
                                 填写单价
                             </a>
                         </div>
+
+                        <div v-if="record.mafl_operator_id == admin.admin_id && record.is_last">
+                            <a-popconfirm
+                                title="是否确认撤销?"
+                                ok-text="确认"
+                                cancel-text="取消"
+                                @confirm="cancel(record)"
+                            >
+                                <a style="margin-right: 8px">
+                                    撤销
+                                </a>
+                            </a-popconfirm>
+                        </div>
                     </div>
                 </a-table>
 
@@ -398,6 +411,29 @@
                         // 默认请求方式为get
                         method: 'post',
                         url: '/api/materialFlow/verify',
+                        // 传递参数
+                        data: {id:row.mafl_id},
+                        responseType: 'json',
+                        headers:{
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }).then(response => {
+                        let res = response.data;
+                        if(res.code != 0){
+                            this.$message.error(res.message);
+                            return false;
+                        }
+
+                        this.getPageList();
+                    }).catch(error => {
+                        this.$message.error('请求失败');
+                    });
+                },
+                cancel(row){
+                    axios({
+                        // 默认请求方式为get
+                        method: 'post',
+                        url: '/api/materialFlow/cancel',
                         // 传递参数
                         data: {id:row.mafl_id},
                         responseType: 'json',

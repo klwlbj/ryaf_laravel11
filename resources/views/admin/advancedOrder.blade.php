@@ -4,89 +4,53 @@
     <a-card>
         <div>
             <a-form layout="inline" >
+                <a-form-model-item>
+                    <node-cascader @change="nodeChange"></node-cascader>
+                </a-form-model-item>
                 <a-form-item>
-                    <a-input v-model="listQuery.name" placeholder="单位/用户名称" style="width: 200px;" />
-                </a-form-item>
-                <a-form-item>
-                    <a-cascader v-model="listQuery.street_id" :options="areaList" placeholder="区域"   :show-search="{}" change-on-select />
-                </a-form-item>
-                <a-form-item>
-                    <a-input v-model="listQuery.address" placeholder="地址" style="width: 200px;" />
-                </a-form-item>
-                <a-form-item>
-                    <a-input v-model="listQuery.phone" placeholder="联系方式" style="width: 200px;" />
-                </a-form-item>
-                <a-form-item>
-                    <a-space>
-                        <a-select
-                                ref="select"
-                                placeholder="客户类型"
-                                v-model="listQuery.customer_type"
-                                :allow-clear="true"
-                                style="width: 120px"
-                                @change="handleChange"
-                        >
-                            <a-select-option value="1">toB</a-select-option>
-                            <a-select-option value="2">toC</a-select-option>
-                        </a-select>
-                    </a-space>
+                    <a-input v-model="listQuery.user_keyword" placeholder="用户名/用户手机号" style="width: 200px;" />
                 </a-form-item>
 
                 <a-form-item>
-                    <a-space>
-                        <a-select
-                                ref="select"
-                                placeholder="付款方案"
-                                v-model="listQuery.payment_type"
-                                :allow-clear="true"
-                                style="width: 120px"
-                                @change="handleChange"
-                        >
-                            <a-select-option value="1" >预付</a-select-option>
-                        </a-select>
-                    </a-space>
-                </a-form-item>
-                <a-form-item>
-                    <a-space>
-                        <a-select
-                                ref="select"
-                                placeholder="收款方式"
-                                v-model="listQuery.pay_way"
-                                style="width: 120px"
-                                :allow-clear="true"
-                                @change="handleChange"
-                        >
-                            <a-select-option value="1" >微信</a-select-option>
-                            <a-select-option value="2" >支付宝</a-select-option>
-                            <a-select-option value="3" >银行</a-select-option>
-                            <a-select-option value="4" >现金</a-select-option>
-                            <a-select-option value="5" >扫二维码</a-select-option>
-                        </a-select>
-                    </a-space>
+                    <a-range-picker
+                        :placeholder="['预收开始时间', '预收结束时间']"
+                        @change="dateChange"
+                    ></a-range-picker>
                 </a-form-item>
 
                 <a-form-item>
                     <a-input v-model="listQuery.remark" placeholder="备注" style="width: 120px;" />
+                    <span style="margin-left: 10px"><a-checkbox v-model="listQuery.remark_precise">精确匹配</a-checkbox></span>
                 </a-form-item>
 
                 <a-form-item>
                     <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                 </a-form-item>
-                <a-form-item>
-                    <a-button icon="search" @click="exportList">导出</a-button>
-                </a-form-item>
+{{--                <a-form-item>--}}
+{{--                    <a-button icon="search" @click="exportList">导出</a-button>--}}
+{{--                </a-form-item>--}}
                 <a-form-item>
                     <a-button @click="onCreate" type="primary" icon="edit">添加订单</a-button>
                 </a-form-item>
             </a-form>
 
             <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                     :pagination="false" :scroll="{ x: 2000,y: 650}">
+                     :pagination="false" :scroll="{ x: 1500,y: 650}">
+
+                <div slot="user_info" slot-scope="text, record">
+                    <div>@{{ record.ador_user_name }}</div>
+                    <div>@{{ record.ador_user_mobile }}</div>
+                </div>
+
+                <div slot="date" slot-scope="text, record">
+                    <span style="color:red">@{{ record.ador_installation_date }}</span>/<span style="color:green">@{{ record.ador_pay_date }}</span>
+                </div>
 
                 <div slot="action" slot-scope="text, record">
                     <a style="margin-right: 8px" @click="onUpdate(record)">
                         修改
                     </a>
+
                     <a style="margin-right: 8px" @click="onLinkOrder(record)">
                         关联订单
                     </a>
@@ -130,9 +94,9 @@
 
         <a-modal :mask-closable="false" v-model="linkOrderFormVisible"
                  title="关联订单"
-                 width="800px" :footer="null">
+                 width="1200px" :footer="null">
             <advanced-order-link ref="linkOrder"
-                                 :id="id"
+                                 :id="relationId"
                                  @submit="linkOrderSubmit"
                                  @close="linkOrderFormVisible = false;"
             >
@@ -151,14 +115,12 @@
         data: {
             areaList:[],
             listQuery: {
-                street_id:[],
-                address:'',
-                name:'',
-                phone:'',
+                user_keyword:'',
                 remark:'',
-                payment_type:undefined,
-                customer_type:undefined,
-                pay_way:undefined,
+                node_id:undefined,
+                start_date:null,
+                end_date:null,
+                remark_precise:true
             },
             listSource: [],
             listLoading:false,
@@ -172,58 +134,39 @@
             },
             columns:[
                 {
-                    title: 'Id',
-                    dataIndex: 'ador_id',
-                    width: 80
+                    title: '预付编号',
+                    dataIndex: 'ador_sn',
                 },
                 {
-                    title: '区',
-                    dataIndex: 'district_name',
-                    width: 100
+                    title: '监控中心',
+                    dataIndex: 'node_name',
                 },
                 {
-                    title: '街道',
-                    dataIndex: 'street_name'
+                    title: '用户信息',
+                    scopedSlots: { customRender: 'user_info' },
+                    dataIndex: 'user_info'
                 },
                 {
-                    title: '村委/经济联社/社区',
-                    dataIndex: 'community_name'
-                },
-                {
-                    title: '地址',
-                    dataIndex: 'address'
-                },
-                {
-                    title: '单位/用户名称',
-                    dataIndex: 'name'
-                },
-                {
-                    title: '联系方式',
-                    dataIndex: 'phone'
-                },
-                {
-                    title: '客户类型',
-                    dataIndex: 'customer_type_name'
+                    title: '安装日期/支付日期',
+                    scopedSlots: { customRender: 'date' },
+                    dataIndex: 'date',
+                    width:300
                 },
                 {
                     title: '预计安装总数',
-                    dataIndex: 'advanced_total_installed'
+                    dataIndex: 'ador_installation_count'
                 },
                 {
                     title: '预付金额（元）',
-                    dataIndex: 'advanced_amount'
-                },
-                {
-                    title: '付款方案',
-                    dataIndex: 'payment_type_name'
+                    dataIndex: 'ador_funds_received'
                 },
                 {
                     title: '收款方式',
-                    dataIndex: 'pay_way_name'
+                    dataIndex: 'ador_pay_way_msg'
                 },
                 {
                     title: '备注',
-                    dataIndex: 'remark'
+                    dataIndex: 'ador_remark'
                 },
                 {
                     title: '操作',
@@ -233,7 +176,8 @@
             ],
             dialogFormVisible:false,
             linkOrderFormVisible:false,
-            id:null
+            id:null,
+            relationId:null,
         },
         created () {
             // 获取区域和街道等
@@ -242,6 +186,7 @@
             this.handleFilter()
         },
         components: {
+            "node-cascader":  httpVueLoader('/statics/components/node/nodeCascader.vue'),
             "advanced-order-add":  httpVueLoader('/statics/components/business/advancedOrderAdd.vue'),
             "advanced-order-link":  httpVueLoader('/statics/components/business/advancedOrderLink.vue')
         },
@@ -336,7 +281,7 @@
                 this.dialogFormVisible = true;
             },
             onLinkOrder(row){
-                this.id = row.ador_id
+                this.relationId = row.ador_id
                 this.status = '关联订单';
                 this.linkOrderFormVisible = true;
             },
@@ -383,7 +328,14 @@
                 this.$message.success('关联成功');
                 this.linkOrderFormVisible = false;
                 this.handleFilter();
-            }
+            },
+            nodeChange(value){
+                this.listQuery.node_id = value;
+            },
+            dateChange(value,arr){
+                this.listQuery.start_date = arr[0];
+                this.listQuery.end_date = arr[1];
+            },
         },
 
     })

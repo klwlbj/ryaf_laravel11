@@ -126,6 +126,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/verify', [MaterialFlowController::class, 'verify']);
         Route::post('/setPrice', [MaterialFlowController::class, 'setPrice']);
         Route::post('/inComingUpdate', [MaterialFlowController::class, 'inComingUpdate']);
+        Route::post('/cancel', [MaterialFlowController::class, 'cancel']);
     });
 
     Route::prefix('materialPurchase')->group(function () {

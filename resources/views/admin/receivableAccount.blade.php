@@ -93,11 +93,25 @@
                             :file-list="fileList"
                             :multiple="false"
                             :before-upload="fileBeforeUpload"
-                            @change="fileHandleChange"
+                            @change="(file) => fileHandleChange(file)"
                         >
                             <a-button>
                                 <a-icon type="upload" ></a-icon>
                                 导入数据
+                            </a-button>
+                        </a-upload>
+                    </a-form-item>
+
+                    <a-form-item v-if="$checkPermission('/api/receivableAccount/import')">
+                        <a-upload
+                            :file-list="fileList"
+                            :multiple="false"
+                            :before-upload="fileBeforeUpload"
+                            @change="(file) => fileHandleChange(file,'receipt')"
+                        >
+                            <a-button>
+                                <a-icon type="upload" ></a-icon>
+                                导入收款数据
                             </a-button>
                         </a-upload>
                     </a-form-item>
@@ -446,7 +460,7 @@
                     link.setAttribute('download', fileName);
                     link.click();
                 },
-                fileHandleChange(file){
+                fileHandleChange(file,type='history'){
                     if(file.file.status && file.file.status === 'removed'){
                         return false;
                     }
@@ -508,7 +522,8 @@
                             url: '/api/receivableAccount/import',
                             // 传递参数
                             data: {
-                                data:JSON.stringify(jsonData)
+                                data:JSON.stringify(jsonData),
+                                type:type
                             },
                             responseType: 'json',
                             headers:{

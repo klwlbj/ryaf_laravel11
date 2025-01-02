@@ -1,63 +1,42 @@
 <template>
     <div>
         <a-form-model :loading="loading" :model="formData" ref="dataForm" :label-col="dialogFormLabelCol" :wrapper-col="dialogFormWrapperCol" :rules="formRules">
-            <a-form-model-item label="街道" prop="street_id">
-                <a-cascader v-model="formData.street_id" :options="areaList" placeholder="区-街道-村委/居委" />
+            <a-form-model-item label="监控中心" prop="street">
+                <node-cascader :default-data="nodeId" @change="nodeChange"></node-cascader>
             </a-form-model-item>
 
-            <a-form-model-item label="详细地址" prop="address">
-                <a-input v-model="formData.address" />
+            <a-form-model-item label="安装日期" prop="installation_date">
+                <a-date-picker format="YYYY-MM-DD" v-model:value="formData.installation_date"/>
             </a-form-model-item>
 
-            <a-form-model-item label="名称" prop="name">
-                <a-input v-model="formData.name"/>
+            <a-form-model-item label="收款日期" prop="pay_date">
+                <a-date-picker format="YYYY-MM-DD" v-model:value="formData.pay_date"/>
             </a-form-model-item>
 
-            <a-form-model-item label="联系方式" prop="phone">
-                <a-input-number v-model="formData.phone" size="large" :max="10000000000000000" style="width: 200px;"/>
+            <a-form-model-item label="用户名" prop="user_name">
+                <a-input v-model="formData.user_name" style="width: 200px;"/>
             </a-form-model-item>
 
-            <a-form-model-item label="客户类型" prop="customer_type">
-                <a-radio-group v-model="formData.customer_type">
-                    <a-radio :value="1">
-                        ToB
-                    </a-radio>
-                    <a-radio :value="2">
-                        ToC
-                    </a-radio>
-                </a-radio-group>
+            <a-form-model-item label="联系方式" prop="user_phone">
+                <a-input v-model="formData.user_phone" style="width: 200px;"/>
             </a-form-model-item>
 
-            <a-form-model-item label="预计安装总数" prop="advanced_total_installed">
-                <a-input v-model="formData.advanced_total_installed" />
+            <a-form-model-item label="预计安装总数" prop="installation_count">
+                <a-input-number v-model="formData.installation_count"/>
             </a-form-model-item>
 
-            <a-form-model-item label="预付金额" prop="advanced_amount">
-              <a-input-number v-model="formData.advanced_amount"  :step="0.01"/>
-            </a-form-model-item>
-
-            <a-form-model-item label="付款方案" prop="payment_type">
-                <a-radio-group v-model="formData.payment_type">
-                    <a-radio :value="1">
-                      分期
-                    </a-radio>
-                  <a-radio :value="2">
-                    一次性
-                    </a-radio>
-                  <a-radio :value="3">
-                    租赁
-                    </a-radio>
-                </a-radio-group>
+            <a-form-model-item label="预付金额" prop="funds_received">
+              <a-input-number v-model="formData.funds_received"  :step="0.01"/>
             </a-form-model-item>
 
             <a-form-model-item label="收款方式" prop="pay_way">
                 <a-radio-group v-model="formData.pay_way">
-                    <a-radio :value="1">
-                        微信
-                    </a-radio>
-                    <a-radio :value="2">
-                        支付宝
-                    </a-radio>
+<!--                    <a-radio :value="1">-->
+<!--                        微信-->
+<!--                    </a-radio>-->
+<!--                    <a-radio :value="2">-->
+<!--                        支付宝-->
+<!--                    </a-radio>-->
                     <a-radio :value="3">
                         银行
                     </a-radio>
@@ -65,7 +44,7 @@
                         现金
                     </a-radio>
                     <a-radio :value="5">
-                        扫二维码
+                        二维码
                     </a-radio>
                 </a-radio-group>
             </a-form-model-item>
@@ -73,7 +52,7 @@
             <a-form-model-item label="备注" prop="remark">
                 <a-textarea
                     v-model="formData.remark"
-                    placeholder="厂家备注"
+                    placeholder="备注"
                     :auto-size="{ minRows: 3, maxRows: 5 }"
                 />
             </a-form-model-item>
@@ -94,7 +73,9 @@
 <script>
 module.exports = {
     name: 'advancedOrderAdd',
-    components: {},
+    components: {
+        "node-cascader":  httpVueLoader('/statics/components/node/nodeCascader.vue'),
+    },
     props: {
         id: {
             default:function(){
@@ -107,39 +88,31 @@ module.exports = {
             formData: {
 
             },
-            imageList: [],
-            listImageList: [],
-            areaList: [],
             dialogFormLabelCol: { span: 4 },
             dialogFormWrapperCol: { span: 14 },
             formRules: {
-                name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
-                address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
-                phone: [{ required: true, message: '请输入联系方式', trigger: 'blur' }],
-                advanced_total_installed: [{ required: true, message: '请输入预计安装总数', trigger: 'blur' }],
-                advanced_amount: [{ required: true, message: '请输入预付金额', trigger: 'blur' }],
+                funds_received: [{ required: true, message: '请输入预付金额', trigger: 'blur' }],
             },
             loading :false,
-            cid:undefined
+            nodeId:undefined
         }
     },
     methods: {
+        moment,
         initForm(){
             // 获取区域和街道等
             this.getEnumList()
 
             this.formData= {
-                street_id:[],
-                // community:'',
-                address:'',
-                name:'',
-                phone:'',
+                user_name:'',
+                user_phone:'',
+                installation_count:0,
+                funds_received:0,
+                installation_date:moment().format("YYYY-MM-DD"),
+                pay_date:moment().format("YYYY-MM-DD"),
                 remark:'',
-                advanced_amount:0,
-                advanced_total_installed:0,
-                payment_type:1,
-                customer_type:1,
-                pay_way:1,
+                node_id:undefined,
+                pay_way:3,
             };
         },
         // 获取枚举列表
@@ -183,7 +156,7 @@ module.exports = {
                                 return false;
                             }
                             this.initForm();
-                            that.$emit('linkOrderSubmit');
+                            that.$emit('update');
                         }).catch(error => {
                             this.$message.error('请求失败');
                         });
@@ -241,25 +214,27 @@ module.exports = {
                     return false;
                 }
                 this.formData = {
-                    street_id: res.data.area_all_id,
-                    name: res.data.name,
-                    phone:res.data.phone,
-                    address:res.data.address,
-                    remark:res.data.remark,
-                    advanced_amount:res.data.advanced_amount,
-                    advanced_total_installed:res.data.advanced_total_installed,
-                    payment_type:res.data.payment_type,
-                    customer_type:res.data.customer_type,
-                    pay_way:res.data.pay_way,
+                    node_id: res.data.ador_node_id,
+                    installation_date: res.data.ador_installation_date,
+                    pay_date:res.data.ador_pay_date,
+                    user_name:res.data.ador_user_name,
+                    user_phone:res.data.ador_user_phone,
+                    installation_count:res.data.ador_installation_count,
+                    funds_received:res.data.ador_funds_received,
+                    pay_way:res.data.ador_pay_way,
+                    remark:res.data.ador_remark,
                 }
+
+                this.nodeId = res.data.ador_node_arr;
             }).catch(error => {
                 this.$message.error('请求失败');
             });
-        }
+        },
+        nodeChange(value){
+            this.formData.node_id = value;
+        },
     },
     created () {
-      console.log(this.id)
-
         this.initForm();
         if(this.id){
             this.getDetail(this.id);
@@ -267,6 +242,7 @@ module.exports = {
     },
     watch: {
         id (newData,oldData) {
+            console.log(newData);
             if(newData === oldData){
                 return false
             }

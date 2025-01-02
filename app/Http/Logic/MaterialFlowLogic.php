@@ -90,7 +90,10 @@ class MaterialFlowLogic extends BaseLogic
                 'material_specification.masp_name'
             ])->get()->groupBy('masp_material_id')->toArray();
 
+        $lastFlowArr = MaterialFlow::getLastFlow($materialId);
+
         foreach ($list as $key => &$value) {
+            $value['is_last'] = ($value['mafl_id'] == $lastFlowArr[$value['mafl_material_id']]) ? true : false;
             $value['file_list'] = $fileList[$value['mafl_id']] ?? '';
             $value['mafl_price'] = bcdiv($value['mafl_price_tax'],1 + $value['mafl_tax']/100,2);
             $value['mafl_invoice_type_msg'] = MaterialFlow::$invoiceTypeArr[$value['mafl_invoice_type']] ?? '未确认';
@@ -438,6 +441,106 @@ class MaterialFlowLogic extends BaseLogic
             ]) === false){
             ResponseLogic::setMsg('设置价格失败');
             return false;
+        }
+
+        return [];
+    }
+
+    public function cancel($params)
+    {
+        ToolsLogic::writeLog('撤销出入库记录','material_flow',$params);
+        $flowData = MaterialFlow::query()->where(['mafl_id' => $params['id']])->first();
+
+        if(!$flowData){
+            ResponseLogic::setMsg('记录不存在');
+            return false;
+        }
+
+        $flowData = $flowData->toArray();
+
+        #获取最后一次操作记录id
+        $lastFlowId = MaterialFlow::query()->where(['mafl_material_id' => $flowData['mafl_material_id']])
+            ->select(['mafl_id'])->orderBy('mafl_id','desc')->limit(1)->value('mafl_id') ?: 0;
+
+        if($params['id'] != $lastFlowId){
+            ResponseLogic::setMsg('该记录不为最新记录，不能撤销');
+            return false;
+        }
+
+
+        if($flowData['mafl_type'] == 1){
+            #撤回入库
+            DB::beginTransaction();
+            #删除明细表
+            if(MaterialDetail::query()->where(['made_in_id' => $params['id']])->delete() === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('删除明细表失败');
+                return false;
+            }
+
+            #删除流水记录
+            if(MaterialFlow::query()->where(['mafl_id' => $params['id']])->delete() === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('删除流水记录失败');
+                return false;
+            }
+
+            #修改仓库表库存数据
+            if(MaterialInventory::query()
+                    ->where(['main_warehouse_id' => $flowData['mafl_warehouse_id'],'main_material_id' => $flowData['mafl_material_id']])
+                    ->update(['main_number' => DB::raw("main_number-".$flowData['mafl_number'])]) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('修改仓库记录表失败');
+                return false;
+            }
+
+            #修改物品表库存数据
+            if(Material::query()
+                    ->where(['mate_id' => $flowData['mafl_material_id']])
+                    ->update(['mate_number' => DB::raw("mate_number-".$flowData['mafl_number'])]) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('修改物品表库存失败');
+                return false;
+            }
+
+            DB::commit();
+        }else{
+            #撤回出库
+            DB::beginTransaction();
+
+            #把明细表的出库字段还原
+            if(MaterialDetail::query()->where(['made_out_id' => $params['id']])->update(['made_receive_user_id' => null,'made_status' => 1,'made_out_id' => null]) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('明细表的出库字段还原失败');
+                return false;
+            }
+
+            #删除流水记录
+            if(MaterialFlow::query()->where(['mafl_id' => $params['id']])->delete() === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('删除流水记录失败');
+                return false;
+            }
+
+            #修改仓库表库存数据
+            if(MaterialInventory::query()
+                    ->where(['main_warehouse_id' => $flowData['mafl_warehouse_id'],'main_material_id' => $flowData['mafl_material_id']])
+                    ->update(['main_number' => DB::raw("main_number+".$flowData['mafl_number'])]) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('修改仓库记录表失败');
+                return false;
+            }
+
+            #修改物品表库存数据
+            if(Material::query()
+                    ->where(['mate_id' => $flowData['mafl_material_id']])
+                    ->update(['mate_number' => DB::raw("mate_number+".$flowData['mafl_number'])]) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('修改物品表库存失败');
+                return false;
+            }
+
+            DB::commit();
         }
 
         return [];

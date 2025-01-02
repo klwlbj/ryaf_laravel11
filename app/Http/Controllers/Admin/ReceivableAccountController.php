@@ -228,8 +228,10 @@ class ReceivableAccountController
 
         $validate = Validator::make($params, [
             'data' => 'required',
+            'type' => 'required',
         ],[
             'data.required' => '数据不得为空',
+            'type.required' => '类型不得为空',
         ]);
 
         if($validate->fails())
@@ -237,7 +239,12 @@ class ReceivableAccountController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = ReceivableAccountLogic::getInstance()->import($params);
+        if($params['type'] === 'receipt'){
+            $res = ReceivableAccountLogic::getInstance()->importReceipt($params);
+        }else{
+            $res = ReceivableAccountLogic::getInstance()->import($params);
+        }
+
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }

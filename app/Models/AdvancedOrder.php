@@ -2,53 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
-
 class AdvancedOrder extends BaseModel
 {
-    use SoftDeletes;
-
     protected $table = 'advanced_order';
 
-    public $primaryKey = 'ador_id';
+    public $timestamps = null;
 
-
-    protected array $dates = ['deleted_at'];
-
-    public function area()
-    {
-        return $this->belongsTo(Area::class, 'area_id');
-    }
-
-    public const PAY_WAY_WECHAT = 1;
-    public const PAY_WAY_ALIPAY = 2;
-    public const PAY_WAY_BANK   = 3;
-    public const PAY_WAY_MONEY  = 4;
-    public const PAY_WAY_QRCODE = 5;
-
-    public static array $formatPayWayMaps = [
-        self::PAY_WAY_WECHAT => '微信',
-        self::PAY_WAY_ALIPAY => '支付宝',
-        self::PAY_WAY_BANK   => '银行',
-        self::PAY_WAY_MONEY  => '现金',
-        self::PAY_WAY_QRCODE => '扫二维码',
+    public static $payWayArr = [
+        '1' => '微信',
+        '2' => '支付宝',
+        '3' => '银行',
+        '4' => '现金',
+        '5' => '二维码',
     ];
 
-    public const  CUSTOMER_TYPE_TO_B = 1;
-    public const CUSTOMER_TYPE_TO_C  = 2;
-
-    public static array $formatCustomerTypeMaps = [
-        self::CUSTOMER_TYPE_TO_B => 'TO B',
-        self::CUSTOMER_TYPE_TO_C => 'TO C',
-    ];
-
-    public const  PAYMENT_TYPE_BY_STAGES = 1;
-    public const  PAYMENT_TYPE_ONCE = 2;
-    public const  PAYMENT_TYPE_RENT = 3;
-
-    public static array $formatPaymentTypeMaps = [
-        self::PAYMENT_TYPE_BY_STAGES => '分期',
-        self::PAYMENT_TYPE_ONCE => '一次性',
-        self::PAYMENT_TYPE_RENT => '租赁',
-    ];
 }

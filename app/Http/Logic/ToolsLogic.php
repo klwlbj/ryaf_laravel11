@@ -113,7 +113,7 @@ class ToolsLogic
     public static function convertExcelTime($excelValue)
     {
         if(empty($excelValue) || !is_numeric($excelValue)){
-            return '';
+            return $excelValue;
         }
         try {
             $fixation = 25569;
