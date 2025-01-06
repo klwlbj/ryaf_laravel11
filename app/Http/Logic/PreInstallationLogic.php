@@ -131,4 +131,12 @@ class PreInstallationLogic extends ExcelGenerator
     protected function handleLastRow($sheet, int $lastRow, array $lastRowTotal = [])
     {
     }
+
+    public function delete($params)
+    {
+        $id    = $params['id'] ?? 0;
+        $model = PreInstallation::find($id);
+        $model->delete();
+        return [];
+    }
 }

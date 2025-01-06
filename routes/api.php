@@ -241,5 +241,7 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('preInstallation')->group(function () {
         Route::post('/getList', [PreInstallationController::class, 'getList']);
+        Route::post('/delete', [PreInstallationController::class, 'delete']);
+        Route::post('/update', [PreInstallationController::class, 'update']);
     });
 });

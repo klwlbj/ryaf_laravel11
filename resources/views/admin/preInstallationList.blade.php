@@ -33,6 +33,22 @@
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
                          :pagination="false" :scroll="{ x: 1000,y: 650}">
 
+                    <div slot="action" slot-scope="text, record">
+                        <a style="margin-right: 8px" @click="onUpdate(record)">
+                            修改
+                        </a>
+
+                        <a-popconfirm
+                                title="是否确定删除?"
+                                ok-text="确认"
+                                cancel-text="取消"
+                                v-on:confirm="onDel(record)"
+                        >
+                            <a style="margin-right: 8px">
+                                删除
+                            </a>
+                        </a-popconfirm>
+                    </div>
                 </a-table>
                 <div style="text-align: right;margin-top: 10px">
                     <a-pagination
@@ -110,6 +126,11 @@
                         dataIndex: 'installation_count',
                         width: 10
                     },
+                    {
+                        title: '操作',
+                        width: 20,
+                        scopedSlots: { customRender: 'action' },
+                    }
                 ],
                 dialogFormVisible:false,
                 defaultDate:undefined,
@@ -151,6 +172,7 @@
                             'Content-Type': 'multipart/form-data'
                         }
                     }).then(response => {
+                        formData.export = 0;
                         let res = response.data;
                         if(res.code !== 0){
                             this.$message.error(res.message);
@@ -195,7 +217,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/api/advancedOrder/delete',
+                        url: '/api/preInstallation/delete',
                         // 传递参数
                         data: {
                             id:row.id
