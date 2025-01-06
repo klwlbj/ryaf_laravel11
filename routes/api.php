@@ -231,7 +231,7 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('maintain')->group(function () {
         Route::post('/placeList', [MaintainController::class, 'placeList']);
-        Route::post('/placeList', [MaintainController::class, 'placeList']);
+        Route::post('/installationCheckList', [MaintainController::class, 'installationCheckList']);
         Route::post('/getPlaceInfo', [MaintainController::class, 'getPlaceInfo']);
         Route::post('/getRemarkInfo', [MaintainController::class, 'getRemarkInfo']);
         Route::post('/updatePlace', [MaintainController::class, 'updatePlace']);

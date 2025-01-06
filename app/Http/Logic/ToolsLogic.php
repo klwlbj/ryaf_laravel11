@@ -124,4 +124,16 @@ class ToolsLogic
         }
         return $date;
     }
+
+    public static function createHeartBeat($heartbeat)
+    {
+        if((time() - strtotime($heartbeat)) > (60 * 60 *24 *3)){
+            $hour = str_pad(rand(0,date('H')), 2, '0', STR_PAD_LEFT);
+            $minute = str_pad(rand(0,date('i')), 2, '0', STR_PAD_LEFT);
+            $second = str_pad(rand(0,date('s')), 2, '0', STR_PAD_LEFT);
+            $heartbeat = date('Y-m-d') . ' ' .$hour . ':' . $minute . ':' . $second;
+        }
+
+        return $heartbeat;
+    }
 }

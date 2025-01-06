@@ -28,6 +28,12 @@
                         </a-select>
                     </a-form-item>
 
+                    <a-form-item label="交付时间">
+                        <a-range-picker
+                            :placeholder="['开始时间', '结束时间']"
+                            @change="dateChange"></a-range-picker>
+                    </a-form-item>
+
                     <a-form-item label="无心跳天数">
                         <a-input-number v-model="listQuery.none_heart_day"/>
                     </a-form-item>
@@ -35,6 +41,12 @@
                     <a-form-item label="服务临期天数">
                         <a-input-number v-model="listQuery.expired_day"/>
                     </a-form-item>
+
+                    <a-form-item>
+                        <span style="margin-left: 10px"><a-checkbox v-model="listQuery.not_matching">无匹配标准地址</a-checkbox></span>
+                        <span style="margin-left: 10px"><a-checkbox v-model="listQuery.not_standard_address">无标准地址</a-checkbox></span>
+                    </a-form-item>
+
                     <a-form-item>
                         <a-button icon="search" v-on:click="handleFilter">查询</a-button>
                     </a-form-item>
@@ -55,6 +67,12 @@
                     <div slot="count" slot-scope="text, record">
                         <div>@{{record.children_list.length}}</div>
                     </div>
+
+                    <div slot="standard_address" slot-scope="text, record">
+                        <div v-if="record.plac_standard_address_not_exist" style="color: red">无匹配地址</div>
+                        <div v-else>@{{record.plac_standard_address}}</div>
+                    </div>
+
 
                     <div slot="action" slot-scope="text, record">
                         <a style="margin-right: 8px" @click="onUpdatePlace(record)">
@@ -144,12 +162,16 @@
             el: '#app',
             data: {
                 listQuery: {
-                    imei:'',
-                    none_heart_day:'',
-                    online:undefined,
-                    expired_day:'',
-                    node_id:undefined,
-                    user_keyword:'',
+                    imei : '',
+                    none_heart_day : '',
+                    online : undefined,
+                    expired_day : '',
+                    node_id : undefined,
+                    user_keyword : '',
+                    start_date : null,
+                    end_date : null,
+                    not_matching:false,
+                    not_standard_address:false,
                 },
                 tableKey:1,
                 exportLoading:false,
@@ -183,6 +205,12 @@
                         width: 200
                     },
                     {
+                        title: '标准地址',
+                        dataIndex: 'standard_address',
+                        scopedSlots: { customRender: 'standard_address' },
+                        width: 200
+                    },
+                    {
                         title: '用户信息',
                         scopedSlots: { customRender: 'userinfo' },
                         dataIndex: 'userinfo',
@@ -211,6 +239,10 @@
                         dataIndex: 'smde_last_heart_beat',
                         scopedSlots: { customRender: 'smde_last_heart_beat' },
                         width:200
+                    },
+                    {
+                        title: '交付时间',
+                        dataIndex: 'order_actual_delivery_date'
                     },
                     {
                         title: '服务期限',
@@ -329,7 +361,11 @@
                     this.placeId = null;
                     this.placeFormVisible = false;
                     this.getPageList();
-                }
+                },
+                dateChange(value,arr){
+                    this.listQuery.start_date = arr[0];
+                    this.listQuery.end_date = arr[1];
+                },
             },
 
         })

@@ -12,7 +12,7 @@ class MaintainController
 {
     public function __construct()
     {
-//        DB::setDefaultConnection('mysql2');
+        DB::setDefaultConnection('mysql2');
     }
 
     public function placeList(Request $request)
@@ -151,6 +151,28 @@ class MaintainController
         }
 
         $res = MaintainLogic::getInstance()->noDataList($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function installationCheckList(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+
+        ],[
+
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaintainLogic::getInstance()->installationCheckList($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }

@@ -95,4 +95,35 @@ class Node extends BaseModel
     {
         return $this->hasMany(self::class, 'node_parent_id')->orderBy('node_id');
     }
+
+    public static function getYunchuangRustId2($nodeIds ) {
+        if ( !is_array( $nodeIds ) ) {
+            $arr = explode( ",", $nodeIds );
+        } else {
+            $arr = $nodeIds;
+        }
+        foreach ($arr as $key => $value){
+            if(empty($value)){
+                continue;
+            }
+            $yunchuangId = self::query()->where([ "node_type" => "村委", "node_id" => $value])->value('node_yunchuang_id') ?: 0;
+            if ( $yunchuangId > 0 ) {
+                return $yunchuangId;
+            }
+        }
+        return 0;
+    }
+
+    public static function getYunchuangTownId($nodeIds ) {
+        if ( $nodeIds == null || $nodeIds == "" ) return 0;
+        $arr = explode( ",", $nodeIds );
+        foreach ($arr as $key => $value) {
+            $yunchuangId = self::query()->where([ "node_id" => $value ])->value('node_yunchuang_id') ?: 0;
+
+            if ( $yunchuangId > 0 ) {
+                return $yunchuangId;
+            }
+        }
+        return 0;
+    }
 }

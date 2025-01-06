@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 //});
 
 //Route::get('/myCommand', function () {
-//    print_r(Artisan::call('config:cache'));die;
+//    print_r(Artisan::call('make:command UpdateFakeHeartBeat'));die;
 //});
 
 Route::get('/storageLink', function () {
@@ -100,6 +100,7 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('maintain')->group(function () {
         Route::view('place/view', 'admin.maintainPlace');
         Route::view('noData/view', 'admin.maintainNoData');
+        Route::view('installationCheck/view', 'admin.maintainInstallationCheck');
     });
     Route::prefix('preInstallationList')->group(function () {
         Route::view('/view', 'admin.preInstallationList');

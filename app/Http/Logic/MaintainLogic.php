@@ -34,13 +34,16 @@ class MaintainLogic extends BaseLogic
 
         if(!empty($params['user_keyword'])){
             $query->where(function (Builder $q) use ($params){
-                $q->orWhere('user.user_name','=',$params['user_keyword'])
-                    ->orWhere('user.user_mobile','=',$params['user_keyword']);
+                $userKeyArr = explode(' ',$params['user_keyword']);
+//                print_r($userKeyArr);die;
+                $q->orWhereIn('user.user_name',$userKeyArr)
+                    ->orWhereIn('user.user_mobile',$userKeyArr);
             });
         }
 
         if(!empty($params['imei'])){
-            $query->where('smoke_detector.smde_imei',$params['imei']);
+            $imeiArr = explode(' ',$params['imei']);
+            $query->whereIn('smoke_detector.smde_imei',$imeiArr);
         }
 
         if(isset($params['online']) && $params['online'] !== ''){
@@ -54,6 +57,23 @@ class MaintainLogic extends BaseLogic
         if(isset($params['expired_day']) && $params['expired_day'] !== ''){
             $query->whereRaw('order_service_date < (NOW() - INTERVAL ' . $params['expired_day'] . ' DAY)');
         }
+
+        if(isset($params['start_date']) && $params['start_date'] !== ''){
+            $query->where('order_actual_delivery_date','>=',$params['start_date']);
+        }
+
+        if(isset($params['end_date']) && $params['end_date'] !== ''){
+            $query->where('order_actual_delivery_date','<=',$params['end_date'] . ' 23:59:59');
+        }
+
+        if(isset($params['not_matching']) && $params['not_matching'] === 'true'){
+            $query->where('plac_standard_address_not_exist','=',1);
+        }
+
+        if(isset($params['not_standard_address']) && $params['not_standard_address'] === 'true'){
+            $query->where('plac_standard_address','=','');
+        }
+
         $nodeStreetArr = Node::getNodeStreet();
         if(!empty($params['export'])){
             ini_set( 'max_execution_time', 72000 );
@@ -61,6 +81,8 @@ class MaintainLogic extends BaseLogic
             $list = $query->select([
                 'plac_name',
                 'place.plac_address',
+                'place.plac_standard_address',
+                'place.plac_standard_address_not_exist',
                 'node.node_id',
                 'node.node_name',
                 'user_name',
@@ -119,6 +141,8 @@ class MaintainLogic extends BaseLogic
         $list = $query->select([
             'place.plac_name',
             'place.plac_id',
+            'place.plac_standard_address',
+            'place.plac_standard_address_not_exist',
             'place.plac_address',
             'node.node_name',
             'user_name',
@@ -145,6 +169,7 @@ class MaintainLogic extends BaseLogic
                 'smde_last_heart_beat',
                 'smde_extra_remark',
                 'order_service_date',
+                'order_actual_delivery_date',
                 'smde_last_nb_module_battery',
                 'smde_last_signal_intensity'
             ])
@@ -414,6 +439,115 @@ class MaintainLogic extends BaseLogic
             'smde_imei',
             'admin_name',
             'order_actual_delivery_date',
+            'plac_address',
+            'node_name',
+            'order_user_name',
+            'order_user_mobile'
+        ])->orderBy('order_actual_delivery_date','desc')
+            ->offset($point)->limit($pageSize)->get()->toArray();
+
+
+        return ['list' => $list,'total' => $total];
+    }
+
+    public function installationCheckList($params)
+    {
+        $page = $params['page'] ?? 1;
+        $pageSize = $params['page_size'] ?? 10;
+        $point = ($page - 1) * $pageSize;
+
+        $day = $params['check_day'] ?? 10;
+        $heartDay = $params['heart_day'] ?? 4;
+
+        $query = SmokeDetector::query()
+            ->leftJoin('order','order.order_id','=','smoke_detector.smde_order_id')
+            ->leftJoin('admin','admin.admin_id','=','order.order_deliverer_id')
+            ->leftJoin('place','place.plac_id','=','smoke_detector.smde_place_id')
+            ->leftJoin('node','node.node_id','=','place.plac_node_id')
+            ->where(function (Builder $q) use ($day,$heartDay){
+
+                $q->orWhere(function (Builder $checkQuery1) use ($day,$heartDay){
+                    #监察条件1  交付日期内规定日期内没有心跳包
+                    $checkQuery1
+                        ->where('order.order_actual_delivery_date','<=',date('Y-m-d', strtotime('-' . $heartDay . ' days')))
+                        ->whereRaw("COALESCE(smde_last_heart_beat,'') = ''");
+                })->orWhere(function (Builder $checkQuery2) use ($day){
+                    #监察条件2  交付日期内规定日期到达后  心跳包没有上报
+                    $checkQuery2
+                        ->where('order.order_actual_delivery_date','<=',date('Y-m-d', strtotime('-' . $day . ' days')))
+                        ->where(function (Builder $checkQuery22) use ($day){
+                            $checkQuery22
+                                ->orWhereRaw("COALESCE(smde_last_heart_beat,'') = ''")
+                                ->orWhere('smde_last_heart_beat','<=',DB::raw("DATE_ADD(order_actual_delivery_date, INTERVAL " . ($day - 2) . " DAY)"));
+                        });
+                });
+
+            })
+//            ->whereRaw("COALESCE(smde_last_heart_beat,'') = ''")
+            ->where('smde_place_id','>',0)
+            ->where('smde_order_id','>',0)
+            ->where('order_status','=','交付完成')
+        ;
+
+        if(!empty($params['start_date'])){
+            $query->where('order_actual_delivery_date','>=',$params['start_date']);
+        }
+
+        if(!empty($params['end_date'])){
+            $query->where('order_actual_delivery_date','<=',$params['end_date'] . " 23:59:59");
+        }
+
+        if(!empty($params['export'])) {
+            ini_set( 'max_execution_time', 72000 );
+            ini_set( 'memory_limit', '2048M' );
+
+            $list = $query->select([
+                'smde_imei',
+                'admin_name',
+                'smde_last_heart_beat',
+                'order_actual_delivery_date',
+                'plac_address',
+                'node_name',
+                'order_user_name',
+                'order_user_mobile'
+            ])->orderBy('order_actual_delivery_date', 'desc')
+                ->get()->toArray();
+
+            $title = ['imei', '监控中心', '安装地址', '用户名称', '用户联系方式', '交付人', '交付时间', '最后心跳包'];
+
+            $exportData = [];
+            $config = [
+                'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . '1' => true],
+                'width' => ['A' => 20, 'B' => 20, 'C' => 20, 'D' => 20, 'E' => 20, 'F' => 20, 'G' => 20, 'H' => 20,]
+            ];
+            $row = 2;
+            foreach ($list as $key => $value) {
+                $exportData[] = [
+                    $value['smde_imei'] . "\t",
+                    $value['node_name'],
+                    $value['plac_address'],
+                    $value['order_user_name'],
+                    $value['order_user_mobile'],
+                    $value['admin_name'],
+                    $value['order_actual_delivery_date'],
+                    $value['smde_last_heart_beat'],
+                ];
+
+                $row++;
+            }
+            $config['horizontal_center'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true];
+            $config['wrap_text'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true];
+
+            return ExportLogic::getInstance()->export($title, $exportData, '安装监察数据', $config);
+        }
+
+        $total = $query->count();
+
+        $list = $query->select([
+            'smde_imei',
+            'admin_name',
+            'order_actual_delivery_date',
+            'smde_last_heart_beat',
             'plac_address',
             'node_name',
             'order_user_name',
