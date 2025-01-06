@@ -139,4 +139,45 @@ class PreInstallationLogic extends ExcelGenerator
         $model->delete();
         return [];
     }
+
+    public function getInfo($params)
+    {
+        $data = PreInstallation::query()->where(['id' => $params['id']])->first();
+
+        if (!$data) {
+            ResponseLogic::setMsg('记录不存在');
+            return false;
+        }
+
+        return $data;
+    }
+
+    public function addOrUpdate($params)
+    {
+        $insertData = [
+            'phone'               => $params['phone'],
+            'name'                => $params['name'] ?? '',
+            'installation_count'  => $params['number'] ?? 1,
+            'registration_date'   => $params['date'] ?? '',
+            'handwritten_address' => $params['handwritten_address'] ?? '',
+            'address'             => $params['address_list_0_standard_address'] ?? '',
+            'address_code'        => $params['address_list_0_code'] ?? '',
+            // 'ador_operator_id'        => AuthLogic::$userId ?? 0,
+        ];
+        // dd($params);
+
+        if (isset($params['id']) && !empty($params['id'])) {
+            if (PreInstallation::query()->where(['id' => $params['id']])->update($insertData) === false) {
+                ResponseLogic::setMsg('更新失败');
+                return false;
+            }
+        } else {
+            if (PreInstallation::query()->insert($insertData) === false) {
+                ResponseLogic::setMsg('添加失败');
+                return false;
+            }
+        }
+
+        return [];
+    }
 }
