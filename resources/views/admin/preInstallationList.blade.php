@@ -34,7 +34,7 @@
                          :pagination="false" :scroll="{ x: 1000,y: 650}">
 
                     <div slot="action" slot-scope="text, record">
-                        <a style="margin-right: 8px" @click="onUpdate(record)">
+                        <a v-if="$checkPermission('/api/preInstallation/update')" style="margin-right: 8px" @click="onUpdate(record)">
                             修改
                         </a>
 
@@ -44,7 +44,7 @@
                                 cancel-text="取消"
                                 v-on:confirm="onDel(record)"
                         >
-                            <a style="margin-right: 8px">
+                            <a v-if="$checkPermission('/api/preInstallation/delete')" style="margin-right: 8px">
                                 删除
                             </a>
                         </a-popconfirm>
@@ -59,7 +59,17 @@
                     ></a-pagination>
                 </div>
             </div>
-
+            <a-modal :mask-closable="false" v-model="dialogFormVisible"
+                     :title="status"
+                     width="800px" :footer="null">
+                <manufacturer-add ref="manufacturerAdd"
+                                  :id="id"
+                                  @update="update"
+                                  @add="add"
+                                  @close="dialogFormVisible = false;"
+                >
+                </manufacturer-add>
+            </a-modal>
 
         </a-card>
     </div>
@@ -143,6 +153,7 @@
                 this.handleFilter()
             },
             components: {
+                "manufacturer-add":  httpVueLoader('/statics/components/preInstallation/preInstallationAdd.vue')
             },
             methods: {
                 paginationChange (current, pageSize) {
@@ -212,6 +223,11 @@
                 dateChange(value,arr){
                     this.listQuery.start_date = arr[0];
                     this.listQuery.end_date = arr[1];
+                },
+                onUpdate(row){
+                    this.id = row.id
+                    this.status = '更新';
+                    this.dialogFormVisible = true;
                 },
                 onDel(row){
                     axios({

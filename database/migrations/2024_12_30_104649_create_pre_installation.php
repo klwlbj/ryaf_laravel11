@@ -18,7 +18,7 @@ return new class () extends Migration {
             $table->date('registration_date');
             $table->string('address');
             $table->string('handwritten_address')->default('');
-            $table->string('address_code', 30);
+            $table->string('address_code', 50);
             $table->ipAddress('ip_address');
             $table->softDeletes();
             $table->timestamps();

@@ -67,7 +67,7 @@
                 <a-form-item prop="date" label="安装日期">
                     <a-date-picker @change="dateChange" v-model:value="form.date" format="YYYY-MM-DD" />
                         <a-icon slot="prefix" type="date" style="color: rgba(0,0,0,.25)"/>
-                    </a-input>
+
                 </a-form-item>
 
                 <a-form-item prop="address" label="地址">

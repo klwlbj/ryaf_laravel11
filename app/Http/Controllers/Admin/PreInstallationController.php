@@ -23,6 +23,20 @@ class PreInstallationController extends BaseController
 
     public function delete(Request $request)
     {
+        return $this->baseMethod($request, [
+            'id' => 'required',
+        ]);
+    }
+
+    public function addOrUpdate(Request $request)
+    {
+        return $this->baseMethod($request, [
+            'id' => 'required',
+        ]);
+    }
+
+    public function getInfo(Request $request)
+    {
         return $this->baseMethod($request, []);
     }
 
@@ -31,15 +45,15 @@ class PreInstallationController extends BaseController
         $params = $request->all();
 
         $validate = Validator::make($params, [
-            'phone'               => 'required',
-            'name'                => 'required',
-            'number'              => 'required|integer',
-            'date'                => 'required|date',
+            'phone'  => 'required',
+            'name'   => 'required',
+            'number' => 'required|integer',
+            'date'   => 'required|date',
         ], [
-            'phone.required'                       => '手机号不得为空',
-            'name.required'                        => '姓名不得为空',
-            'number.required'                      => '安装数量不得为空',
-            'date.required'                        => '安装日期不得为空',
+            'phone.required'  => '手机号不得为空',
+            'name.required'   => '姓名不得为空',
+            'number.required' => '安装数量不得为空',
+            'date.required'   => '安装日期不得为空',
         ]);
 
         if ($validate->fails()) {
