@@ -30,14 +30,17 @@ class SecurityController
         if ($validator->fails()) {
             return ResponseLogic::apiErrorResult($validator->errors()->first());
         }
+
         $query = SmokeDetector::select(DB::raw('count(*) as count, sum(smde_online = "1") as online_count, sum(smde_online = "0") as offline_count'))
-            ->where('smde_place_id', "!=", 0)
-            ->where('plac_user_ids', 'like', ',1345,%')
-            // ->where('smde_user_ids', 'like', ',1345,%')
+            ->where('smde_user_id', "!=", 0)
+            ->where(function ($query) {
+                $query->where('smde_node_ids', 'like', '%,5,33,%')
+                        ->Orwhere('smde_user_ids', 'like', ',1345,%');
+            })
             ->whereNotNull('smde_place_id')
-            ->leftJoin('place', 'plac_id', '=', 'smde_place_id')
             ->when(isset($params['node_id']), function ($query) use ($params) {
-                return $query->where('plac_node_ids', 'like', '%,' . $params['node_id'] . ',%');
+                return $query->leftJoin('place', 'plac_id', '=', 'smde_place_id')
+                    ->where('plac_node_ids', 'like', '%,' . $params['node_id'] . ',%');
             })
             ->first();
 
@@ -80,18 +83,19 @@ class SecurityController
             ];
         }
 
-        $list = SmokeDetector::query()->select("plac_node_id as node_id", "plac_node_ids", 'smde_online')
-            ->where('plac_node_ids', 'like', '%,' . $params['node_id'] . ',%')
+        $list = SmokeDetector::query()->select("smde_node_ids", 'smde_online')
+            ->where('smde_user_id', "!=", 0)
+            ->where('smde_node_ids', 'like', '%,' . $params['node_id'] . ',%')
             ->where('smde_place_id', "!=", 0)
-            ->whereNotNull('plac_node_id')
-            ->where('plac_user_ids', 'like', ',1345,%')
-            ->leftJoin('place', 'plac_id', '=', 'smde_place_id')
-            ->leftJoin('node', 'plac_node_id', '=', 'node_id')
+            ->where(function ($query) {
+                $query->where('smde_node_ids', 'like', '%,5,33,%')
+                    ->Orwhere('smde_user_ids', 'like', ',1345,%');
+            })
             ->get();
 
         foreach ($list as $item) {
             foreach ($nodeIds as $newNodeId) {
-                if (Str::contains($item->plac_node_ids, ',' . $newNodeId . ',')) {
+                if (Str::contains($item->smde_node_ids, ',' . $newNodeId . ',')) {
                     $data[$newNodeId]['count'] = ($data[$newNodeId]['count'] ?? 0) + 1;
                     if ($item->smde_online == 1) {
                         $data[$newNodeId]['online_count'] = ($data[$newNodeId]['online_count'] ?? 0) + 1;
@@ -125,16 +129,18 @@ class SecurityController
         $point    = ($page - 1) * $pageSize;
 
         $query = SmokeDetector::query()
+            ->where('smde_user_id', "!=", 0)
             ->where('smde_place_id', "!=", 0)
-            ->where('plac_user_ids', 'like', ',1345,%')
+            ->where(function ($query) {
+                $query->where('smde_node_ids', 'like', '%,5,33,%')
+                    ->Orwhere('smde_user_ids', 'like', ',1345,%');
+            })
             ->when(isset($params['node_id']), function ($query) use ($params) {
-                return $query->where('plac_node_ids', 'like', '%,' . $params['node_id'] . ',%');
+                return $query->where('smde_node_ids', 'like', '%,' . $params['node_id'] . ',%');
             })
             ->when(isset($params['status']), function ($query) use ($params) {
                 return $query->where('smde_online', $params['status']);
             })
-            ->leftJoin('place', 'plac_id', '=', 'smde_place_id')
-            ->leftJoin('node', 'plac_node_id', '=', 'node_id')
         ;
         $count  = $query->count();
         $select = ['node_id', 'node_name', 'smde_id', 'smde_type', 'smde_position', 'smde_lng', 'smde_lat',
@@ -143,15 +149,17 @@ class SecurityController
         ];
 
         $list = $query->select($select)
-        ->orderBy('smde_id', 'desc')
-        ->offset($point)
-        ->limit($pageSize)
-        ->get()
-        ->transform(function ($item) {
-            $item->smde_last_temperature = (int) $item->smde_last_temperature / 100;
-            $item->smde_last_smokescope  = (int) $item->smde_last_smokescope / 100;
-            return $item;
-        });
+            ->leftJoin('place', 'plac_id', '=', 'smde_place_id')
+            ->leftJoin('node', 'plac_node_id', '=', 'node_id')
+            ->orderBy('smde_id', 'desc')
+            ->offset($point)
+            ->limit($pageSize)
+            ->get()
+            ->transform(function ($item) {
+                $item->smde_last_temperature = (int) $item->smde_last_temperature / 100;
+                $item->smde_last_smokescope  = (int) $item->smde_last_smokescope / 100;
+                return $item;
+            });
 
         return ResponseLogic::apiResult(0, 'ok', ['list' => $list, 'count' => $count]);
     }
@@ -173,7 +181,12 @@ class SecurityController
         $startTime = $params['start_time'] ?? '';
         $endTime   = $params['end_time'] ?? '';
 
-        $smokeDetectorIMEIs = SmokeDetector::query()->where('smde_user_ids', 'like', ',1345,%')->pluck('smde_imei');
+        $smokeDetectorIMEIs = SmokeDetector::query()
+            ->where(function ($query) {
+                $query->where('smde_node_ids', 'like', '%,5,33,%')
+                    ->Orwhere('smde_user_ids', 'like', ',1345,%');
+            })
+            ->pluck('smde_imei');
 
         $count = IotNotificationAlert::query()
             ->where('iono_crt_time', '>=', $startTime)
@@ -213,7 +226,12 @@ class SecurityController
             $startTime = $params['start_time'] ?? '';
             $endTime   = $params['end_time'] ?? '';
 
-            $smokeDetectorIMEIs = SmokeDetector::query()->where('smde_user_ids', 'like', ',1345,%')->pluck('smde_imei');
+            $smokeDetectorIMEIs = SmokeDetector::query()
+                ->where(function ($query) {
+                    $query->where('smde_node_ids', 'like', '%,5,33,%')
+                        ->Orwhere('smde_user_ids', 'like', ',1345,%');
+                })
+                ->pluck('smde_imei');
 
             $query = IotNotificationAlert::query()
                 ->select('plac_node_id as node_id', 'node_name', DB::raw('count(*) as count'))
@@ -241,7 +259,10 @@ class SecurityController
                 ->limit($pageSize)
                 ->get();
 
-            return ResponseLogic::apiResult(0, 'ok', ['list' => $list, 'count' => $count->count]);
+            return ResponseLogic::apiResult(0, 'ok', [
+                'list'  => $list,
+                'count' => $count->count,
+            ]);
         }
 
     public function alertList(Request $request)
@@ -275,7 +296,10 @@ class SecurityController
             ->whereIn('iono_type', [1, 3])
             ->where('iono_crt_time', '>=', $startTime)
             ->where('iono_crt_time', '<=', $endTime)
-            ->where('plac_user_ids', 'like', ',1345,%')
+            ->where(function ($query) {
+                $query->where('smde_node_ids', 'like', '%,5,33,%')
+                    ->Orwhere('smde_user_ids', 'like', ',1345,%');
+            })
             ->when(isset($params['node_id']), function ($query) use ($params) {
                 return $query->where('plac_node_id', $params['node_id']);
             })
