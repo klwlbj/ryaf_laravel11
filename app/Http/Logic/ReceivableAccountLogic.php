@@ -134,6 +134,10 @@ class ReceivableAccountLogic extends BaseLogic
             $query->whereIn('reac_node_id',$nodeIds);
         }
 
+        if(isset($params['sn']) && !empty($params['sn'])){
+            $query->where('reac_relation_sn','=',$params['sn']);
+        }
+
         if(isset($params['address']) && !empty($params['address'])){
             $ids = ReceivableAccountAddress::query()
                 ->where('reac_address','like',"%{$params['address']}%")
@@ -448,7 +452,7 @@ class ReceivableAccountLogic extends BaseLogic
 
                 $receivedWay = $value[14] ?: '二维码';
                 if($receivedWay == '对公'){
-                    $payWay = 6;
+                    $payWay = 3;
                 }else{
                     $payWay = 5;
                 }
@@ -660,15 +664,16 @@ class ReceivableAccountLogic extends BaseLogic
 
         $sucCount = 0;
 
-        $snArr = $filtered_array = array_filter(array_column($sheetData,'0'), function($value) {
+        $snArr = array_filter(array_column($sheetData,'0'), function($value) {
             // 返回true保留元素，返回false移除元素
             return (string)$value !== '';
         });
 
-        $nodeArr = Node::query()->select(['node_id','node_name'])->pluck('node_id','node_name')->toArray();
+//        $nodeArr = Node::query()->select(['node_id','node_name'])->pluck('node_id','node_name')->toArray();
 
         $existList = ReceivableAccount::query()->where(['reac_type' => 2])
             ->whereIn('reac_relation_sn',$snArr)
+            ->select(['reac_funds_received','reac_account_receivable','reac_id'])
             ->get()->keyBy('reac_relation_sn')->toArray();
 
         foreach ($sheetData as $key => $value) {
@@ -703,12 +708,12 @@ class ReceivableAccountLogic extends BaseLogic
 
                 $receivedWay = $value[14] ?: '二维码';
                 if ($receivedWay == '对公') {
-                    $payWay = 6;
+                    $payWay = 3;
                 } else {
                     $payWay = 5;
                 }
 
-                $payData = $value[15];
+                $payData = $value[15] ?: date('Y-m-d');
 
 
                 if (empty($userName)) {
@@ -737,17 +742,138 @@ class ReceivableAccountLogic extends BaseLogic
                     continue;
                 }
 
-                #如果存在订单编号 判断订单号唯一性
+                #如果存在订单编号
                 if (!empty($orderSn)) {
+                    if(!isset($existList[$orderSn])){
+                        $errorArr[] = '行' . ($key + 2) . '订单编号数据不存在  用户：' . $userName;
 
+                        $value[] = '订单编号数据不存在';
+                        $errorData[] = $value;
+                        continue;
+                    }
+
+                    $receivableData = $existList[$orderSn];
                 } else {
+                    $receivableList = ReceivableAccount::query()
+                        ->leftJoin('receivable_account_address','receivable_account_address.reac_account_id','=','receivable_account.reac_id')
+                        ->where([
+                            'receivable_account.reac_installation_date' => $installationDate,
+                            'receivable_account.reac_user_mobile' => $userMobile,
+                            'receivable_account_address.reac_address' => $address[0] ?? '',
+                        ])->select([
+                            'receivable_account.reac_funds_received',
+                            'receivable_account.reac_account_receivable',
+                            'receivable_account.reac_id'
+                        ])->get()->toArray();
 
+                    if(empty($receivableList)){
+                        $errorArr[] = '行' . ($key + 2) . '数据不存在  用户：' . $userName;
+                        $value[] = '数据不存在';
+                        $errorData[] = $value;
+                        continue;
+                    }
+
+                    if(count($receivableList) > 1){
+                        $errorArr[] = '行' . ($key + 2) . '存在多个数据  用户：' . $userName;
+                        $value[] = '存在多个数据';
+                        $errorData[] = $value;
+                        continue;
+                    }
+
+                    $receivableData = $receivableList[0];
                 }
+
+                $updateData = [
+                    'reac_installation_count' => $installationCount,
+                    'reac_given_count' => $givenCount,
+                    'reac_funds_received' => $fundsReceived,
+                    'reac_remark' => $remark,
+                ];
+
+                ReceivableAccount::query()->where(['reac_id' => $receivableData['reac_id']])->update($updateData);
+
+                #如果导入实收大于数据实收  则生成一条回款流水记录
+                if($fundsReceived > $receivableData['reac_funds_received']){
+                    $flowInsert[] = [
+                        'reac_account_id' => $receivableData['reac_id'],
+                        'reac_datetime' => $payData,
+                        'reac_pay_way' => $payWay,
+                        'reac_type' => (date('Ym',strtotime($installationDate)) ==  date('Ym',strtotime($payData))) ? 1 : 2,
+                        'reac_status' => 2,
+                        'reac_funds_received' => bcsub($fundsReceived,$receivableData['reac_funds_received'],2)
+                    ];
+
+                    if(count($flowInsert) >= 500){
+                        ReceivableAccountFlow::query()->insert($flowInsert);
+                        $flowInsert = [];
+                    }
+                }
+
+                $sucCount++;
             } catch (\Exception $e) {
                 $errorArr[] = '行' . ($key + 2) . '的记录异常：' . $e->getMessage();
                 continue;
             }
         }
+
+        if(!empty($flowInsert)){
+            ReceivableAccountFlow::query()->insert($flowInsert);
+            $flowInsert = [];
+        }
+
+        if(!empty($errorData)){
+            $title = ['地区','订单编号','安装日期','客户类型','区域场所','单位','联系方式','地址','安装总数','赠送台数','备注（完成情况）','应收账款','是否付款','付款金额','未付金额','付款方案','收款路径','回款时间','错误信息'];
+
+            $exportData = [];
+
+            $width = [];
+            foreach ($title as $key => $value){
+                $width[chr(65 + $key)] = 30;
+            }
+
+            $config = [
+                'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . '1' => true],
+                'width' => $width
+            ];
+
+            $row = 2;
+            foreach ($errorData as $key => $value){
+                $exportData[] = [
+                    $value[1],
+                    $value[0],
+                    $value[2],
+                    $value[3],
+                    $value[4],
+                    $value[5],
+                    $value[6],
+                    $value[7],
+                    $value[8],
+                    $value[9],
+                    $value[10],
+                    $value[11],
+                    '',
+                    $value[12],
+                    '',
+                    $value[13],
+                    $value[14],
+                    $value[15],
+                    $value[16],
+                ];
+
+                $row++;
+            }
+            $config['horizontal_center'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true];
+            $config['wrap_text'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true];
+
+            $exportReturn = ExportLogic::getInstance()->export($title,$exportData,'应收款导入失败数据',$config);
+            $url = $exportReturn['url'];
+        }else{
+            $url = '';
+        }
+
+        $errorCount = count($errorArr);
+
+        return ['success_count' => $sucCount,'error_count' => $errorCount,'error_arr' => $errorArr ,'error_url' => $url];
     }
 
     public function addFlow($params)

@@ -2,7 +2,7 @@
     <div style="height: 100%; user-select: none;-moz-user-select: none;-webkit-user-select: none;-ms-user-select: none;">
         <ul>
             <li v-for="parent in list">
-                <div class="parent-box" @click="parentClick(parent)" @mouseenter="handelMouse(parent,true)" @mouseleave="handelMouse(parent,false)">
+                <div v-if="parent.children" class="parent-box" @click="parentClick(parent)" @mouseenter="handelMouse(parent,true)" @mouseleave="handelMouse(parent,false)">
                     <span :class="{enter:parent.enter}" style="width: 5px;height: 100%;position: absolute;left: 0"></span>
                     <span style="float: left">
                         <a-icon style="font-size: 10px" type="read" ></a-icon>
@@ -162,7 +162,6 @@ module.exports = {
 
             let menu = localStorage.getItem("menu");
             this.list = JSON.parse(menu);
-
         },
         getLocalUrl(url){
             return url;

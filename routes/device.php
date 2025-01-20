@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Device\FireAlarmPanelController;
+use App\Http\Controllers\Device\SmokeDetectorController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,11 @@ Route::middleware(['checkIp'])->group(function () {
         Route::any('/pushData', [FireAlarmPanelController::class, 'pushData']);
         Route::any('/getDeviceList', [FireAlarmPanelController::class, 'getDeviceList']);
     });
+
+
+
 });
 
-
+Route::prefix('smokeDetector')->group(function () {
+    Route::any('/getOneNetCommand', [SmokeDetectorController::class, 'getOneNetCommand']);
+});

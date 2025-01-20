@@ -6,6 +6,9 @@
         <a-card>
             <div>
                 <a-form layout="inline" >
+                    <a-form-item>
+                        <a-input v-model="listQuery.sn" placeholder="订单编号" style="width: 200px;" />
+                    </a-form-item>
                     <a-form-model-item>
                         <node-cascader @change="nodeChange"></node-cascader>
                     </a-form-model-item>
@@ -306,6 +309,7 @@
             el: '#app',
             data: {
                 listQuery: {
+                    sn:'',
                     area:undefined,
                     is_debt:undefined,
                     keyword: "",

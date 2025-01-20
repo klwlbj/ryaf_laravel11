@@ -17,7 +17,10 @@
                 <a-button icon="search" v-on:click="handleFilter">查询</a-button>
             </a-form-item>
         </a-form>
-        <a-table  :columns="columns" :data-source="list" :loading="loading"  :row-key="(record, index) => { return index }" :pagination="false">
+
+        <a-table  :columns="columns" :data-source="list" :loading="loading"  :row-key="(record, index) => { return index }"
+                  :scroll="{x: 1500,y:500}"
+                  :pagination="false">
 
             <div slot="address" slot-scope="text, record">
                 <div v-for="item in record.address">
@@ -82,6 +85,7 @@ module.exports = {
             listQuery: {
                 sn:'',
                 user_keyword:'',
+                is_debt:1,
                 address:''
             },
             pagination: {
@@ -240,7 +244,7 @@ module.exports = {
                     return false;
                 }
                 this.$message.success('绑定成功');
-
+                this.getPageList();
             }).catch(error => {
                 this.$message.error('请求失败');
             });

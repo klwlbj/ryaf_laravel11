@@ -8,7 +8,9 @@ use App\Models\Order;
 use App\Models\AdvancedOrder;
 use App\Http\Logic\Excel\ExcelGenerator;
 use App\Models\ReceivableAccount;
+use App\Models\ReceivableAccountFlow;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
 class AdvancedOrderLogic extends ExcelGenerator
@@ -140,6 +142,7 @@ class AdvancedOrderLogic extends ExcelGenerator
                 'ador_user_phone',
                 'ador_installation_count',
                 'ador_funds_received',
+                'ador_remain_funds',
                 'ador_pay_way',
                 'ador_status',
                 'ador_remark',
@@ -200,7 +203,6 @@ class AdvancedOrderLogic extends ExcelGenerator
             'ador_user_name'          => $params['user_name'] ?? '',
             'ador_user_phone'         => $params['user_phone'] ?? '',
             'ador_installation_count' => $params['installation_count'] ?? '',
-            'ador_funds_received'     => $params['funds_received'],
             'ador_pay_way'            => $params['pay_way'] ?? '',
             'ador_remark'             => $params['remark'] ?? '',
             'ador_operator_id'        => AuthLogic::$userId ?? 0,
@@ -213,6 +215,8 @@ class AdvancedOrderLogic extends ExcelGenerator
             }
         }else{
             $insertData['ador_sn'] = 'AD'. date('YmdHis') . rand(1000,9999);
+            $insertData['ador_funds_received'] = $params['funds_received'];
+            $insertData['ador_remain_funds'] = $params['funds_received'];
             $insertData['ador_status'] = 1;
             if(AdvancedOrder::query()->insert($insertData) === false){
                 ResponseLogic::setMsg('添加失败');
@@ -232,18 +236,109 @@ class AdvancedOrderLogic extends ExcelGenerator
             return false;
         }
 
-        $receivableData->toArray();
+        $advancedData = AdvancedOrder::query()->where(['ador_id' => $params['advanced_id']])->first();
+
+        if(!$advancedData){
+            ResponseLogic::setMsg('预收记录不存在');
+            return false;
+        }
+
+        $receivableData = $receivableData->toArray();
+        $advancedData = $advancedData->toArray();
 
         if(AdvancedRelation::query()->where(['adre_reac_id' => $params['receivable_id'],'adre_ador_id' => $params['advanced_id']])->exists()){
             ResponseLogic::setMsg('订单已被绑定');
             return false;
         }
 
+        $needPay = $receivableData['reac_account_receivable'] - $receivableData['reac_funds_received'];
+
+        if($needPay == 0){
+            ResponseLogic::setMsg('该订单已完成回款');
+            return false;
+        }
+//        print_r($receivableData);die;
+
+        #如果预收金额大于订单金额
+        if($advancedData['ador_remain_funds'] >= $needPay){
+            $update = [
+                'ador_remain_funds' => $advancedData['ador_remain_funds'] - $needPay,
+            ];
+
+            $consume = $needPay;
+        }else{
+            $update = [
+                'ador_remain_funds' => 0,
+                'ador_status' => 2
+            ];
+
+            $consume = $advancedData['ador_remain_funds'];
+        }
+
+        $insert = [
+            'adre_reac_id' => $params['receivable_id'],
+            'adre_ador_id' => $params['advanced_id'],
+            'adre_funds_received' => $consume,
+            'adre_operator_id' => AuthLogic::$userId,
+        ];
+
+        DB::beginTransaction();
+
+        #插入关联表
+        if(AdvancedRelation::query()->insert($insert) === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('插入关联失败');
+            return false;
+        }
+
+        #更新预收订单
+        if(AdvancedOrder::query()->where(['ador_id' => $params['advanced_id']])->update($update) === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('更新预付订单失败');
+            return false;
+        }
+
+        #更新订单实收并添加流水
+        if(ReceivableAccount::query()->where(['reac_id' => $params['receivable_id']])->update(['reac_funds_received' => DB::raw("reac_funds_received+".$consume)]) === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('更新应收款表失败');
+            return false;
+        }
+
+        $flow = [
+            'reac_account_id' => $params['receivable_id'],
+            'reac_datetime' => $advancedData['ador_pay_date'],
+            'reac_pay_way' => $advancedData['ador_pay_way'],
+            'reac_funds_received' => $consume,
+            'reac_type' => 1,
+            'reac_remark' => '预收抵扣',
+            'reac_status' => 2,
+            'reac_operator_id' => AuthLogic::$userId
+        ];
+
+        if(ReceivableAccountFlow::query()->insert($flow) === false){
+            DB::rollBack();
+            ResponseLogic::setMsg('插入回款流水失败');
+            return false;
+        }
+
+        DB::commit();
         return [];
     }
 
     public function delete($params)
     {
+        $data = AdvancedOrder::query()->where(['ador_id' => $params['id']])->first();
+
+        if(!$data){
+            ResponseLogic::setMsg('记录不存在');
+            return false;
+        }
+
+        if(AdvancedRelation::query()->where(['adre_ador_id' => $params['id']])->exists()){
+            ResponseLogic::setMsg('已存在绑定记录 不能删除');
+            return false;
+        }
         AdvancedOrder::where(['ador_id' => $params['id']])->delete();
         return [];
     }

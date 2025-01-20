@@ -427,6 +427,10 @@
                 }
             },
             created () {
+                this.admin = JSON.parse(localStorage.getItem("admin"));
+                if(this.admin.admin_id == 44){
+                    this.listQuery.is_verify = 1;
+                }
                 this.listQuery.page_size = this.pagination.pageSize;
                 this.handleFilter()
             },

@@ -58,6 +58,11 @@ Route::any('/test1', [\App\Http\Controllers\DemoController::class, 'test1']);
 Route::any('/importDemo', [\App\Http\Controllers\DemoController::class, 'import']);
 Route::any('/compareDemo', [\App\Http\Controllers\DemoController::class, 'compare']);
 
+Route::prefix('yunChuang')->group(function () {
+    Route::any('/updateDevice', [\App\Http\Controllers\YunChuangController::class, 'updateDevice']);
+});
+
+
 //标准地址
 Route::any('address/getStandardAddress', [AddressController::class, 'getStandardAddress']);
 

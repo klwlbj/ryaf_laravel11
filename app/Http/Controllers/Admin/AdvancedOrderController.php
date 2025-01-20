@@ -47,7 +47,7 @@ class AdvancedOrderController extends BaseController
     {
         return $this->baseMethod($request, [
             'id'             => 'required|string|exists:advanced_order,ador_id',
-            'funds_received' => 'required',
+//            'funds_received' => 'required',
             'node_id' => 'required',
         ], 'addOrUpdate');
     }

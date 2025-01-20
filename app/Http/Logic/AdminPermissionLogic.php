@@ -90,17 +90,12 @@ class AdminPermissionLogic extends BaseLogic
 
     public function delete($params)
     {
-        if(AdminPermission::query()->where(['depa_parent_id' => $params['id']])->exists()){
-            ResponseLogic::setMsg('存在下级部门，不能删除');
+        if(AdminPermission::query()->where(['adpe_parent_id' => $params['id']])->exists()){
+            ResponseLogic::setMsg('存在下级菜单，不能删除');
             return false;
         }
 
-        if(Admin::query()->where(['admin_part_id' => $params['id']])->exists()){
-            ResponseLogic::setMsg('部门下存在人员，不能删除');
-            return false;
-        }
-
-        Admin::query()->where(['depa_id' => $params['id']])->delete();
+        AdminPermission::query()->where(['adpe_id' => $params['id']])->delete();
         return [];
     }
 }

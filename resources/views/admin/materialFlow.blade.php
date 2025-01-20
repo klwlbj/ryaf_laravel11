@@ -123,7 +123,7 @@
                             </a>
                         </div>
 
-                        <div v-if="record.mafl_operator_id == admin.admin_id && record.is_last">
+                        <div v-if="$checkPermission('/api/materialFlow/cancel') && record.mafl_operator_id == admin.admin_id && record.is_last && mafl_status == 1">
                             <a-popconfirm
                                 title="是否确认撤销?"
                                 ok-text="确认"
@@ -323,6 +323,9 @@
             },
             created () {
                 this.admin = JSON.parse(localStorage.getItem("admin"));
+                if(this.admin.admin_id == 44){
+                    this.listQuery.status = 1;
+                }
                 this.listQuery.page_size = this.pagination.pageSize;
                 this.handleFilter()
             },

@@ -12,6 +12,18 @@
                 </a-form-item>
 
                 <a-form-item>
+                    <a-select v-model="listQuery.status" show-search placeholder="状态" :max-tag-count="1"
+                              style="width: 200px;" allow-clear>
+                        <a-select-option :value="1">
+                            进行中
+                        </a-select-option>
+                        <a-select-option :value="2">
+                            已完成
+                        </a-select-option>
+                    </a-select>
+                </a-form-item>
+
+                <a-form-item>
                     <a-range-picker
                         :placeholder="['预收开始时间', '预收结束时间']"
                         @change="dateChange"
@@ -19,7 +31,7 @@
                 </a-form-item>
 
                 <a-form-item>
-                    <a-input v-model="listQuery.remark" placeholder="备注" style="width: 120px;" />
+                    <span><a-input v-model="listQuery.remark" placeholder="备注" style="width: 120px;" /></span>
                     <span style="margin-left: 10px"><a-checkbox v-model="listQuery.remark_precise">精确匹配</a-checkbox></span>
                 </a-form-item>
 
@@ -42,6 +54,15 @@
                     <div>@{{ record.ador_user_mobile }}</div>
                 </div>
 
+                <div slot="funds_received" slot-scope="text, record">
+                    <span style="color:red">@{{ record.ador_funds_received }}</span>/<span style="color:green">@{{ record.ador_remain_funds }}</span>
+                </div>
+
+                <div slot="status" slot-scope="text, record">
+                    <a-tag v-if="record.ador_status==1" color="#f50">进行中</a-tag>
+                    <a-tag v-else color="#87d068">已完成</a-tag>
+                </div>
+
                 <div slot="date" slot-scope="text, record">
                     <span style="color:red">@{{ record.ador_installation_date }}</span>/<span style="color:green">@{{ record.ador_pay_date }}</span>
                 </div>
@@ -51,11 +72,12 @@
                         修改
                     </a>
 
-                    <a style="margin-right: 8px" @click="onLinkOrder(record)">
+                    <a v-if="record.ador_status == 1" style="margin-right: 8px" @click="onLinkOrder(record)">
                         关联订单
                     </a>
 
                     <a-popconfirm
+                        v-if="record.ador_status == 1"
                         title="是否确定删除?"
                         ok-text="确认"
                         cancel-text="取消"
@@ -117,6 +139,7 @@
             listQuery: {
                 user_keyword:'',
                 remark:'',
+                status:undefined,
                 node_id:undefined,
                 start_date:null,
                 end_date:null,
@@ -147,18 +170,25 @@
                     dataIndex: 'user_info'
                 },
                 {
+                    title: '状态',
+                    scopedSlots: { customRender: 'status' },
+                    dataIndex: 'ador_status'
+                },
+                {
                     title: '安装日期/支付日期',
                     scopedSlots: { customRender: 'date' },
                     dataIndex: 'date',
-                    width:300
+                    width:200
+                },
+                {
+                    title: '预付金额/剩余金额（元）',
+                    scopedSlots: { customRender: 'funds_received' },
+                    dataIndex: 'ador_funds_received',
+                    width:200
                 },
                 {
                     title: '预计安装总数',
                     dataIndex: 'ador_installation_count'
-                },
-                {
-                    title: '预付金额（元）',
-                    dataIndex: 'ador_funds_received'
                 },
                 {
                     title: '收款方式',

@@ -6,11 +6,11 @@
             </a-form-model-item>
 
             <a-form-model-item label="安装日期" prop="installation_date">
-                <a-date-picker format="YYYY-MM-DD" v-model:value="formData.installation_date"/>
+                <a-date-picker format="YYYY-MM-DD" v-model:value="formData.installation_date" @change="installationDateChange"/>
             </a-form-model-item>
 
             <a-form-model-item label="收款日期" prop="pay_date">
-                <a-date-picker format="YYYY-MM-DD" v-model:value="formData.pay_date"/>
+                <a-date-picker format="YYYY-MM-DD" v-model:value="formData.pay_date"  @change="payDateChange"/>
             </a-form-model-item>
 
             <a-form-model-item label="用户名" prop="user_name">
@@ -25,7 +25,7 @@
                 <a-input-number v-model="formData.installation_count"/>
             </a-form-model-item>
 
-            <a-form-model-item label="预付金额" prop="funds_received">
+            <a-form-model-item v-if="!this.id" label="预付金额" prop="funds_received">
                 <a-input-number v-model="formData.funds_received"  :step="0.01"/>
             </a-form-model-item>
 
@@ -91,7 +91,7 @@ module.exports = {
             dialogFormLabelCol: { span: 4 },
             dialogFormWrapperCol: { span: 14 },
             formRules: {
-                funds_received: [{ required: true, message: '请输入预付金额', trigger: 'blur' }],
+                // funds_received: [{ required: true, message: '请输入预付金额', trigger: 'blur' }],
             },
             loading :false,
             nodeId:undefined
@@ -233,6 +233,12 @@ module.exports = {
         nodeChange(value){
             this.formData.node_id = value;
         },
+        installationDateChange(value,str){
+            this.formData.installation_date = str;
+        },
+        payDateChange(value,str){
+            this.formData.pay_date = str;
+        }
     },
     created () {
         this.initForm();

@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class SmokeDetectorLogic extends BaseLogic
 {
+    /**处理设备信号
+     * @param $model
+     * @return void
+     */
     public function handleSignal($model = 'YL-IOT-YW03')
     {
         ini_set( 'max_execution_time', 72000 );
@@ -130,54 +134,6 @@ class SmokeDetectorLogic extends BaseLogic
         die;
     }
 
-    public function getHmSignalData($str)
-    {
-        $str = strtolower($str);
-
-        $config = [
-            'rsrp' => '1f52',
-            'rsrq' => '1f53',
-            'snr' => '1f54',
-        ];
-
-        $res = [];
-
-        foreach ($config as $key => $value){
-            $position = strpos($str, $value);
-            if(!$position){
-                continue;
-            }
-
-            $subStr = mb_substr($str, $position, 12);
-
-            $signalValue = mb_substr($subStr, 8, 4);
-
-            if($signalValue == '0000'){
-                $res[$key] = 0;
-                continue;
-            }
-
-            $bin = str_pad(base_convert($signalValue, 16, 2), 16, '0', STR_PAD_LEFT);
-
-            $firstStr = mb_substr($str,0 , 1);
-
-            #如果最高位为1  则为负数
-            if($firstStr == 1){
-                $reverse = '';
-                for ($i = 0; $i < 16; $i++) {
-                    $reverse .= (1 - $bin[$i]); // 输出当前字符并换行
-                }
-
-                $res[$key] = base_convert($reverse, 2, 10);
-                $res[$key] = -((int)$res[$key] + 1);
-            }else{
-                $res[$key] = (int)base_convert($bin, 2, 10);
-            }
-        }
-
-        return $res;
-    }
-
     public function calculateSignalScore($rssi = null, $csq = null, $rsrq = null, $rsrp = null)
     {
         $weightList = [];
@@ -243,5 +199,17 @@ class SmokeDetectorLogic extends BaseLogic
         }
 
         return round($score,2);
+    }
+
+    public function getOneNetCommand($params)
+    {
+        return [
+            [
+                'identifier' => 'cmd',
+                'params' => [
+                    'muffling' => 1
+                ]
+            ]
+        ];
     }
 }
