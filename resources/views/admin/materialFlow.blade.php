@@ -123,7 +123,7 @@
                             </a>
                         </div>
 
-                        <div v-if="$checkPermission('/api/materialFlow/cancel') && record.mafl_operator_id == admin.admin_id && record.is_last && mafl_status == 1">
+                        <div v-if="$checkPermission('/api/materialFlow/cancel') && record.mafl_operator_id == admin.admin_id && record.is_last && record.mafl_status == 1">
                             <a-popconfirm
                                 title="是否确认撤销?"
                                 ok-text="确认"

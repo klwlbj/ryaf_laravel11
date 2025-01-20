@@ -105,5 +105,9 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('preInstallationList')->group(function () {
         Route::view('/view', 'admin.preInstallationList');
     });
+
+    Route::prefix('materialFlowConsume')->group(function () {
+        Route::view('/view', 'admin.materialFlowConsume');
+    });
 });
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\MaterialFlowConsumeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckIpMiddleware;
 use App\Http\Middleware\SignatureMiddleware;
@@ -134,6 +135,10 @@ Route::middleware(['login'])->group(function () {
         Route::post('/setPrice', [MaterialFlowController::class, 'setPrice']);
         Route::post('/inComingUpdate', [MaterialFlowController::class, 'inComingUpdate']);
         Route::post('/cancel', [MaterialFlowController::class, 'cancel']);
+    });
+
+    Route::prefix('materialFlowConsume')->group(function () {
+        Route::post('/getList', [MaterialFlowConsumeController::class, 'getList']);
     });
 
     Route::prefix('materialPurchase')->group(function () {
