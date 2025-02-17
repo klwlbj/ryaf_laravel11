@@ -50,8 +50,8 @@ class DeviceImport extends Command
 
 //        $aep_product_id = "15599428"; $aep_master_key = "08d3fbc2c028477c8afc3e9ce60d714d"; $oneNetProductId = '407478'; //平安穗粤-海曼HM608NB      //温感
 //        $aep_product_id = "16922967"; $aep_master_key = "0434f19136324920a51ba7287fffb667"; $oneNetProductId = '407478'; //平安穗粤-海曼HM608/618NB透传版
-        //$aep_product_id = "17085637"; $aep_master_key = "9c6f31f078024c0c8ab9d288eeaec206"; $oneNetProductId = 'kC06Yb93QB'; //平安穗粤-六瑞-SA-JTY-GD02C
-        $aep_product_id = "17102042"; $aep_master_key = "3859262b741f40d0a0c3bd8d64a5cebe"; $oneNetProductId = 'HzFl9NvY5q'; //平安穗粤-源流-YL-IOT-YW03（源流Y3_4G_烟感MQTT）
+        $aep_product_id = "17085637"; $aep_master_key = "9c6f31f078024c0c8ab9d288eeaec206"; $oneNetProductId = 'kC06Yb93QB'; //平安穗粤-六瑞-SA-JTY-GD02C
+//        $aep_product_id = "17102042"; $aep_master_key = "3859262b741f40d0a0c3bd8d64a5cebe"; $oneNetProductId = 'HzFl9NvY5q'; //平安穗粤-源流-YL-IOT-YW03（源流Y3_4G_烟感MQTT）
 //        $aep_product_id = "17084269"; $aep_master_key = "c9636dcae10841aa859d5511589483b6"; $oneNetProductId = 'E2dMYR85jh'; //平安穗粤-海曼618-4G
 
 //        $aep_product_id = "17090734"; $aep_master_key = "2eae2c21209842a6985af4cbd794bba4";$oneNetProductId = 'YeruR7viEL'; //平安穗粤-源流-YL-IOT-YW03 本地
@@ -61,8 +61,8 @@ class DeviceImport extends Command
 //        $smde_type = "烟感"; $smde_brand_name = "海曼"; $smde_model_name = "HM-618PH-NB";
 //        $smde_type = "温感"; $smde_brand_name = "海曼"; $smde_model_name = "HM-5HA-NB";
         //$smde_type = "烟感"; $smde_brand_name = "东昂"; $smde_model_name = "JTY-YG-002NB";
-        //$smde_type = "烟感"; $smde_brand_name = "六瑞"; $smde_model_name = "SA-JTY-GD02C";
-        $smde_type = "烟感"; $smde_brand_name = "源流"; $smde_model_name = "YL-IOT-YW03";
+        $smde_type = "烟感"; $smde_brand_name = "六瑞"; $smde_model_name = "SA-JTY-GD02C";
+//        $smde_type = "烟感"; $smde_brand_name = "源流"; $smde_model_name = "YL-IOT-YW03";
 //        $smde_type = "烟感"; $smde_brand_name = "海曼"; $smde_model_name = "HM-618PH-4G";
 
 

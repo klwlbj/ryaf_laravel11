@@ -68,10 +68,15 @@ class InsertFakeHeartBeat extends Command
 //        $token = Token::query()->where(['token_name' => 'yunchuang'])->value('token_value') ?: '';
 
         #根据总数和离线率计算出需要处理的数量
-        $needHandleCount = $outlineCount - bcmul($total, rand(60,70) / 1000);
+        $needHandleCount = $outlineCount - bcmul($total, rand(65,70) / 1000);
+
+//        print_r($needHandleCount);die;
 //        print_r($total);die;
         #如果真实心跳包恢复了  则清楚造心跳包
         SmokeDetector::query()->whereRaw("smde_last_heart_beat > smde_fake_heart_beat")->update(['smde_fake_heart_beat' => null]);
+
+        #删除三天前的虚拟心跳任务
+        SimulateTask::query()->whereRaw("sita_fake_heart_beat < (NOW() - INTERVAL 3 DAY)")->delete();
 
         //造心跳包烟感
         $fakeList = SmokeDetector::query()

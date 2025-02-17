@@ -62,7 +62,9 @@ class HandleFakeHeartBeat extends Command
         $failIds = [];
         $notHandle = [];
 
-        if($this->isPushYunChuang()){
+        $isPushYunChuang = $this->isPushYunChuang();
+
+        if($isPushYunChuang){
             $token = Cache::get('yun_chuang_token');
             if(empty($token)){
                 try {
@@ -88,7 +90,7 @@ class HandleFakeHeartBeat extends Command
                     continue;
                 }
 
-                if($this->isPushYunChuang()){
+                if($isPushYunChuang){
                     if (!empty($value['sita_yunchuang_id'])) {
 
                         #如果是新增  推送巡检状态
@@ -109,7 +111,7 @@ class HandleFakeHeartBeat extends Command
 
                 $sucIds[] = $value['sita_id'];
             }catch (\Exception $e) {
-                $notHandle = $value['sita_id'];
+                $notHandle[] = $value['sita_id'];
                 $this->setErrorCount();
                 ToolsLogic::writeLog('exception' . $e->getMessage() .$e->getLine() . ' imei:' . $value['sita_imei'],'handleFakeHeartbeat');
             }
@@ -134,7 +136,7 @@ class HandleFakeHeartBeat extends Command
 
     public function setErrorCount(){
         $count = Cache::get('yun_chuang_err_count') ?: 0;
-        Cache::set('yun_chuang_err_count',$count + 1,60*60);
+        Cache::set('yun_chuang_err_count',$count + 1,60*10);
     }
 
     public function isPushYunChuang()

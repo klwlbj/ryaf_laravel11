@@ -98,9 +98,10 @@ Route::middleware(['login'])->group(function () {
     });
 
     Route::prefix('maintain')->group(function () {
-        Route::view('place/view', 'admin.maintainPlace');
-        Route::view('noData/view', 'admin.maintainNoData');
-        Route::view('installationCheck/view', 'admin.maintainInstallationCheck');
+        Route::view('place/view', 'admin.maintain.place');
+        Route::view('noData/view', 'admin.maintain.noData');
+        Route::view('installationCheck/view', 'admin.maintain.installationCheck');
+        Route::view('importDevice/view', 'admin.maintain.importDevice');
     });
     Route::prefix('preInstallationList')->group(function () {
         Route::view('/view', 'admin.preInstallationList');
@@ -110,4 +111,3 @@ Route::middleware(['login'])->group(function () {
         Route::view('/view', 'admin.materialFlowConsume');
     });
 });
-

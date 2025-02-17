@@ -20,7 +20,7 @@
                     </a-form-item>
                 </a-form>
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                         :pagination="false" :scroll="{ x: 1800,y: 650 }">
+                         :pagination="false" :scroll="{y: 650 }">
 
                     <div slot="mafl_specification_name" slot-scope="text, record">
                         <a-tag v-for="(item,i) in record.mafl_specification_name" :key="i">@{{ item }}</a-tag>
@@ -37,22 +37,20 @@
                     </div>
 
                     <div slot="number" slot-scope="text, record">
-                        <span v-if="record.mafl_type == 1"  style="color:green">+ @{{ record.mafl_number }}</span>
-                        <span v-else style="color:red">- @{{ record.mafl_number }}</span>
+                        <span style="color:green">@{{ record.mafl_number }}</span>/<span style="color:red">@{{ record.consume_number }}</span>
                     </div>
 
                     <div slot="action" slot-scope="text, record">
-                        <div v-if="record.mafl_status == 1 && record.mafl_verify_user_id == admin.admin_id">
-                            <a-popconfirm
-                                title="是否确认无误?"
-                                ok-text="确认"
-                                cancel-text="取消"
-                                @confirm="onVerify(record)"
-                            >
-                                <a style="margin-right: 8px">
-                                    确认无误
-                                </a>
-                            </a-popconfirm>
+                        <div v-if="record.consume_status==1">
+                            <a style="margin-right: 8px" @click="onAddConsume(record)">
+                                添加记录
+                            </a>
+                        </div>
+
+                        <div>
+                            <a style="margin-right: 8px" @click="onGetConsume(record)">
+                                查看记录
+                            </a>
                         </div>
                     </div>
                 </a-table>
@@ -66,6 +64,27 @@
                     ></a-pagination>
                 </div>
             </div>
+
+            <a-modal :mask-closable="false" v-model="consumeAddFormVisible"
+                     title="填写消耗记录"
+                     width="800px" :footer="null">
+                <consume-add ref="consumeAdd"
+                             :id="flowId"
+                             @submit="consumeAddSubmit"
+                             @close="consumeAddFormVisible = false;"
+                >
+                </consume-add>
+            </a-modal>
+
+            <a-modal :mask-closable="false" v-model="consumeListFormVisible"
+                     title="消耗记录"
+                     width="800px" :footer="null">
+                <consume-flow ref="consumeFlow"
+                             :id="flowListId"
+                             @close="consumeListFormVisible = false;"
+                >
+                </consume-flow>
+            </a-modal>
 
         </a-card>
     </div>
@@ -96,11 +115,6 @@
                     onShowSizeChange: this.paginationChange,
                 },
                 columns:[
-                    // {
-                    //     title: 'Id',
-                    //     dataIndex: 'mafl_id',
-                    //     width: 80
-                    // },
                     {
                         title: '物品名称',
                         fixed: 'left',
@@ -115,18 +129,8 @@
                         dataIndex: 'mafl_specification_name',
                         align: 'center'
                     },
-                    // {
-                    //     title: '出库仓库',
-                    //     dataIndex: 'mafl_warehouse_name',
-                    // },
                     {
-                        title: '类型',
-                        scopedSlots: { customRender: 'type' },
-                        dataIndex: 'mafl_type',
-                        align: 'center'
-                    },
-                    {
-                        title: '数量',
+                        title: '数量/消耗',
                         scopedSlots: { customRender: 'number' },
                         dataIndex: 'mafl_number',
                         align: 'center'
@@ -134,13 +138,6 @@
                     {
                         title: '出/入库时间',
                         dataIndex: 'mafl_datetime',
-                        align: 'center'
-                    },
-                    {
-                        title: '单价',
-                        scopedSlots: { customRender: 'price' },
-                        dataIndex: 'mafl_price',
-                        width: 200,
                         align: 'center'
                     },
                     {
@@ -156,31 +153,8 @@
                         align: 'center'
                     },
                     {
-                        title: '附件',
-                        scopedSlots: { customRender: 'file_list' },
-                        dataIndex: 'file_list',
-                        align: 'center'
-                    },
-                    {
-                        title: '过期时间',
-                        dataIndex: 'mafl_expire_date',
-                        align: 'center'
-                    },
-
-                    {
                         title: '备注',
                         dataIndex: 'mafl_remark',
-                        align: 'center'
-                    },
-                    {
-                        title: '最终确认人',
-                        dataIndex: 'mafl_verify_user',
-                        align: 'center'
-                    },
-                    {
-                        title: '状态',
-                        scopedSlots: { customRender: 'status' },
-                        dataIndex: 'mafl_status',
                         align: 'center'
                     },
                     {
@@ -191,12 +165,11 @@
                     }
                 ],
                 dialogFormVisible:false,
-                inComingFormVisible:false,
-                outComingFormVisible:false,
-                setPriceFormVisible:false,
-                inComingUpdateVisible:false,
+                consumeAddFormVisible: false,
+                consumeListFormVisible: false,
                 id:null,
                 flowId:null,
+                flowListId:null,
                 admin:{}
             },
             created () {
@@ -208,7 +181,9 @@
                 this.handleFilter()
             },
             components: {
-                "material-add":  httpVueLoader('/statics/components/material/materialAdd.vue'),
+                "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
+                "consume-add":  httpVueLoader('/statics/components/material/consumeAdd.vue'),
+                "consume-flow":  httpVueLoader('/statics/components/material/consumeFlow.vue'),
             },
             methods: {
                 paginationChange (current, pageSize) {
@@ -229,7 +204,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/api/materialFlow/getList',
+                        url: '/api/materialFlowConsume/getList',
                         // 传递参数
                         data: this.listQuery,
                         responseType: 'json',
@@ -250,6 +225,23 @@
                     this.listQuery.end_date = arr[1];
                     this.handleFilter();
                 },
+                materialChange(value){
+                    this.listQuery.material_id = value;
+                    this.handleFilter();
+                },
+                onAddConsume(row){
+                    this.flowId = row.mafl_id;
+                    this.consumeAddFormVisible = true;
+                },
+                onGetConsume(row){
+                    this.flowListId = row.mafl_id;
+                    this.consumeListFormVisible = true;
+                },
+                consumeAddSubmit(){
+                    this.flowId = null;
+                    this.consumeAddFormVisible = false;
+                    this.getPageList();
+                }
             },
 
         })

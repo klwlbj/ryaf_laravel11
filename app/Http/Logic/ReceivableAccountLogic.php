@@ -673,9 +673,9 @@ class ReceivableAccountLogic extends BaseLogic
 
         $existList = ReceivableAccount::query()->where(['reac_type' => 2])
             ->whereIn('reac_relation_sn',$snArr)
-            ->select(['reac_funds_received','reac_account_receivable','reac_id'])
+            ->select(['reac_funds_received','reac_account_receivable','reac_id','reac_relation_sn'])
             ->get()->keyBy('reac_relation_sn')->toArray();
-
+//        print_r($existList);die;
         foreach ($sheetData as $key => $value) {
 //            if($key == 0){
 //                continue;
@@ -685,7 +685,7 @@ class ReceivableAccountLogic extends BaseLogic
                 $value = array_values($value);
                 $value[2] = ToolsLogic::convertExcelTime($value[2]);
                 $value[15] = ToolsLogic::convertExcelTime($value[15]);
-//            print_r($value);die;
+//              print_r($value);die;
                 $area = $value[1];
                 $orderSn = $value[0];
                 $installationDate = date('Y-m-d', strtotime($value[2]));
@@ -786,6 +786,7 @@ class ReceivableAccountLogic extends BaseLogic
                 $updateData = [
                     'reac_installation_count' => $installationCount,
                     'reac_given_count' => $givenCount,
+                    'reac_account_receivable' => $accountReceivable,
                     'reac_funds_received' => $fundsReceived,
                     'reac_remark' => $remark,
                 ];
@@ -1121,7 +1122,10 @@ class ReceivableAccountLogic extends BaseLogic
 
 //        $nodeArr = Node::query()->whereIn('node_id',$nodeIds)->select(['node_id','node_name'])->pluck('node_name','node_id')->toArray();
 
-        $deviceCountArr = DB::connection('mysql2')->table('smoke_detector')->whereIn('smde_order_id',$orderIds)
+        $deviceCountArr = DB::connection('mysql2')
+            ->table('smoke_detector')
+            ->whereIn('smde_order_id',$orderIds)
+            ->where('smde_place_id','>',0)
             ->select([
                 'smde_order_id',
                 DB::raw('count(smde_order_id) as count'),
@@ -1169,6 +1173,11 @@ class ReceivableAccountLogic extends BaseLogic
                 'reac_remark' => $value['order_remark'],
                 'reac_operator_id' => AuthLogic::$userId
             ];
+
+            if (strpos($value['order_remark'], '售后') !== false){
+                $insertData['reac_account_receivable'] = 0;
+                $insertData['reac_device_funds'] = 0;
+            }
 
             $id = ReceivableAccount::query()->insertGetId($insertData);
             $existOrderIds[] = $value['order_id'];

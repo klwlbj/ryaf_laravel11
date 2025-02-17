@@ -3,6 +3,7 @@
 namespace App\Http\Logic;
 
 use App\Http\Logic\Excel\ExportLogic;
+use App\Models\DetectorImportTask;
 use App\Models\Dic;
 use App\Models\Node;
 use App\Models\Order;
@@ -27,6 +28,8 @@ class MaintainLogic extends BaseLogic
                 ->leftJoin('admin','admin.admin_id','=','order.order_deliverer_id')
                 ->where(['order_status' => '交付完成']);
 
+        $deviceQuery = SmokeDetector::query();
+
         if(!empty($params['node_id'])){
             $childIds = Node::getNodeChild($params['node_id']);
             $query->whereIn('place.plac_node_id',$childIds);
@@ -44,14 +47,23 @@ class MaintainLogic extends BaseLogic
         if(!empty($params['imei'])){
             $imeiArr = explode(' ',$params['imei']);
             $query->whereIn('smoke_detector.smde_imei',$imeiArr);
+            $deviceQuery->whereIn('smde_imei',$imeiArr);
+        }
+
+        if(!empty($params['iccid'])){
+            $imeiArr = explode(' ',$params['iccid']);
+            $query->whereIn('smoke_detector.smde_nb_iid2',$imeiArr);
+            $deviceQuery->whereIn('smde_nb_iid2',$imeiArr);
         }
 
         if(isset($params['online']) && $params['online'] !== ''){
             $query->where('smoke_detector.smde_online_real',$params['online']);
+            $deviceQuery->where('smde_online_real',$params['online']);
         }
 
         if(isset($params['none_heart_day']) && $params['none_heart_day'] !== ''){
             $query->whereRaw('smde_last_heart_beat < (NOW() - INTERVAL ' . $params['none_heart_day'] . ' DAY)');
+            $deviceQuery->whereRaw('smde_last_heart_beat < (NOW() - INTERVAL ' . $params['none_heart_day'] . ' DAY)');
         }
 
         if(isset($params['expired_day']) && $params['expired_day'] !== ''){
@@ -153,7 +165,7 @@ class MaintainLogic extends BaseLogic
         $placeIds = array_column($list,'plac_id');
 
         #获取烟感数据
-        $deviceGroup = SmokeDetector::query()
+        $deviceGroup = $deviceQuery
             ->leftJoin('order','order.order_id','=','smoke_detector.smde_order_id')
             ->whereIn('smde_place_id',$placeIds)
             ->whereIn('smde_type',['烟感','温感'])
@@ -557,5 +569,79 @@ class MaintainLogic extends BaseLogic
 
 
         return ['list' => $list,'total' => $total];
+    }
+
+    public function importList($params)
+    {
+        DB::setDefaultConnection('mysql');
+        $page = $params['page'] ?? 1;
+        $pageSize = $params['page_size'] ?? 10;
+        $point = ($page - 1) * $pageSize;
+
+        $query = DetectorImportTask::query();
+
+        if(!empty($params['start_date'])){
+            $query->where('deim_crt_time','>=',$params['start_date']);
+        }
+
+        if(!empty($params['end_date'])){
+            $query->where('deim_crt_time','<=',$params['end_date']);
+        }
+
+        if(!empty($params['import_fail']) && $params['import_fail'] == 'true'){
+            $query->where(function (Builder $q) {
+                $q->orWhere('deim_database_status','=',0)
+                    ->orWhere('deim_aep_status','=',0)
+                    ->orWhere('deim_onenet_status','=',0);
+            });
+        }
+
+        $total = $query->count();
+
+        $list = $query
+            ->offset($point)->limit($pageSize)->get()->toArray();
+
+        return ['list' => $list,'total' => $total];
+    }
+
+    public function importDevice($params)
+    {
+        ini_set( 'max_execution_time', 7200 );
+        ini_set( 'memory_limit', '512M' );
+        DB::setDefaultConnection('mysql');
+        $modelArr = [
+            'HM-618PH-4G' => '海曼',
+            'YL-IOT-YW03' => '源流'
+        ];
+
+        $sheetData = ToolsLogic::jsonDecode($params['data']);
+        $suc = 0;
+        $err = 0;
+        $insertData = [];
+//        print_r($sheetData);die;
+        foreach ($sheetData as $key => $value) {
+            if(strlen($value[0]) != 15){
+                $err++;
+                continue;
+            }
+            $insertData[] = [
+                'deim_imei' => $value[0],
+                'deim_brand_name' => $modelArr[$params['model_name']] ?? '海曼',
+                'deim_model_name' => $params['model_name'],
+                'deim_operator_id' => AuthLogic::$userId
+            ];
+            $suc++;
+            if(count($insertData) >= 100){
+                DetectorImportTask::query()->insert($insertData);
+                $insertData = [];
+            }
+        }
+
+        if(!empty($insertData)){
+            DetectorImportTask::query()->insert($insertData);
+            $insertData = [];
+        }
+
+        return ['success_count' => $suc,'error_count' => $err];
     }
 }

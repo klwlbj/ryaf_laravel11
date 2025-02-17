@@ -178,4 +178,50 @@ class MaintainController
         }
         return ResponseLogic::apiResult(0,'ok',$res);
     }
+
+    public function importList(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+
+        ],[
+
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaintainLogic::getInstance()->importList($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function importDevice(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'data' => 'required',
+            'model_name' => 'required',
+        ],[
+            'data.required' => '数据不得为空',
+            'model_name.required' => '型号不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaintainLogic::getInstance()->importDevice($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
 }

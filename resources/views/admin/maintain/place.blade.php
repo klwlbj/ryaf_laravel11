@@ -12,6 +12,10 @@
                         <a-input v-model="listQuery.imei" placeholder="imei" style="width: 200px;" />
                     </a-form-item>
 
+                    <a-form-item label="iccid">
+                        <a-input v-model="listQuery.iccid" placeholder="iccid" style="width: 200px;" />
+                    </a-form-item>
+
                     <a-form-item label="用户名/手机号">
                         <a-input v-model="listQuery.user_keyword" placeholder="用户名/手机号" style="width: 200px;" />
                     </a-form-item>
@@ -163,6 +167,7 @@
             data: {
                 listQuery: {
                     imei : '',
+                    iccid: '',
                     none_heart_day : '',
                     online : undefined,
                     expired_day : '',

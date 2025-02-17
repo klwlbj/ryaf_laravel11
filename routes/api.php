@@ -139,6 +139,8 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('materialFlowConsume')->group(function () {
         Route::post('/getList', [MaterialFlowConsumeController::class, 'getList']);
+        Route::post('/addConsumeFlow', [MaterialFlowConsumeController::class, 'addConsumeFlow']);
+        Route::post('/getConsumeList', [MaterialFlowConsumeController::class, 'getConsumeList']);
     });
 
     Route::prefix('materialPurchase')->group(function () {
@@ -251,6 +253,8 @@ Route::middleware(['login'])->group(function () {
         Route::post('/updatePlace', [MaintainController::class, 'updatePlace']);
         Route::post('/setRemark', [MaintainController::class, 'setRemark']);
         Route::post('/noDataList', [MaintainController::class, 'noDataList']);
+        Route::post('/importList', [MaintainController::class, 'importList']);
+        Route::post('/importDevice', [MaintainController::class, 'importDevice']);
     });
 
     Route::prefix('preInstallation')->group(function () {

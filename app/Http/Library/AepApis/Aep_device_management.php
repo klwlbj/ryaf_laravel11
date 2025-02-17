@@ -269,6 +269,30 @@ class Aep_device_management
     //  描述:
     //参数body: 类型json, 参数不可以为空
     //  描述:body,具体参考平台api说明
+    public static function DeleteDeviceByImei($appKey, $appSecret, $MasterKey, $body)
+    {
+        $path                 = "/aep_nb_device_management/deleteDeviceByImei";
+        $headers              = [];
+        $headers["MasterKey"] = $MasterKey;
+
+        $param   = null;
+        $version = "20220226071405";
+
+        $application = $appKey;
+        $secret      = $appSecret;
+
+        $response = AepSdkCore::sendSDkRequest($path, $headers, $param, $body, $version, $application, $secret, "POST");
+        if ($response != null) {
+            return $response;
+        }
+        return null;
+    }
+
+
+    //参数MasterKey: 类型String, 参数不可以为空
+    //  描述:
+    //参数body: 类型json, 参数不可以为空
+    //  描述:body,具体参考平台api说明
     public static function ListDeviceActiveStatus($appKey, $appSecret, $MasterKey, $body)
     {
         $path                 = "/aep_device_management/listActiveStatus";
