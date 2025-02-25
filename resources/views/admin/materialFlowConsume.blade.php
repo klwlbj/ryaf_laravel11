@@ -15,6 +15,10 @@
                             :default-value="[defaultDate,defaultDate]"></a-range-picker>
                     </a-form-item>
 
+                    <a-form-item label="领用人">
+                        <receive-select @change="receiveChange"></receive-select>
+                    </a-form-item>
+
                     <a-form-item>
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
@@ -98,10 +102,10 @@
             data: {
                 listQuery: {
                     keyword: "",
-                    category_id:'',
                     status:undefined,
                     start_date:null,
                     end_date:null,
+                    receive_user_id:undefined
                 },
                 defaultDate:undefined,
                 listSource: [],
@@ -184,6 +188,7 @@
                 "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
                 "consume-add":  httpVueLoader('/statics/components/material/consumeAdd.vue'),
                 "consume-flow":  httpVueLoader('/statics/components/material/consumeFlow.vue'),
+                "receive-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
             },
             methods: {
                 paginationChange (current, pageSize) {
@@ -228,6 +233,9 @@
                 materialChange(value){
                     this.listQuery.material_id = value;
                     this.handleFilter();
+                },
+                receiveChange(value){
+                    this.listQuery.receive_user_id = value;
                 },
                 onAddConsume(row){
                     this.flowId = row.mafl_id;

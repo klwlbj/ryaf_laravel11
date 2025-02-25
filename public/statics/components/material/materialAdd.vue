@@ -17,6 +17,17 @@
                 <specification-select ref="specificationSelect" mode="multiple" :category-id="categoryId" :default-data="specificationId" @change="specificationChange"></specification-select>
             </a-form-model-item>
 
+            <a-form-model-item label="物品等级" prop="is_account">
+                <a-radio-group v-model="formData.is_account">
+                    <a-radio :value="1">
+                        一级物资
+                    </a-radio>
+                    <a-radio :value="0">
+                        二级物资
+                    </a-radio>
+                </a-radio-group>
+            </a-form-model-item>
+
             <a-form-model-item label="是否出货" prop="is_deliver">
                 <a-radio-group v-model="formData.is_deliver">
                     <a-radio :value="0">
@@ -165,6 +176,7 @@ module.exports = {
                 invoice_type:1,
                 sort:0,
                 status : 1,
+                is_account:0,
             };
 
             this.imageList = [];
@@ -349,6 +361,7 @@ module.exports = {
                     image: res.data.mate_image,
                     sort: res.data.mate_sort,
                     status: res.data.mate_status,
+                    is_account: res.data.mate_is_account,
                 }
                 this.categoryId = res.data.mate_category_id;
                 this.manufacturerId = res.data.mate_manufacturer_id;

@@ -26,6 +26,10 @@ class MaterialFlowLogic extends BaseLogic
             ->leftJoin('warehouse','warehouse.waho_id','=','material_flow.mafl_warehouse_id')
         ;
 
+        if(in_array(AuthLogic::$userId,MaterialLogic::$onlyAccessory)){
+            $query->where(['material.mate_category_id' => 2]);
+        }
+
         if(isset($params['material_id']) && $params['material_id']){
             $query->where(['material_flow.mafl_material_id' => $params['material_id']]);
         }

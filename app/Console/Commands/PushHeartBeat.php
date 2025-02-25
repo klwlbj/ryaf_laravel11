@@ -34,6 +34,10 @@ class PushHeartBeat extends Command
 
         $time = date('H:i');
 
+        if(!$this->isRun()){
+            return false;
+        }
+
         $deviceList = SmokeDetector::query()
             ->where('smde_yunchuang_id','>',0)
             ->where('smde_place_id', '>', 0)
@@ -61,12 +65,14 @@ class PushHeartBeat extends Command
                     Cache::set('yun_chuang_token',$token,60*60);
                 }catch (\Exception $e) {
                     $this->setErrorCount();
+                    $this->clearProgress();
                     ToolsLogic::writeLog('token获取失败' . $e->getMessage() .$e->getLine(),'pushHeartbeat');
                     return false;
                 }
 
             }
         }else{
+            $this->clearProgress();
             return true;
         }
 
@@ -82,7 +88,7 @@ class PushHeartBeat extends Command
                 ToolsLogic::writeLog('exception' . $e->getMessage() .$e->getLine() . ' imei:' . $value['smde_imei'],'pushHeartbeat');
             }
         }
-
+        $this->clearProgress();
         return true;
     }
 
@@ -93,6 +99,7 @@ class PushHeartBeat extends Command
 
     public function isPushYunChuang()
     {
+//        return true;
         $count = Cache::get('yun_chuang_err_count') ?: 0;
         if(empty($count)){
             return true;
@@ -104,4 +111,34 @@ class PushHeartBeat extends Command
 
         return true;
     }
+
+    public function isRun()
+    {
+//        return true;
+        $progressCount = Cache::get('yun_progress_count') ?: 0;
+        if($progressCount >= 5){
+            return false;
+        }
+
+        $progressCount += 1;
+        ToolsLogic::writeLog("添加进程；进程数：" . $progressCount, 'pushHeartbeat');
+        Cache::set('yun_progress_count',$progressCount,60*60);
+
+        return true;
+    }
+
+    public function clearProgress()
+    {
+        $progressCount = Cache::get('yun_progress_count') ?: 0;
+        if(empty($progressCount)){
+            return true;
+        }
+
+        $progressCount -= 1;
+        ToolsLogic::writeLog("消耗进程；进程数：" . $progressCount, 'pushHeartbeat');
+        Cache::set('yun_progress_count',$progressCount,60*60);
+
+        return true;
+    }
+
 }

@@ -34,6 +34,10 @@ class MaterialFlowConsumeLogic extends BaseLogic
             $query->where('material_flow.mafl_datetime','<=',$params['end_date'] . ' 23:59:59');
         }
 
+        if(!empty($params['receive_user_id'])){
+            $query->where('material_flow.mafl_receive_user_id','=',$params['receive_user_id']);
+        }
+
         $total = $query->count();
 
         $query->select([

@@ -39,8 +39,19 @@
                         <category-select @change="categoryChange"></category-select>
                     </a-form-item>
                     <a-form-item>
+                        <a-select v-model="listQuery.is_account" show-search placeholder="物品等级" :max-tag-count="1"
+                                  style="width: 200px;" allow-clear @change="handleFilter">
+                            <a-select-option :value="1">
+                                一级物资
+                            </a-select-option>
+                            <a-select-option :value="0">
+                                二级物资
+                            </a-select-option>
+                        </a-select>
+                    </a-form-item>
+                    <a-form-item>
                         <a-select v-model="listQuery.is_expire" show-search placeholder="是否临期" :max-tag-count="1"
-                                  style="width: 200px;" allow-clear>
+                                  style="width: 200px;" allow-clear @change="handleFilter">
                             <a-select-option :value="1">
                                 是
                             </a-select-option>
@@ -48,7 +59,7 @@
                     </a-form-item>
                     <a-form-item>
                         <a-select v-model="listQuery.is_verify" show-search placeholder="是否待确认" :max-tag-count="1"
-                                  style="width: 200px;" allow-clear>
+                                  style="width: 200px;" allow-clear @change="handleFilter">
                             <a-select-option :value="1">
                                 是
                             </a-select-option>
@@ -324,7 +335,8 @@
                     manufacturer_id:'',
                     category_id:'',
                     is_expire:undefined,
-                    is_verify:undefined
+                    is_verify:undefined,
+                    is_account:undefined
                 },
                 listSource: [],
                 expireList: [],

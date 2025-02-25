@@ -2,6 +2,7 @@
 
 namespace App\Http\Logic;
 
+use App\Http\Logic\Device\SmokeDetectorLogic;
 use App\Http\Logic\Excel\ExportLogic;
 use App\Models\DetectorImportTask;
 use App\Models\Dic;
@@ -643,5 +644,14 @@ class MaintainLogic extends BaseLogic
         }
 
         return ['success_count' => $suc,'error_count' => $err];
+    }
+
+    public function rerun($params)
+    {
+        $data = DetectorImportTask::query()->where(['deim_id' => $params['id']])->first();
+
+        SmokeDetectorLogic::getInstance()->importDevice($data);
+
+        return [];
     }
 }

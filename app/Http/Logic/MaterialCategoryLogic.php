@@ -45,6 +45,10 @@ class MaterialCategoryLogic extends BaseLogic
             $query->where('maca_name','like','%'.$params['keyword'].'%');
         }
 
+        if(in_array(AuthLogic::$userId,MaterialLogic::$onlyAccessory)){
+            $query->where(['maca_id' => 2]);
+        }
+
         return $query
             ->orderBy('maca_sort','desc')
             ->orderBy('maca_id','asc')

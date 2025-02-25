@@ -40,20 +40,24 @@ class SyncQingNiao extends Command
     public function handle()
     {
         $unitList = $this->getUnitList();
+        print_r($unitList);die;
         #插入单位信息
         $placeInsert = [];
         $placeInertIds = [];
+//        print_r($unitList);die;
         foreach ($unitList as $key => $unitItem){
             if(Place::query()->where(['plac_thpl_pk' => $unitItem['id'],'plac_thpl_id' => 7])->exists()){
+                $placeInertIds[] = $unitItem['id'];
                 continue;
             }
+
             $placeInsert[] = [
                 'plac_node_id' => 115,
-                'plac_node_ids' => '3,4,61,115,',
+                'plac_node_ids' => ',3,4,61,115,',
                 'plac_name' => $unitItem['name'],
                 'plac_address' => $unitItem['address'],
-                'plac_lng' => $unitItem['lng'],
-                'plac_lat' => $unitItem['lat'],
+                'plac_lng' => $unitItem['longitude'],
+                'plac_lat' => $unitItem['latitude'],
                 'plac_thpl_id' => 7,
                 'plac_thpl_raw' => ToolsLogic::jsonEncode($unitItem),
                 'plac_thpl_pk' => $unitItem['id'],
@@ -80,7 +84,7 @@ class SyncQingNiao extends Command
 
         foreach ($placeList as $key => $placeItem){
             $deviceList = $this->getDeviceList($placeItem['plac_thpl_pk']);
-
+//            print_r($deviceList);die;
             foreach ($deviceList as $k => $deviceItem){
                 if(SmokeDetector::query()->where(['smde_imei' => $deviceItem['imei']])->exists()){
                     continue;
@@ -90,11 +94,11 @@ class SyncQingNiao extends Command
                     'smde_type' => '烟感',
                     'smde_imei' => $deviceItem['imei'],
                     'smde_status' => '已入库',
-                    'smde_node_ids' => '3,4,61,115,',
+                    'smde_node_ids' => ',3,4,61,115,',
                     'smde_thpl_id' => 7,
                     'smde_place_id' => $placeItem['plac_id'],
                     'smde_thpl_raw' => ToolsLogic::jsonEncode($deviceItem),
-                    'smde_thpl_plac_pk' => $deviceItem['id']
+                    'smde_thpl_plac_pk' => $placeItem['plac_thpl_pk']
                 ];
 
                 if(count($deviceInsert) > 100){
@@ -122,6 +126,7 @@ class SyncQingNiao extends Command
                     'alre_place_id' => $placeItem['plac_id'],
                     'alre_name' => $linkmanItem['name'],
                     'alre_mobile' => $linkmanItem['phone'],
+                    'alre_remark' => '北大青鸟华洲街道接警人',
                 ];
 
                 if(count($receiverInsert) >= 100){
@@ -145,7 +150,6 @@ class SyncQingNiao extends Command
         $unitList = [];
         while (1) {
             $list = $this->apiUnit->getUnitList($page,$pageSize);
-
             if(empty($list)){
                 break;
             }
@@ -169,7 +173,6 @@ class SyncQingNiao extends Command
         $deviceList = [];
         while (1) {
             $list = $this->apiUnit->getDeviceList($unitId,$page,$pageSize);
-
             if(empty($list)){
                 break;
             }

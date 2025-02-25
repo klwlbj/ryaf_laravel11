@@ -110,4 +110,8 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('materialFlowConsume')->group(function () {
         Route::view('/view', 'admin.materialFlowConsume');
     });
+
+    Route::prefix('report')->group(function () {
+        Route::view('online/view', 'admin.report.online');
+    });
 });

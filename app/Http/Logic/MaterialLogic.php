@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 class MaterialLogic extends BaseLogic
 {
+    #只有辅料权限的
+    public static $onlyAccessory = [10039];
+
     public function getList($params)
     {
         $page = $params['page'] ?? 1;
@@ -21,6 +24,10 @@ class MaterialLogic extends BaseLogic
             ->leftJoin('material_manufacturer','material.mate_manufacturer_id','=','material_manufacturer.mama_id')
             ->leftJoin('material_category','material.mate_category_id','=','material_category.maca_id')
         ;
+
+        if(in_array(AuthLogic::$userId,self::$onlyAccessory)){
+            $query->where(['material.mate_category_id' => 2]);
+        }
 
         if(isset($params['keyword']) && $params['keyword']){
             $query->where('mate_name','like','%'.$params['keyword'].'%');
@@ -45,6 +52,10 @@ class MaterialLogic extends BaseLogic
         if(!empty($params['is_verify'])){
             $verifyIds = MaterialFlow::query()->where(['mafl_status' => 1])->select(['mafl_material_id'])->distinct()->pluck('mafl_material_id')->toArray();
             $query->whereIn('material.mate_id',$verifyIds);
+        }
+
+        if(isset($params['is_account']) && $params['is_account'] !== ''){
+            $query->where(['material.mate_is_account' => $params['is_account']]);
         }
 
         #过期列表
@@ -298,6 +309,10 @@ class MaterialLogic extends BaseLogic
             $query->where('mate_id_name','like','%'.$params['keyword'].'%');
         }
 
+        if(in_array(AuthLogic::$userId,self::$onlyAccessory)){
+            $query->where(['material.mate_category_id' => 2]);
+        }
+
         if(!empty($params['category_id'])){
             $query->where(['material.mate_category_id' => $params['category_id']]);
         }
@@ -409,6 +424,7 @@ class MaterialLogic extends BaseLogic
             'mate_category_id' => $params['category_id'],
             'mate_name' => $params['name'],
             'mate_is_deliver' => $params['is_deliver'] ?? 0,
+            'mate_is_account' => $params['is_account'] ?? 0,
             'mate_number' => $params['number'] ?? 0,
             'mate_unit' => $params['unit'],
             'mate_warning' => $params['warning'] ?? 0,
@@ -461,6 +477,7 @@ class MaterialLogic extends BaseLogic
             'mate_category_id' => $params['category_id'],
             'mate_name' => $params['name'],
             'mate_is_deliver' => $params['is_deliver'] ?? 0,
+            'mate_is_account' => $params['is_account'] ?? 0,
             'mate_unit' => $params['unit'],
             'mate_warning' => $params['warning'],
             'mate_image' => $params['image'] ?? '',
@@ -531,6 +548,8 @@ class MaterialLogic extends BaseLogic
 //            ->leftJoin('warehouse','waho_id','=','material_detail.made_warehouse_id')
             ->leftJoin('material_flow','material_detail.made_in_id','=','material_flow.mafl_id')
             ->where(['made_status' => 1]);
+
+
 
         if(isset($params['material_id']) && $params['material_id']){
             $query->where(['made_material_id' => $params['material_id']]);

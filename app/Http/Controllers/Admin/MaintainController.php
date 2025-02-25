@@ -224,4 +224,26 @@ class MaintainController
         }
         return ResponseLogic::apiResult(0,'ok',$res);
     }
+
+    public function rerun(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+        ],[
+            'id.required' => '记录id不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaintainLogic::getInstance()->rerun($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
 }

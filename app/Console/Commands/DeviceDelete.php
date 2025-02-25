@@ -43,9 +43,8 @@ class DeviceDelete extends Command
         $sheetData = $spreadsheet->getSheet(0)->toArray(null, true, true, true);
         foreach ($sheetData as $key => $value) {
             $value = array_values($value);
-            $imeis[] = $value[0];
+            $imeis[] = str_replace("IMEI=", "", $value[0]);;
         }
-
 
         $appKey = 'O6eqmX5VOJ'; $appSecret = 'dpeI2JriLl'; $oneNetUserId = '127713';$oneNetAccessKey = '6XeJW0M/Im0DC2cmMD/pnGA/B59IEbS7LLX7M8P5D03pOjH+IaHScIIspDbZ4CI50x3M2RPvD05ba1HcwdzzNg=='; //平安穗粤
 
@@ -53,17 +52,17 @@ class DeviceDelete extends Command
 
 //        $aep_product_id = "15599428"; $aep_master_key = "08d3fbc2c028477c8afc3e9ce60d714d"; $oneNetProductId = '407478'; //平安穗粤-海曼HM608NB      //温感
 
-        $aep_product_id = "16922967"; $aep_master_key = "0434f19136324920a51ba7287fffb667"; $oneNetProductId = '407478'; //平安穗粤-海曼HM608/618NB透传版
+//        $aep_product_id = "16922967"; $aep_master_key = "0434f19136324920a51ba7287fffb667"; $oneNetProductId = '407478'; //平安穗粤-海曼HM608/618NB透传版
 
-        //$aep_product_id = "17085637"; $aep_master_key = "9c6f31f078024c0c8ab9d288eeaec206"; $oneNetProductId = 'kC06Yb93QB'; //平安穗粤-六瑞-SA-JTY-GD02C
+        $aep_product_id = "17085637"; $aep_master_key = "9c6f31f078024c0c8ab9d288eeaec206"; $oneNetProductId = 'kC06Yb93QB'; //平安穗粤-六瑞-SA-JTY-GD02C
 //        $aep_product_id = "17102042"; $aep_master_key = "3859262b741f40d0a0c3bd8d64a5cebe"; $oneNetProductId = 'HzFl9NvY5q'; //平安穗粤-源流-YL-IOT-YW03（源流Y3_4G_烟感MQTT）
 //        $aep_product_id = "17084269"; $aep_master_key = "c9636dcae10841aa859d5511589483b6"; $oneNetProductId = 'E2dMYR85jh'; //平安穗粤-海曼618-4G
 
         //删除AEP
-        $this->deleteAep($imeis,$aep_product_id,$appKey, $appSecret, $aep_master_key);
+//        $this->deleteAep($imeis,$aep_product_id,$appKey, $appSecret, $aep_master_key);
 
         //删除oneNet
-//        $this->deleteOneNet($imeis,$oneNetProductId,$oneNetUserId,$oneNetAccessKey);
+        $this->deleteOneNet($imeis,$oneNetProductId,$oneNetUserId,$oneNetAccessKey);
 
 
     }
@@ -109,8 +108,6 @@ class DeviceDelete extends Command
 
    public function deleteOneNet($imeis,$productId,$userId,$accessKey)
    {
-        $oneNet = new OneNetDeviceManagement();
-
         $deviceList = [];
         foreach ($imeis as $key => $imei){
             $req = [
@@ -119,13 +116,13 @@ class DeviceDelete extends Command
                 'imei' => $imei,
             ];
 
-           $result = $oneNet->delete($req,$userId,$accessKey);
+           $result = OneNetDeviceManagement::delete($req,$userId,$accessKey);
 //           print_r($result);die;
             if(!$result){
-                ToolsLogic::writeLog('导入ONENET失败:','deviceDelete',['params' => $req]);
+                ToolsLogic::writeLog('删除ONENET失败:','deviceDelete',['params' => $req]);
             }else{
                 $result = ToolsLogic::jsonDecode($result);
-                ToolsLogic::writeLog('导入ONENET结果:','deviceDelete',['params' => $req,'result' => $result]);
+                ToolsLogic::writeLog('删除ONENET结果:','deviceDelete',['params' => $req,'result' => $result]);
             }
         }
    }

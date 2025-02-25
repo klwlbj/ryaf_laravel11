@@ -185,15 +185,20 @@ class AdminLogic extends BaseLogic
             return false;
         }
 
-        $permissionArr = explode(',',$params['permission']);
+        if(!empty($params['permission'])){
+            $permissionArr = explode(',',$params['permission']);
 
-        $permissionInsertData = [];
-        foreach ($permissionArr as $key => $value){
-            $permissionInsertData[] = [
-                'adpe_admin_id' => $params['id'],
-                'adpe_permission_id' => $value
-            ];
+            $permissionInsertData = [];
+            foreach ($permissionArr as $key => $value){
+                $permissionInsertData[] = [
+                    'adpe_admin_id' => $params['id'],
+                    'adpe_permission_id' => $value
+                ];
+            }
+        }else{
+            $permissionInsertData = [];
         }
+
 
         DB::beginTransaction();
         if(Admin::query()->where('admin_id',$params['id'])->update($insertData) === false){
@@ -203,10 +208,12 @@ class AdminLogic extends BaseLogic
         }
 
         AdminPermissionRelation::query()->where(['adpe_admin_id' => $params['id']])->delete();
-        if(AdminPermissionRelation::query()->insert($permissionInsertData) === false){
-            DB::rollBack();
-            ResponseLogic::setMsg('更新权限失败');
-            return false;
+        if(!empty($permissionInsertData)){
+            if(AdminPermissionRelation::query()->insert($permissionInsertData) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('更新权限失败');
+                return false;
+            }
         }
 
         DB::commit();

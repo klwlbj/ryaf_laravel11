@@ -50,6 +50,20 @@
                         <a-tag v-else color="green">已执行</a-tag>
                     </div>
 
+                    <div slot="action" slot-scope="text, record">
+                        <div>
+                            <a-popconfirm
+                                title="是否确定重新执行?"
+                                ok-text="确认"
+                                cancel-text="取消"
+                                @confirm="onRerun(record)"
+                            >
+                                <a style="margin-right: 8px">
+                                    重新执行
+                                </a>
+                            </a-popconfirm>
+                        </div>
+                    </div>
 
                 </a-table>
 
@@ -172,6 +186,11 @@
                         title: '创建时间',
                         dataIndex: 'deim_crt_time',
                     },
+                    {
+                        title: '操作',
+                        align: 'center',
+                        scopedSlots: { customRender: 'action' },
+                    }
                 ],
                 dialogFormVisible:false,
                 importFormVisible:false,
@@ -314,6 +333,9 @@
                     // }];
                     return false;
                 },
+                onRerun(row){
+
+                }
             },
 
         })

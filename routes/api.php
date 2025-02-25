@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\MaterialFlowConsumeController;
+use App\Http\Controllers\Admin\ReportController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckIpMiddleware;
 use App\Http\Middleware\SignatureMiddleware;
@@ -262,5 +263,9 @@ Route::middleware(['login'])->group(function () {
         Route::post('/getInfo', [PreInstallationController::class, 'getInfo']);
         Route::post('/delete', [PreInstallationController::class, 'delete']);
         Route::post('/update', [PreInstallationController::class, 'addOrUpdate']);
+    });
+
+    Route::prefix('report')->group(function () {
+        Route::post('/online', [ReportController::class, 'online']);
     });
 });

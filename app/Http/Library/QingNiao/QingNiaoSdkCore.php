@@ -13,8 +13,8 @@ class QingNiaoSdkCore
     public const HOST = 'http://push.jbufacloud.com/jbfsys';
 
     public static $monitorId = '';
-    public static $unitId = '';
-    public static $signKey = 'pasy2025';
+    public static $unitId = '64986';
+    public static $signKey = 'nht6x4tY54W6zKfk';
 
     public static function getSign($data,$timestamp)
     {
@@ -29,10 +29,10 @@ class QingNiaoSdkCore
     {
 
         $token = Cache::get('qing_niao_token');
+
         if(!empty($token)){
             return $token;
         }
-
         $timestamp               = time() . '000';
 
         $client = new Client([
@@ -51,7 +51,6 @@ class QingNiaoSdkCore
                     'X-Signature' => self::getSign('',$timestamp),
                 ],
             ]);
-
         } catch (RequestException $e) {
             $res = ToolsLogic::jsonDecode($e->getResponse()->getBody()->getContents());//5xx 4xx
             ResponseLogic::setMsg($res['message']);
@@ -68,7 +67,7 @@ class QingNiaoSdkCore
         }
 
         if(isset($tokenRes['data']['token'])){
-            Cache::set('qing_niao_token',86000);
+            Cache::set('qing_niao_token',$tokenRes['data']['token'],60*50);
             return $tokenRes['data']['token'];
         }
 
@@ -93,7 +92,7 @@ class QingNiaoSdkCore
         }
 
         if(!empty(self::$monitorId)){
-            $header['Fire-Monitor-Center-Id-Id'] = self::$monitorId;
+            $header['Monitor-Center-Id'] = self::$monitorId;
         }
 
         try {
