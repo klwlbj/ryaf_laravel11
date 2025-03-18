@@ -27,9 +27,9 @@ class MaintainLogic extends BaseLogic
                 ->leftJoin('smoke_detector','smoke_detector.smde_place_id','=','place.plac_id')
                 ->leftJoin('user','user.user_id','=','place.plac_user_id')
                 ->leftJoin('admin','admin.admin_id','=','order.order_deliverer_id')
-                ->where(['order_status' => '交付完成']);
+                ->where(['order_status' => '交付完成','smde_present' => 0]);
 
-        $deviceQuery = SmokeDetector::query();
+        $deviceQuery = SmokeDetector::query()->where(['smde_present' => 0]);
 
         if(!empty($params['node_id'])){
             $childIds = Node::getNodeChild($params['node_id']);
@@ -101,6 +101,7 @@ class MaintainLogic extends BaseLogic
                 'user_name',
                 'user_mobile',
                 'smde_model_name',
+                'smde_nb_iid2',
                 'smde_imei',
                 'smde_last_heart_beat',
                 'smde_extra_remark',
@@ -112,12 +113,12 @@ class MaintainLogic extends BaseLogic
             ])->orderBy('order_actual_delivery_date','desc')->get()->toArray();
 
 
-            $title = ['imei','型号','街道','监控中心','单位名称','安装地址','用户名称','用户联系方式','交付人员','交付时间','最近心跳包','最近电量','最近信号强度','服务期限','标注'];
+            $title = ['imei','型号','iccid','街道','监控中心','单位名称','安装地址','用户名称','用户联系方式','交付人员','交付时间','最近心跳包','最近电量','最近信号强度','服务期限','标注'];
 
             $exportData = [];
             $config = [
-                'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(14) . '1' => true],
-                'width' => ['A'=>20,'B'=>20,'C'=>20,'D'=>20,'E'=>20,'F'=>20,'G'=>20,'H'=>20,'I'=>20,'J'=>20,'K'=>20,'L'=>20,'M'=>20,'N'=>20,]
+                'bold' => [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . '1' => true],
+                'width' => ['A'=>20,'B'=>20,'C'=>20,'D'=>20,'E'=>20,'F'=>20,'G'=>20,'H'=>20,'I'=>20,'J'=>20,'K'=>20,'L'=>20,'M'=>20,'N'=>20,'O'=>20]
             ];
 
             $row = 2;
@@ -125,6 +126,7 @@ class MaintainLogic extends BaseLogic
                 $exportData[] = [
                     $value['smde_imei'] . "\t",
                     $value['smde_model_name'],
+                    $value['smde_nb_iid2'],
                     $nodeStreetArr[$value['node_id']]['node_name'] ?? '',
                     $value['node_name'],
                     $value['plac_name'],
@@ -142,8 +144,8 @@ class MaintainLogic extends BaseLogic
 
                 $row++;
             }
-            $config['horizontal_center'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(14) . $row => true];
-            $config['wrap_text'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(14) . $row => true];
+            $config['horizontal_center'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true];
+            $config['wrap_text'] = [ExportLogic::getColumnName(1) . '1:' . ExportLogic::getColumnName(count($title)) . $row => true];
 
             return ExportLogic::getInstance()->export($title,$exportData,'运维烟感数据',$config);
         }
@@ -388,6 +390,7 @@ class MaintainLogic extends BaseLogic
             ->where('smde_place_id','>',0)
             ->where('smde_order_id','>',0)
             ->where('order_status','=','交付完成')
+            ->where(['smde_present' => 0])
         ;
 
         if(!empty($params['imei'])){
@@ -478,8 +481,7 @@ class MaintainLogic extends BaseLogic
             ->leftJoin('place','place.plac_id','=','smoke_detector.smde_place_id')
             ->leftJoin('node','node.node_id','=','place.plac_node_id')
             ->where(function (Builder $q) use ($day,$heartDay){
-
-                $q->orWhere(function (Builder $checkQuery1) use ($day,$heartDay){
+                $q->orWhere(function (Builder $checkQuery1) use ($heartDay){
                     #监察条件1  交付日期内规定日期内没有心跳包
                     $checkQuery1
                         ->where('order.order_actual_delivery_date','<=',date('Y-m-d', strtotime('-' . $heartDay . ' days')))
@@ -487,11 +489,11 @@ class MaintainLogic extends BaseLogic
                 })->orWhere(function (Builder $checkQuery2) use ($day){
                     #监察条件2  交付日期内规定日期到达后  心跳包没有上报
                     $checkQuery2
-                        ->where('order.order_actual_delivery_date','<=',date('Y-m-d', strtotime('-' . $day . ' days')))
+                        ->whereRaw("(smde_last_heart_beat < (NOW() - INTERVAL 2 DAY) or COALESCE(smde_last_heart_beat,'') = '')")
                         ->where(function (Builder $checkQuery22) use ($day){
                             $checkQuery22
-                                ->orWhereRaw("COALESCE(smde_last_heart_beat,'') = ''")
-                                ->orWhere('smde_last_heart_beat','<=',DB::raw("DATE_ADD(order_actual_delivery_date, INTERVAL " . ($day - 2) . " DAY)"));
+//                                ->orWhereRaw("COALESCE(smde_last_heart_beat,'') = ''")
+                                ->orWhere('smde_last_heart_beat','<=',DB::raw("DATE_ADD(order_actual_delivery_date, INTERVAL " . ($day) . " DAY)"));
                         });
                 });
 
@@ -500,6 +502,7 @@ class MaintainLogic extends BaseLogic
             ->where('smde_place_id','>',0)
             ->where('smde_order_id','>',0)
             ->where('order_status','=','交付完成')
+            ->where(['smde_present' => 0])
         ;
 
         if(!empty($params['start_date'])){

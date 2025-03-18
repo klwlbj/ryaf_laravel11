@@ -2,63 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Logic\AdminLogic;
+use App\Http\Logic\MaterialApplyLogic;
+use App\Http\Logic\MaterialPurchaseLogic;
 use App\Http\Logic\ResponseLogic;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class AdminController
+class MaterialApplyController
 {
-    public function login(Request $request)
-    {
-        $params = $request->all();
-
-        $validate = Validator::make($params, [
-            'mobile' => 'required',
-            'password' => 'required',
-        ],[
-            'mobile.required' => '账号不得为空',
-            'password.required' => '密码不得为空',
-        ]);
-
-        if($validate->fails())
-        {
-            return ResponseLogic::apiErrorResult($validate->errors()->first());
-        }
-
-        $res = AdminLogic::getInstance()->login($params);
-        if($res === false){
-            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
-        }
-        return ResponseLogic::apiResult(0,'ok',$res);
-    }
-
-    public function resetPassword(Request $request)
-    {
-        $params = $request->all();
-
-        $validate = Validator::make($params, [
-            'password' => 'required',
-            'new_password' => 'required',
-            'confirm_password' => 'required',
-        ],[
-            'password.required' => '原密码不得为空',
-            'new_password.required' => '新密码不得为空',
-            'confirm_password.required' => '确认密码不得为空',
-        ]);
-
-        if($validate->fails())
-        {
-            return ResponseLogic::apiErrorResult($validate->errors()->first());
-        }
-
-        $res = AdminLogic::getInstance()->resetPassword($params);
-        if($res === false){
-            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
-        }
-        return ResponseLogic::apiResult(0,'ok',$res);
-    }
-
     public function getList(Request $request)
     {
         $params = $request->all();
@@ -74,14 +25,14 @@ class AdminController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = AdminLogic::getInstance()->getList($params);
+        $res = MaterialApplyLogic::getInstance()->getList($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
-    public function getAllList(Request $request)
+    public function getSelectList(Request $request)
     {
         $params = $request->all();
 
@@ -96,7 +47,29 @@ class AdminController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = AdminLogic::getInstance()->getAllList($params);
+        $res = MaterialApplyLogic::getInstance()->getSelectList($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function getRelationList(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+
+        ],[
+
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialApplyLogic::getInstance()->getRelationList($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
@@ -118,7 +91,31 @@ class AdminController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = AdminLogic::getInstance()->getInfo($params);
+        $res = MaterialApplyLogic::getInstance()->getInfo($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function getPreInfo(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'detail' => 'required',
+            'purpose' => 'required',
+        ],[
+            'detail.required' => '申购详情不得为空',
+            'purpose.required' => '销售用途不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialApplyLogic::getInstance()->getPreInfo($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
@@ -130,13 +127,17 @@ class AdminController
         $params = $request->all();
 
         $validate = Validator::make($params, [
-            'department_id' => 'required',
             'name' => 'required',
-            'mobile' => 'required',
+            'reason' => 'required',
+            'detail' => 'required',
+            'purpose' => 'required',
+            'file_list' => 'required',
         ],[
-            'department_id.required' => '部门不得为空',
-            'name.required' => '成员名称不得为空',
-            'mobile.required' => '手机号不得为空',
+            'name.required' => '申领名称不得为空',
+            'reason.required' => '申领事由不得为空',
+            'detail.required' => '申购详情不得为空',
+            'purpose.required' => '销售用途不得为空',
+            'file_list.required' => '附件列表不得为空',
         ]);
 
         if($validate->fails())
@@ -144,7 +145,7 @@ class AdminController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = AdminLogic::getInstance()->add($params);
+        $res = MaterialApplyLogic::getInstance()->add($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
@@ -157,14 +158,18 @@ class AdminController
 
         $validate = Validator::make($params, [
             'id' => 'required',
-            'department_id' => 'required',
             'name' => 'required',
-            'mobile' => 'required',
+            'reason' => 'required',
+            'detail' => 'required',
+            'purpose' => 'required',
+            'file_list' => 'required',
         ],[
-            'id.required' => 'id不得为空',
-            'department_id.required' => '部门不得为空',
-            'name.required' => '成员名称不得为空',
-            'mobile.required' => '手机号不得为空',
+            'id.required' => '申领名称不得为空',
+            'name.required' => '申领名称不得为空',
+            'reason.required' => '申领事由不得为空',
+            'detail.required' => '申购详情不得为空',
+            'purpose.required' => '销售用途不得为空',
+            'file_list.required' => '附件列表不得为空',
         ]);
 
         if($validate->fails())
@@ -172,7 +177,7 @@ class AdminController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = AdminLogic::getInstance()->update($params);
+        $res = MaterialApplyLogic::getInstance()->update($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }
@@ -194,29 +199,7 @@ class AdminController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = AdminLogic::getInstance()->delete($params);
-        if($res === false){
-            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
-        }
-        return ResponseLogic::apiResult(0,'ok',$res);
-    }
-
-    public function getBacklogCount(Request $request)
-    {
-        $params = $request->all();
-
-        $validate = Validator::make($params, [
-
-        ],[
-
-        ]);
-
-        if($validate->fails())
-        {
-            return ResponseLogic::apiErrorResult($validate->errors()->first());
-        }
-
-        $res = AdminLogic::getInstance()->getBacklogCount($params);
+        $res = MaterialPurchaseLogic::getInstance()->delete($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }

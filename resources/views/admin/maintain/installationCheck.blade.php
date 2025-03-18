@@ -62,7 +62,7 @@
                 listQuery: {
                     start_date:moment('2024-12-31').format("YYYY-MM-DD"),
                     end_date:moment().format("YYYY-MM-DD"),
-                    check_day:10,
+                    check_day:15,
                     heart_day:4
                 },
                 defaultStartDate:moment('2024-12-31').format("YYYY-MM-DD"),

@@ -102,7 +102,7 @@ class DepartmentLogic extends BaseLogic
             return false;
         }
 
-        Admin::query()->where(['depa_id' => $params['id']])->delete();
+        Department::query()->where(['depa_id' => $params['id']])->delete();
         return [];
     }
 }

@@ -59,6 +59,10 @@ module.exports = {
         },
         clearData(){
             this.id = undefined;
+        },
+        setValue(value){
+            this.id = value;
+            this.$emit('change',value);
         }
     },
     created () {

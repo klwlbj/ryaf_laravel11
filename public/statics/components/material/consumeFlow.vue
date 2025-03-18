@@ -7,6 +7,19 @@
                 <span v-if="record.is_expire == 1"  style="color:red">{{ record.expire_date }}</span>
                 <span v-else style="color:green">{{ record.expire_date }}</span>
             </div>
+
+            <div slot="action" slot-scope="text, record">
+                <a-popconfirm
+                    title="是否确定删除记录?"
+                    ok-text="确认"
+                    cancel-text="取消"
+                    @confirm="onDel(record)"
+                >
+                    <a style="margin-right: 8px">
+                        删除
+                    </a>
+                </a-popconfirm>
+            </div>
         </a-table>
     </div>
 </template>
@@ -45,6 +58,11 @@ module.exports = {
                 {
                     title: '使用人',
                     dataIndex: 'admin_name',
+                },
+                {
+                    title: '操作',
+                    fixed: 'right',
+                    scopedSlots: { customRender: 'action' },
                 }
             ],
         }
@@ -84,6 +102,31 @@ module.exports = {
                 this.$message.error('请求失败');
             });
         },
+        onDel(row){
+            this.listLoading = true;
+            axios({
+                // 默认请求方式为get
+                method: 'post',
+                url: '/api/materialFlowConsume/deleteConsumeFlow',
+                // 传递参数
+                data: {id:row.mafl_id},
+                responseType: 'json',
+                headers:{
+                    'Content-Type': 'multipart/form-data'
+                }
+            }).then(response => {
+                this.listLoading = false
+                let res = response.data;
+                if(res.code !== 0){
+                    this.$message.error(res.message);
+                    return false;
+                }
+
+                this.getPageList(this.id);
+            }).catch(error => {
+                this.$message.error('请求失败');
+            });
+        }
     },
     created () {
         if(this.id){

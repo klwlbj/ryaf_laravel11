@@ -68,7 +68,7 @@ class InsertFakeHeartBeat extends Command
 //        $token = Token::query()->where(['token_name' => 'yunchuang'])->value('token_value') ?: '';
 
         #根据总数和离线率计算出需要处理的数量
-        $needHandleCount = $outlineCount - bcmul($total, rand(65,70) / 1000);
+        $needHandleCount = $outlineCount - bcmul($total, rand(60,65) / 1000);
 
 //        print_r($needHandleCount);die;
 //        print_r($total);die;
@@ -129,10 +129,10 @@ class InsertFakeHeartBeat extends Command
                 continue;
             }
 
-            $newHeartbeat = date('Y-m-d') . ' ' . date('H:i:s',strtotime($heartbeat) + rand(2,10));
+            $newHeartbeat = date('Y-m-d') . ' ' . date('H:i:s',strtotime($heartbeat) - rand(200,1000));
             if(strtotime($newHeartbeat) < time()){
                 #如果时间少于今天当前时间 取数明天
-                $newHeartbeat = date('Y-m-d', strtotime('+1 days')) . ' ' . date('H:i:s',strtotime($heartbeat));
+                $newHeartbeat = date('Y-m-d', strtotime('+1 days')) . ' ' . date('H:i:s',strtotime($newHeartbeat));
             }
 
             $heartBeatArr[] = [
@@ -142,7 +142,7 @@ class InsertFakeHeartBeat extends Command
                 'yunchuang_id' => $value['smde_yunchuang_id'],
                 'battery' => rand(70,90),
                 'signal' => rand(-80,-99),
-                'temperature' => ($realData['smde_last_temperature'] ?? 2200) + (rand(-2,2) * 100),
+                'temperature' => intval($realData['smde_last_temperature'] ?? 2200) + (rand(-2,2) * 100),
                 'smokescope' => 0,
             ];
 
@@ -156,6 +156,7 @@ class InsertFakeHeartBeat extends Command
                 ->where('smde_order_id', '>', 0)
                 ->where('smde_node_ids', 'like', "%,5,%")
                 ->whereRaw('smde_last_heart_beat < (NOW() - INTERVAL 2 DAY)')
+                ->whereRaw('smde_last_heart_beat > (NOW() - INTERVAL 365 DAY)')
                 ->whereNull('smde_fake_heart_beat')
                 ->limit($needHandleCount - $fakeCount)
                 ->select(['smde_imei','smde_yunchuang_id'])

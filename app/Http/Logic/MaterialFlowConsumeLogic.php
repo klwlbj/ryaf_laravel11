@@ -22,6 +22,8 @@ class MaterialFlowConsumeLogic extends BaseLogic
             ->where(['material_flow.mafl_type' => 2]);
         ;
 
+        $query->where('mafl_datetime','>=','2025-03-17 00:00:00');
+
         if(isset($params['material_id']) && $params['material_id']){
             $query->where(['material_flow.mafl_material_id' => $params['material_id']]);
         }
@@ -49,6 +51,7 @@ class MaterialFlowConsumeLogic extends BaseLogic
         ]);
 
         $list = $query
+            ->orderBy('material_flow.mafl_datetime','asc')
             ->offset($point)->limit($pageSize)->get()->toArray();
 
         $materialId = array_values(array_unique(array_column($list, 'mafl_material_id')));
@@ -72,9 +75,10 @@ class MaterialFlowConsumeLogic extends BaseLogic
             ->groupBy(['mafl_out_id'])->pluck('number','mafl_out_id')->toArray();
 
         foreach ($list as $key => &$value){
-            $value['consume_status'] = 1;
-            $value['mafl_specification_name'] = array_column($specificationArr[$value['mafl_material_id']],'masp_name') ?? [];
             $value['consume_number'] = $consumeCountArr[$value['mafl_id']] ?? 0;
+            $value['consume_status'] = ($value['mafl_number'] > $value['consume_number']) ? 1 : 2;
+            $value['mafl_specification_name'] = array_column($specificationArr[$value['mafl_material_id']],'masp_name') ?? [];
+
         }
 
         unset($value);
@@ -144,5 +148,15 @@ class MaterialFlowConsumeLogic extends BaseLogic
             ->offset($point)->limit($pageSize)->get()->toArray();
 
         return $list;
+    }
+
+    public function deleteConsumeFlow($params)
+    {
+        if(MaterialFlowConsume::query()->where(['mafl_id' => $params['id']])->delete() === false){
+            ResponseLogic::setMsg('删除失败');
+            return false;
+        }
+
+        return [];
     }
 }

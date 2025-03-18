@@ -40,15 +40,16 @@ class PushHeartBeat extends Command
 
         $deviceList = SmokeDetector::query()
             ->where('smde_yunchuang_id','>',0)
-            ->where('smde_place_id', '>', 0)
-            ->where('smde_order_id','>',0)
+//            ->where('smde_place_id', '>', 0)
+//            ->where('smde_order_id','>',0)
             ->where('smde_fake','=',0)
             ->whereIn('smde_type',['烟感','温感'])
-            ->where('smde_node_ids', 'like', "%,5,%")
+//            ->where('smde_node_ids', 'like', "%,5,%")
             ->whereRaw("DATE_FORMAT(smde_last_heart_beat, '%Y-%m-%d %H:%i') = DATE_FORMAT((NOW() - INTERVAL 1 MINUTE), '%Y-%m-%d %H:%i')")
             ->select([
                 'smde_yunchuang_id',
                 'smde_imei',
+                'smde_deliver_time',
                 'smde_last_smokescope',
                 'smde_last_temperature',
                 'smde_last_nb_module_battery',
@@ -83,6 +84,11 @@ class PushHeartBeat extends Command
                 $res = ToolsLogic::jsonDecode($res);
 
                 ToolsLogic::writeLog($time . ' 推送imei：' . $value['smde_imei'], 'pushHeartbeat', $res);
+
+                #如果交付时间为3天内  则推送巡检状态
+                if(time() - strtotime($value['smde_deliver_time']) < (60*60*24*3)){
+                    YunChuangUtil::updateOnlineStatus($token, $value['smde_yunchuang_id'], 1);
+                }
             }catch (\Exception $e) {
                 $this->setErrorCount();
                 ToolsLogic::writeLog('exception' . $e->getMessage() .$e->getLine() . ' imei:' . $value['smde_imei'],'pushHeartbeat');

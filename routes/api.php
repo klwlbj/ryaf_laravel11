@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\ApprovalController;
+use App\Http\Controllers\Admin\MaterialApplyController;
 use App\Http\Controllers\Admin\MaterialFlowConsumeController;
 use App\Http\Controllers\Admin\ReportController;
 use Illuminate\Support\Facades\Route;
@@ -77,6 +79,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/update', [AdminController::class, 'update']);
         Route::post('/getInfo', [AdminController::class, 'getInfo']);
         Route::post('/resetPassword', [AdminController::class, 'resetPassword']);
+        Route::post('/getBacklogCount', [AdminController::class, 'getBacklogCount']);
     });
 
     Route::prefix('warehouse')->group(function () {
@@ -142,6 +145,17 @@ Route::middleware(['login'])->group(function () {
         Route::post('/getList', [MaterialFlowConsumeController::class, 'getList']);
         Route::post('/addConsumeFlow', [MaterialFlowConsumeController::class, 'addConsumeFlow']);
         Route::post('/getConsumeList', [MaterialFlowConsumeController::class, 'getConsumeList']);
+        Route::post('/deleteConsumeFlow', [MaterialFlowConsumeController::class, 'deleteConsumeFlow']);
+    });
+
+    Route::prefix('materialApply')->group(function () {
+        Route::post('/getList', [MaterialApplyController::class, 'getList']);
+        Route::post('/getSelectList', [MaterialApplyController::class, 'getSelectList']);
+        Route::post('/getRelationList', [MaterialApplyController::class, 'getRelationList']);
+        Route::post('/getPreInfo', [MaterialApplyController::class, 'getPreInfo']);
+        Route::post('/add', [MaterialApplyController::class, 'add']);
+        Route::post('/update', [MaterialApplyController::class, 'update']);
+        Route::post('/getInfo', [MaterialApplyController::class, 'getInfo']);
     });
 
     Route::prefix('materialPurchase')->group(function () {
@@ -267,5 +281,13 @@ Route::middleware(['login'])->group(function () {
 
     Route::prefix('report')->group(function () {
         Route::post('/online', [ReportController::class, 'online']);
+    });
+
+    Route::prefix('approval')->group(function () {
+        Route::post('/getList', [ApprovalController::class, 'getList']);
+        Route::post('/getInfo', [ApprovalController::class, 'getInfo']);
+        Route::post('/agree', [ApprovalController::class, 'agree']);
+        Route::post('/reject', [ApprovalController::class, 'reject']);
+        Route::post('/cancel', [ApprovalController::class, 'cancel']);
     });
 });

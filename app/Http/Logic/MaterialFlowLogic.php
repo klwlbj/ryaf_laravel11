@@ -4,6 +4,8 @@ namespace App\Http\Logic;
 
 use App\Models\File;
 use App\Models\Material;
+use App\Models\MaterialApply;
+use App\Models\MaterialApplyDetail;
 use App\Models\MaterialDetail;
 use App\Models\MaterialFlow;
 use App\Models\MaterialInventory;
@@ -127,9 +129,9 @@ class MaterialFlowLogic extends BaseLogic
         }
 
         # 获取默认单价
-        $defaultPriceTax = $materialData['mate_price_tax'] ?? 0;
-        $defaultTax = $materialData['mate_tax'] ?? 0;
-        $defaultInvoiceType = $materialData['mate_invoice_type'] ?? 0;
+        $defaultPriceTax = $params['price_tax'] ?? ($materialData['mate_price_tax'] ?? 0);
+        $defaultTax = $params['tax'] ?? ($materialData['mate_tax'] ?? 0);
+        $defaultInvoiceType = $params['invoice_type'] ?? ($materialData['mate_invoice_type'] ?? 0);
 
         $incomingData = [
             'mafl_material_id'  => $params['material_id'],
@@ -288,10 +290,12 @@ class MaterialFlowLogic extends BaseLogic
             }
         }
 
-        if(File::query()->insert($fileInsertData) === false){
-            DB::rollBack();
-            ResponseLogic::setMsg('插入附件失败');
-            return false;
+        if(!empty($fileInsertData)){
+            if(File::query()->insert($fileInsertData) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('插入附件失败');
+                return false;
+            }
         }
 
         #变更该仓库物品流水
@@ -324,6 +328,36 @@ class MaterialFlowLogic extends BaseLogic
             return false;
         }
 
+        #如果选择了申购单
+        if(!empty($params['apply_id'])){
+            $applyDetailData = MaterialApplyDetail::query()->where(['maap_id' => $params['apply_id']])->first();
+            if(!$applyDetailData){
+                DB::rollBack();
+                ResponseLogic::setMsg('申购单不存在或已出库');
+                return false;
+            }
+
+            if(MaterialApplyDetail::query()->where(['maap_id' => $params['apply_id']])->update(['maap_flow_id' => $flowId,'maap_status' => 2]) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('更新申购单详情表失败');
+                return false;
+            }
+
+            #判断是否已完成申购单  如果完成把主申购单变成完成  如果未完成则变成出库中
+            if(!MaterialApplyDetail::query()->where(['maap_apply_id' => $applyDetailData->maap_apply_id,'maap_status' => 1])->exists()){
+                if(MaterialApply::query()->where(['maap_id' => $applyDetailData->maap_apply_id])->update(['maap_status' => 4]) === false){
+                    DB::rollBack();
+                    ResponseLogic::setMsg('更新申购单状态失败');
+                    return false;
+                }
+            }else{
+                if(MaterialApply::query()->where(['maap_id' => $applyDetailData->maap_apply_id])->update(['maap_status' => 3]) === false){
+                    DB::rollBack();
+                    ResponseLogic::setMsg('更新申购单状态失败');
+                    return false;
+                }
+            }
+        }
 
         DB::commit();
 

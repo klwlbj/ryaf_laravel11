@@ -4,6 +4,7 @@ namespace App\Http\Logic;
 
 use App\Models\Admin;
 use App\Models\AdminPermissionRelation;
+use App\Models\ApprovalProcess;
 use App\Models\Department;
 use Illuminate\Support\Facades\DB;
 
@@ -104,7 +105,7 @@ class AdminLogic extends BaseLogic
     public function getAllList($params)
     {
         $query = Admin::query()
-            ->where(['admin_enabled' => 1]);
+            ->where(['admin_enabled' => 1])->where('admin_department_id','>',0);
 
         if(isset($params['keyword']) && $params['keyword']){
             $query->where('admin_name','like','%'.$params['keyword'].'%');
@@ -241,5 +242,21 @@ class AdminLogic extends BaseLogic
         Admin::query()->where('admin_id',$params['id'])->delete();
 
         return [];
+    }
+
+    public function getBacklogCount($params)
+    {
+        $waitApprovalCount = ApprovalProcess::query()
+            ->leftJoin('approval','approval.appr_id','=','approval_process.appr_approval_id')
+            ->leftJoin('admin','admin_id','=','approval.appr_admin_id')
+            ->where([
+                'approval_process.appr_admin_id' => AuthLogic::$userId,
+                'approval_process.appr_status' => 2,
+                'approval.appr_status' => 1,
+            ])->count() ?: 0;
+
+        return [
+            'wait_approval_count' => $waitApprovalCount,
+        ];
     }
 }

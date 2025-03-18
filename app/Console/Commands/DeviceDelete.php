@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Http\Library\AepApis\Aep_device_management;
 use App\Http\Library\OneNetApis\OneNetDeviceManagement;
+use App\Http\Library\YunChuang\YunChuangUtil;
 use App\Http\Logic\ToolsLogic;
 use App\Models\SmokeDetector;
 use Illuminate\Console\Command;
@@ -31,7 +32,7 @@ class DeviceDelete extends Command
      */
     public function handle()
     {
-//        DB::setDefaultConnection('mysql2');
+        DB::setDefaultConnection('mysql2');
 
         ini_set( 'max_execution_time', 72000 );
         ini_set( 'memory_limit', '2048M' );
@@ -39,12 +40,24 @@ class DeviceDelete extends Command
         $fileName = public_path() . "/deviceDelete1.xlsx";
         $spreadsheet = IOFactory::load($fileName);
         $imeis = [];
-
         $sheetData = $spreadsheet->getSheet(0)->toArray(null, true, true, true);
+
+
         foreach ($sheetData as $key => $value) {
             $value = array_values($value);
-            $imeis[] = str_replace("IMEI=", "", $value[0]);;
+            $imeis[] = $value[0];
+//            if($data){
+//                SmokeDetector::query()->where(['smde_imei' => $value[0]])->delete();
+//                ToolsLogic::writeLog('删除数据库imei:' . $value[0],'deviceDelete');
+//            }else{
+//                ToolsLogic::writeLog('数据库imei不存在:' . $value[0],'deviceDelete');
+//            }
         }
+
+
+        $yunIds = SmokeDetector::query()->whereIn('smde_imei',$imeis)
+            ->where('smde_yunchuang_id','>',0)
+            ->select(['smde_yunchuang_id','smde_imei'])->get()->toArray();
 
         $appKey = 'O6eqmX5VOJ'; $appSecret = 'dpeI2JriLl'; $oneNetUserId = '127713';$oneNetAccessKey = '6XeJW0M/Im0DC2cmMD/pnGA/B59IEbS7LLX7M8P5D03pOjH+IaHScIIspDbZ4CI50x3M2RPvD05ba1HcwdzzNg=='; //平安穗粤
 
@@ -62,8 +75,23 @@ class DeviceDelete extends Command
 //        $this->deleteAep($imeis,$aep_product_id,$appKey, $appSecret, $aep_master_key);
 
         //删除oneNet
-        $this->deleteOneNet($imeis,$oneNetProductId,$oneNetUserId,$oneNetAccessKey);
+//        $this->deleteOneNet($imeis,$oneNetProductId,$oneNetUserId,$oneNetAccessKey);
 
+        //删除区平台
+//        $this->deleteYunChuang($yunIds);
+
+        //删除数据库
+//        $res = SmokeDetector::query()->whereIn('smde_imei',$imeis)->delete();
+//        print_r($res);die;
+        die;
+    }
+
+    public function deleteYunChuang($yunIds){
+        $token = YunChuangUtil::getToken();
+        foreach ($yunIds as $key => $value){
+            $res = YunChuangUtil::removeDevice($token,$value['smde_yunchuang_id']);
+            ToolsLogic::writeLog('删除区平台结果:imei:' . $value['smde_imei'],'deviceDelete',$res);
+        }
 
     }
 

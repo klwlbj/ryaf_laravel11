@@ -661,7 +661,7 @@ class MaterialLogic extends BaseLogic
                     'made_id',
                     'made_in_id',
                 ])
-                ->offset($currentCountArr[$value['mate_id']]['out_count'] ?? 0)
+                ->offset($startCountArr[$value['mate_id']]['out_count'] ?? 0)
                 ->limit($startCountArr[$value['mate_id']]['count'] ?? 0),'sub','sub.made_in_id','=','material_flow.mafl_id')
             ->select([
                 'mafl_id',
@@ -670,6 +670,10 @@ class MaterialLogic extends BaseLogic
                 'mafl_invoice_type',
                 DB::raw("count(sub.made_id) as count")
             ])->groupBy(['sub.made_in_id'])->get()->toArray();
+
+//            if($value['mate_id'] == '65'){
+//                print_r($inFlowList);die;
+//            }
 
             $inFlowArr = [];
             foreach ($inFlowList as $flowItem){

@@ -25,6 +25,28 @@
                 <a-date-picker @change="dateChange" show-time format="YYYY-MM-DD HH:mm:ss" v-model:value="formData.datetime"/>
             </a-form-model-item>
 
+            <a-form-model-item label="价格(含税)" prop="warning">
+                <a-input-number v-model="formData.price_tax" :min="0"/>
+            </a-form-model-item>
+
+            <a-form-model-item label="税率" prop="tax">
+                <a-input-number v-model="formData.tax" :min="0"/>
+            </a-form-model-item>
+
+            <a-form-model-item label="发票类型" prop="invoice_type">
+                <a-radio-group v-model="formData.invoice_type">
+                    <a-radio :value="0">
+                        未确认
+                    </a-radio>
+                    <a-radio :value="1">
+                        专票
+                    </a-radio>
+                    <a-radio :value="2">
+                        普票
+                    </a-radio>
+                </a-radio-group>
+            </a-form-model-item>
+
             <a-form-model-item label="最终确认人" prop="verify_user_id">
                 <verify-user-select ref="verifyUserSelect" @change="verifyUserChange" :default-data="verifyUserId"></verify-user-select>
             </a-form-model-item>
@@ -103,6 +125,9 @@ module.exports = {
                 datetime:moment().format("YYYY-MM-DD HH:mm:ss"),
                 remark:'',
                 verify_user_id:this.admin['department']['depa_leader_id'],
+                price_tax:null,
+                tax:null,
+                invoice_type:null,
             };
 
             this.verifyUserId = this.admin['department']['depa_leader_id'];

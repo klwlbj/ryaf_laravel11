@@ -116,6 +116,10 @@ class AdvancedOrderLogic extends ExcelGenerator
             });
         }
 
+        if(isset($params['address']) && !empty($params['address'])) {
+            $query->where('ador_address','like',"%" . $params['address'] . "%");
+        }
+
         if(isset($params['node_id']) && !empty($params['node_id'])) {
             $nodeIds = Node::getNodeChild($params['node_id']);
             $query->whereIn('ador_node_id', $nodeIds);
@@ -140,6 +144,7 @@ class AdvancedOrderLogic extends ExcelGenerator
                 'ador_pay_date',
                 'ador_user_name',
                 'ador_user_phone',
+                'ador_address',
                 'ador_installation_count',
                 'ador_funds_received',
                 'ador_remain_funds',
@@ -169,6 +174,7 @@ class AdvancedOrderLogic extends ExcelGenerator
     {
         $data = AdvancedOrder::query()
             ->leftJoin('node', 'node_id', '=', 'ador_node_id')
+            ->where(['ador_id' => $params['id']])
             ->select([
                 'advanced_order.*',
                 'node.node_name',
@@ -198,10 +204,11 @@ class AdvancedOrderLogic extends ExcelGenerator
     {
         $insertData = [
             'ador_node_id'            => $params['node_id'],
-            'ador_installation_date'  => $params['installation_date'] ?? '',
-            'ador_pay_date'           => $params['pay_date'] ?? '',
+            'ador_installation_date'  => $params['installation_date'] ?? null,
+            'ador_pay_date'           => $params['pay_date'] ?? null,
             'ador_user_name'          => $params['user_name'] ?? '',
             'ador_user_phone'         => $params['user_phone'] ?? '',
+            'ador_address'         => $params['address'] ?? '',
             'ador_installation_count' => $params['installation_count'] ?? '',
             'ador_pay_way'            => $params['pay_way'] ?? '',
             'ador_remark'             => $params['remark'] ?? '',

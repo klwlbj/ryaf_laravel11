@@ -1,30 +1,24 @@
 <template>
-    <a-select v-model="id" show-search placeholder="请选择物品" :max-tag-count="1"
-              :mode="mode" :style="'width:' + width + 'px'" allow-clear @change="handleChange" option-filter-prop="label">
-        <a-select-option v-for="(item, key) in list" :key="key" :value="item.mate_id" :label="item.mate_name" :title="item.mate_name">
+    <a-select v-model="id" class="applySelect" show-search placeholder="请选择分类" :max-tag-count="1"
+              :mode="mode" style="width: 300px;" allow-clear @change="handleChange" option-filter-prop="label"
+              >
+        <a-select-option v-for="(item, key) in list" :key="key" :value="item.maap_id" :label="item.mate_name">
             {{ item.mate_name }}
+            <div>
+                <span>出库数量：{{ item.maap_number }}</span><span style="margin-left: 10px">申请人：{{item.admin_name}}</span>
+            </div>
         </a-select-option>
     </a-select>
 </template>
 
 <script>
 module.exports = {
-    name: 'materialSelect',
+    name: 'applySelect',
     components: {},
     props: {
-        width: {
-            default:function(){
-                return 200
-            },
-        },
         mode: {
             default:function(){
                 return 'default'
-            },
-        },
-        categoryId: {
-            default:function(){
-                return undefined
             },
         },
         defaultData: {
@@ -41,16 +35,13 @@ module.exports = {
     },
     methods: {
         getList () {
-            let formData = {};
-            if(this.categoryId){
-                formData.category_id = this.categoryId;
-            }
             axios({
                 // 默认请求方式为get
                 method: 'post',
-                url: '/api/material/getAllList',
+                url: '/api/materialApply/getSelectList',
                 // 传递参数
-                data: formData,
+                data: {
+                },
                 responseType: 'json',
                 headers:{
                     'Content-Type': 'multipart/form-data'
@@ -68,14 +59,13 @@ module.exports = {
             });
         },
         handleChange(value){
-            this.$emit('change',value);
+            let selectedObject = this.list.find(option => option.maap_id === value);
+            // console.log('Selected object:', selectedObject);
+
+            this.$emit('change',value,selectedObject);
         },
         clearData(){
             this.id = undefined;
-        },
-        setValue(value){
-            this.id = value;
-            this.$emit('change',value);
         }
     },
     created () {
@@ -97,15 +87,7 @@ module.exports = {
             }
 
             this.id = newData;
-            this.$emit('change',newData);
-        },
-        categoryId (newData,oldData) {
-            if(newData === oldData){
-                return false
-            }
-
-            this.getList();
-        },
+        }
     },
     computed: {
 
@@ -114,6 +96,8 @@ module.exports = {
 }
 </script>
 <style scoped>
-
+.applySelect > div{
+    height: 60px;
+}
 </style>
 

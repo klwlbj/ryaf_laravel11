@@ -2,7 +2,7 @@
     <div>
         <a-form-model :loading="loading" :model="formData" ref="dataForm" :label-col="dialogFormLabelCol" :wrapper-col="dialogFormWrapperCol" :rules="formRules">
             <a-form-model-item label="监控中心" prop="street">
-                <node-cascader :default-data="nodeId" @change="nodeChange"></node-cascader>
+                <node-cascader ref="nodeSelect" :default-data="nodeId" @change="nodeChange"></node-cascader>
             </a-form-model-item>
 
             <a-form-model-item label="安装日期" prop="installation_date">
@@ -19,6 +19,14 @@
 
             <a-form-model-item label="联系方式" prop="user_phone">
                 <a-input v-model="formData.user_phone" style="width: 200px;"/>
+            </a-form-model-item>
+
+            <a-form-model-item label="安装地址" prop="address">
+                <a-textarea
+                    v-model="formData.address"
+                    placeholder="地址"
+                    :auto-size="{ minRows: 2, maxRows: 5 }"
+                />
             </a-form-model-item>
 
             <a-form-model-item label="预计安装总数" prop="installation_count">
@@ -53,7 +61,7 @@
                 <a-textarea
                     v-model="formData.remark"
                     placeholder="备注"
-                    :auto-size="{ minRows: 3, maxRows: 5 }"
+                    :auto-size="{ minRows: 2, maxRows: 5 }"
                 />
             </a-form-model-item>
 
@@ -110,10 +118,15 @@ module.exports = {
                 funds_received:0,
                 installation_date:moment().format("YYYY-MM-DD"),
                 pay_date:moment().format("YYYY-MM-DD"),
+                address:'',
                 remark:'',
                 node_id:undefined,
                 pay_way:3,
             };
+
+            if(this.$refs['nodeSelect']){
+                this.$refs['nodeSelect'].clearData();
+            }
         },
         // 获取枚举列表
         getEnumList () {
@@ -219,6 +232,7 @@ module.exports = {
                     pay_date:res.data.ador_pay_date,
                     user_name:res.data.ador_user_name,
                     user_phone:res.data.ador_user_phone,
+                    address:res.data.ador_address,
                     installation_count:res.data.ador_installation_count,
                     funds_received:res.data.ador_funds_received,
                     pay_way:res.data.ador_pay_way,

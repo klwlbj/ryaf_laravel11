@@ -11,16 +11,22 @@
                     <a-form-item>
                         <a-select v-model="listQuery.status" show-search placeholder="请选择状态" :max-tag-count="1"
                                   style="width: 200px;" allow-clear>
+                            <a-select-option :value="0">
+                                已撤回
+                            </a-select-option>
                             <a-select-option :value="1">
-                                发起中
+                                待审批
                             </a-select-option>
                             <a-select-option :value="2">
-                                采购中
+                                待出库
                             </a-select-option>
                             <a-select-option :value="3">
-                                已完成
+                                出库中
                             </a-select-option>
                             <a-select-option :value="4">
+                                已完成
+                            </a-select-option>
+                            <a-select-option :value="5">
                                 已驳回
                             </a-select-option>
                         </a-select>
@@ -29,80 +35,53 @@
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
                     <a-form-item>
-                        <a-button v-if="$checkPermission('/api/materialPurchase/add')" @click="onCreate" type="primary" icon="edit">添加申购</a-button>
+                        <a-button @click="onCreate" type="primary" icon="edit">添加申领</a-button>
                     </a-form-item>
 
                 </a-form>
                 <a-table :columns="columns" :data-source="listSource" :loading="listLoading" :row-key="(record, index) => { return index }"
-                         :pagination="false">
+                         :pagination="false" :scroll="{ x: 1500,y: 650 }">
 
                     <div slot="detail" slot-scope="text, record">
                         <div v-for="(item,index) in record.detail" :key="index">
-                            @{{ item.mapu_material_name }} * @{{ item.mapu_number }}(@{{ item.mapu_unit }})</span>
+                            @{{ item.mate_name }} * @{{ item.maap_number }}(@{{ item.mate_unit }})</span>
                         </div>
                     </div>
 
                     <div slot="status" slot-scope="text, record">
-                        <a-tag v-if="record.mapu_status == 1">发起中</a-tag>
-                        <a-tag color="#f50" v-else-if="record.mapu_status == 2">采购中</a-tag>
-                        <a-tag color="green" v-else-if="record.mapu_status == 3">已完成</a-tag>
-                        <a-tag color="red" v-else-if="record.mapu_status == 4">已驳回</a-tag>
+                        <a-tag v-if="record.maap_status == 1">待审批</a-tag>
+                        <a-tag v-if="record.maap_status == 0">已撤回</a-tag>
+                        <a-tag color="#f50" v-else-if="record.maap_status == 2">待出库</a-tag>
+                        <a-tag color="#f50" v-else-if="record.maap_status == 3">出库中</a-tag>
+                        <a-tag color="green" v-else-if="record.maap_status == 4">已完成</a-tag>
+                        <a-tag color="red" v-else-if="record.maap_status == 5">已驳回</a-tag>
                     </div>
 
                     <div slot="action" slot-scope="text, record">
-                        <a v-if="record.mapu_status == 1 && $checkPermission('/api/materialPurchase/update')" style="margin-right: 8px" @click="onUpdate(record)">
-                            修改
-                        </a>
-
-                        <a-popconfirm
-                            v-if="record.mapu_status == 1 && $checkPermission('/api/materialPurchase/delete')"
-                            title="是否确定删除商品?"
-                            ok-text="确认"
-                            cancel-text="取消"
-                            @confirm="onDel(record)"
-                        >
-                            <a style="margin-right: 8px">
-                                删除
+                        <div>
+                            <a @click="onDetail(record)">
+                                详情
                             </a>
-                        </a-popconfirm>
-
+                        </div>
+                        <div>
+                            <a v-if="record.is_update" @click="onUpdate(record)">
+                                修改
+                            </a>
+                        </div>
                         <div>
                             <a-popconfirm
-                                v-if="(record.mapu_status == 1) && $checkPermission('/api/materialPurchase/approve')"
-                                title="是否确定同意申购?"
+                                v-if="record.is_cancel"
+                                title="是否确定撤回?"
                                 ok-text="确认"
                                 cancel-text="取消"
-                                @confirm="onApprove(record,1)"
+                                @confirm="onCancel(record)"
                             >
                                 <a style="margin-right: 8px">
-                                    同意
-                                </a>
-                            </a-popconfirm>
-
-                            <a-popconfirm
-                                v-if="(record.mapu_status == 1) && $checkPermission('/api/materialPurchase/approve')"
-                                title="是否确定驳回申购?"
-                                ok-text="确认"
-                                cancel-text="取消"
-                                @confirm="onApprove(record,2)"
-                            >
-                                <a style="margin-right: 8px">
-                                    驳回
-                                </a>
-                            </a-popconfirm>
-
-                            <a-popconfirm
-                                v-if="(record.mapu_status == 2) && $checkPermission('/api/materialPurchase/complete')"
-                                title="是否确定完成申购?"
-                                ok-text="确认"
-                                cancel-text="取消"
-                                @confirm="onComplete(record)"
-                            >
-                                <a style="margin-right: 8px">
-                                    完成申购
+                                    撤回
                                 </a>
                             </a-popconfirm>
                         </div>
+
                     </div>
                 </a-table>
 
@@ -116,18 +95,30 @@
                 </div>
             </div>
 
+            <a-modal :mask-closable="false" v-model="detailVisible"
+                     title="详情"
+                     width="1000px" :footer="null">
+                <apply-detail
+                    style="max-height: 600px;overflow: auto"
+                    ref="applyDetail"
+                    :id="detailId"
+                    @close="detailVisible = false;"
+                >
+                </apply-detail>
+            </a-modal>
+
             <a-modal :mask-closable="false" v-model="dialogFormVisible"
                      :title="dialogStatus"
                      width="1000px" :footer="null">
-                <purchase-add
+                <apply-add
                     style="max-height: 600px;overflow: auto"
-                            ref="purchaseAdd"
+                            ref="applyAdd"
                              :id="id"
                              @update="update"
                              @add="add"
                              @close="dialogFormVisible = false;"
                 >
-                </purchase-add>
+                </apply-add>
             </a-modal>
 
         </a-card>
@@ -144,7 +135,6 @@
             data: {
                 listQuery: {
                     keyword: "",
-                    category_id:'',
                     material_id:'',
                     status:undefined,
                 },
@@ -161,53 +151,57 @@
                 columns:[
                     {
                         title: 'Id',
-                        dataIndex: 'mapu_id',
+                        dataIndex: 'maap_id',
                         width: 80
                     },
                     {
-                        title: '编号',
-                        dataIndex: 'mapu_sn',
+                        title: '申购名称',
+                        dataIndex: 'appr_name',
                     },
                     {
-                        title: '分类',
-                        dataIndex: 'mapu_category_name',
+                        title: '申购事由',
+                        dataIndex: 'appr_reason'
                     },
                     {
-                        title: '详情',
+                        title: '申购详情',
                         scopedSlots: { customRender: 'detail' },
                         dataIndex: 'detail'
                     },
                     {
-                        title: '申请人',
-                        dataIndex: 'mapu_apply_username'
+                        title: '申购总金额',
+                        dataIndex: 'maap_total_price'
+                    },
+                    {
+                        title: '申购人',
+                        dataIndex: 'admin_name'
                     },
                     {
                         title: '状态',
                         scopedSlots: { customRender: 'status' },
-                        dataIndex: 'mapu_status'
-                    },
-                    {
-                        title: '备注',
-                        dataIndex: 'mapu_remark'
+                        dataIndex: 'maap_status'
                     },
                     {
                         title: '提交时间',
-                        dataIndex: 'mapu_crt_time'
+                        dataIndex: 'maap_crt_time'
                     },
                     {
                         title: '操作',
                         scopedSlots: { customRender: 'action' },
+                        fixed:'right'
                     }
                 ],
                 dialogFormVisible:false,
-                id:null
+                detailVisible:false,
+                id:null,
+                detailId:null
             },
             created () {
                 this.listQuery.page_size = this.pagination.pageSize;
                 this.handleFilter()
             },
             components: {
-                "purchase-add":  httpVueLoader('/statics/components/material/purchaseAdd.vue'),
+                "apply-add":  httpVueLoader('/statics/components/material/applyAdd.vue'),
+                "apply-detail":  httpVueLoader('/statics/components/material/applyDetail.vue'),
                 "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
             },
             methods: {
@@ -230,7 +224,7 @@
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/api/materialPurchase/getList',
+                        url: '/api/materialApply/getList',
                         // 传递参数
                         data: this.listQuery,
                         responseType: 'json',
@@ -251,7 +245,7 @@
                     this.dialogFormVisible = true;
                 },
                 onUpdate(row){
-                    this.id = row.mapu_id;
+                    this.id = row.maap_id;
                     this.dialogStatus = '修改';
                     this.dialogFormVisible = true;
                 },
@@ -267,15 +261,19 @@
                     this.dialogFormVisible = false;
                     this.handleFilter();
                 },
-                onDel(row){
+                onDetail(row){
+                    this.detailId = row.maap_id;
+                    this.detailVisible = true;
+                },
+                onCancel(row){
                     this.listLoading = true
                     axios({
                         // 默认请求方式为get
                         method: 'post',
-                        url: '/api/materialPurchase/delete',
+                        url: '/api/approval/cancel',
                         // 传递参数
                         data: {
-                            id:row.mapu_id
+                            id:row.appr_id
                         },
                         responseType: 'json',
                         headers:{
@@ -288,63 +286,8 @@
                             this.$message.error(res.message);
                             return false;
                         }
-                        this.$message.success('删除成功');
+                        this.$message.success('撤回成功');
                         this.getPageList();
-                    }).catch(error => {
-                        this.$message.error('请求失败');
-                    });
-                },
-                onApprove(row,status){
-                    this.listLoading = true
-                    axios({
-                        // 默认请求方式为get
-                        method: 'post',
-                        url: '/api/materialPurchase/approve',
-                        // 传递参数
-                        data: {
-                            id:row.mapu_id,
-                            status:status
-                        },
-                        responseType: 'json',
-                        headers:{
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    }).then(response => {
-                        this.listLoading = false;
-                        let res = response.data;
-                        if(res.code !== 0){
-                            this.$message.error(res.message);
-                            return false;
-                        }
-                        this.$message.success('操作成功');
-                        this.handleFilter();
-                    }).catch(error => {
-                        this.$message.error('请求失败');
-                    });
-                },
-                onComplete(row){
-                    this.listLoading = true
-                    axios({
-                        // 默认请求方式为get
-                        method: 'post',
-                        url: '/api/materialPurchase/complete',
-                        // 传递参数
-                        data: {
-                            id:row.mapu_id
-                        },
-                        responseType: 'json',
-                        headers:{
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    }).then(response => {
-                        this.listLoading = false;
-                        let res = response.data;
-                        if(res.code !== 0){
-                            this.$message.error(res.message);
-                            return false;
-                        }
-                        this.$message.success('操作成功');
-                        this.handleFilter();
                     }).catch(error => {
                         this.$message.error('请求失败');
                     });

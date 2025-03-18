@@ -26,27 +26,35 @@ Route::middleware(['login'])->group(function () {
     Route::view('/test', 'admin.test');
 
     Route::prefix('materialManufacturer')->group(function () {
-        Route::view('/view', 'admin.materialManufacturer');
+        Route::view('/view', 'admin.material.manufacturer');
     });
 
     Route::prefix('materialCategory')->group(function () {
-        Route::view('/view', 'admin.materialCategory');
+        Route::view('/view', 'admin.material.category');
     });
 
     Route::prefix('materialSpecification')->group(function () {
-        Route::view('/view', 'admin.materialSpecification');
+        Route::view('/view', 'admin.material.specification');
     });
 
     Route::prefix('material')->group(function () {
-        Route::view('/view', 'admin.material');
+        Route::view('/view', 'admin.material.material');
     });
 
     Route::prefix('materialFlow')->group(function () {
-        Route::view('/view', 'admin.materialFlow');
+        Route::view('/view', 'admin.material.flow');
+    });
+
+    Route::prefix('materialApply')->group(function () {
+        Route::view('/view', 'admin.material.apply');
     });
 
     Route::prefix('materialPurchase')->group(function () {
-        Route::view('/view', 'admin.materialPurchase');
+        Route::view('/view', 'admin.material.purchase');
+    });
+
+    Route::prefix('materialFlowConsume')->group(function () {
+        Route::view('/view', 'admin.material.flowConsume');
     });
 
     Route::prefix('order')->group(function () {
@@ -107,11 +115,14 @@ Route::middleware(['login'])->group(function () {
         Route::view('/view', 'admin.preInstallationList');
     });
 
-    Route::prefix('materialFlowConsume')->group(function () {
-        Route::view('/view', 'admin.materialFlowConsume');
-    });
-
     Route::prefix('report')->group(function () {
         Route::view('online/view', 'admin.report.online');
+    });
+
+    Route::prefix('approval')->group(function () {
+        Route::view('submitList/view', 'admin.approval.submitList');
+        Route::view('waitApprovalList/view', 'admin.approval.waitApprovalList');
+        Route::view('hasApprovalList/view', 'admin.approval.hasApprovalList');
+        Route::view('carbonCopyList/view', 'admin.approval.carbonCopyList');
     });
 });

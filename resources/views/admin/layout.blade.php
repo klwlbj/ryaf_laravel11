@@ -35,19 +35,31 @@
         <div style="height: 50px;background-color: #053434;color: white;display: flex;align-items:center;justify-content:space-between;padding: 0 5px;">
             <span style="font-size: 22px;">如约安防信息化系统后台VER 1.0</span>
             <span id="time" style="font-size: 22px;font-weight: bold"></span>
-            <span style="font-size: 16px;font-weight: bold">
+            <span style="font-size: 16px;font-weight: bold;margin-right: 20px">
+
                 <a-dropdown>
-                    <span>{{ $adminInfo['admin_name'] }}，您好。</span>
+                    <a-badge :count="backlogData.wait_approval_count" title="待审批">
+                        <span>{{ $adminInfo['admin_name'] }}，您好。</span>
+                    </a-badge>
+
                     <template #overlay>
-                      <a-menu>
-                        <a-menu-item>
-                          <a href="javascript:;" @click="onRestPassword">修改密码</a>
-                        </a-menu-item>
+                        <a-menu>
+                            <a-menu-item>
+                                <a href="javascript:;" @click="onRestPassword">修改密码</a>
+                            </a-menu-item>
+                            <a-menu-item>
+                                <a-badge :count="backlogData.wait_approval_count" :offset="[10,0]"  title="待审批">
+                                    <a href="javascript:;" @click="approval">待审批</a>
+                                </a-badge>
+                            </a-menu-item>
+                            <a-menu-item>
+                                <a style="text-underline: none;" href="javascript:void(0);" onclick="logout()">退出</a>
+                            </a-menu-item>
                       </a-menu>
                     </template>
                   </a-dropdown>
 
-                <a style="color: white;text-underline: none" href="javascript:void(0);" onclick="logout()">退出</a>
+
             </span>
         </div>
         <a-modal
@@ -150,10 +162,13 @@
             loading:false,
             formRules:{
 
-            }
+            },
+            backlogData:{
+                'wait_approval_count' : 0,
+            },
         },
         created () {
-
+            this.getBacklogCount();
         },
         components: {
 
@@ -161,6 +176,33 @@
         methods: {
             onRestPassword(){
                 this.visible = true;
+            },
+            getBacklogCount(){
+                this.loading = true;
+                axios({
+                    // 默认请求方式为get
+                    method: 'post',
+                    url: '/api/admin/getBacklogCount',
+                    // 传递参数
+                    data: this.form,
+                    responseType: 'json',
+                    headers:{
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }).then(response => {
+                    this.loading = false;
+                    let res = response.data;
+                    if(res.code !== 0){
+                        this.$message.error(res.message);
+                        return false;
+                    }
+                    this.backlogData = res.data;
+                }).catch(error => {
+                    this.$message.error('请求失败');
+                });
+            },
+            approval(){
+                window.location.href='/approval/waitApprovalList/view';
             },
             submit(){
                 this.loading = true;
@@ -190,7 +232,7 @@
                 }).catch(error => {
                     this.$message.error('请求失败');
                 });
-                console.log(this.form);
+                // console.log(this.form);
             }
         },
 

@@ -53,8 +53,7 @@ class YunChuangPush extends Command
         $deviceList = SmokeDetector::query()
             ->leftJoin('place','place.plac_id','=','smoke_detector.smde_place_id')
             ->where(['smde_yunchuang_id' => 0])
-            ->where('smde_node_ids','like',"%,5,26,%")
-//            ->where('smde_yunchuang_id','=',0)
+            ->where('smde_node_ids','like',"%,5,40,%")
             ->where('plac_yunchuang_id','>',0)
             ->where('smde_place_id','>',0)
 //            ->where('smde_imei','=','861050049858742')
@@ -90,7 +89,7 @@ class YunChuangPush extends Command
 //            ->leftJoin('order','order_id','=','plac_order_id')
 //            ->where(['plac_yunchuang_id' => 0])
 //            ->where('order_status','=','交付完成')
-//            ->where('plac_node_ids','like','%,5,26,%')
+//            ->where('plac_node_ids','like','%,5,40,%')
 //            ->whereRaw("COALESCE(user_name,'') <> '' and COALESCE(user_mobile,'') <> ''")
 //            ->select(['place.*'])
 //            ->get()->toArray();
@@ -118,7 +117,7 @@ class YunChuangPush extends Command
         $list = Order::query()
             ->leftJoin('place','plac_order_id','=','order_id')
             ->leftJoin('user','user_id','=','order_user_id')
-            ->where('order_node_ids','like',"%,5,26,%")
+            ->where('order_node_ids','like',"%,5,40,%")
             ->where('plac_yunchuang_id','=',0)
             ->where('order_status','=','交付完成')
             ->whereRaw("COALESCE(user_name,'') = '' and COALESCE(user_mobile,'') <> ''")
@@ -300,7 +299,7 @@ class YunChuangPush extends Command
         SmokeDetector::query()->where(['smde_id' => $value['smde_id']])->update(['smde_yunchuang_reg_resp' => ToolsLogic::jsonEncode($resp),'smde_yunchuang_id' => $deviceId]);
 
         $onlineResp = $this->updateOnlineStatus($token, $deviceId, 1 );
-
+        YunChuangUtil::updateDeviceExt($token, $deviceId, $value['smde_last_nb_module_battery'], $value['smde_last_signal_intensity'], $value['smde_last_temperature'], $value['smde_last_smokescope']);
         return $resp;
     }
 

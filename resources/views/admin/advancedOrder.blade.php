@@ -31,6 +31,10 @@
                 </a-form-item>
 
                 <a-form-item>
+                    <span><a-input v-model="listQuery.address" placeholder="地址" style="width: 200px;" /></span>
+                </a-form-item>
+
+                <a-form-item>
                     <span><a-input v-model="listQuery.remark" placeholder="备注" style="width: 120px;" /></span>
                     <span style="margin-left: 10px"><a-checkbox v-model="listQuery.remark_precise">精确匹配</a-checkbox></span>
                 </a-form-item>
@@ -139,6 +143,7 @@
             listQuery: {
                 user_keyword:'',
                 remark:'',
+                address:'',
                 status:undefined,
                 node_id:undefined,
                 start_date:null,
@@ -168,6 +173,11 @@
                     title: '用户信息',
                     scopedSlots: { customRender: 'user_info' },
                     dataIndex: 'user_info'
+                },
+                {
+                    title: '地址',
+                    dataIndex: 'ador_address',
+                    width:200
                 },
                 {
                     title: '状态',

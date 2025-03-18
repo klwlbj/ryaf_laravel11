@@ -9,6 +9,10 @@
                 <warehouse-select ref="warehouseSelect" :default-data="warehouseId" @change="warehouseChange"></warehouse-select>
             </a-form-model-item>
 
+            <a-form-model-item label="申购单" prop="apply_id">
+                <apply-select  ref="applySelect" @change="applyChange"></apply-select>
+            </a-form-model-item>
+
             <a-form-model-item required label="出库数量" prop="number">
                 <a-input-number v-model="formData.number" :min="0"/>
             </a-form-model-item>
@@ -84,6 +88,7 @@ module.exports = {
     components: {
         "warehouse-select":  httpVueLoader('/statics/components/material/warehouseSelect.vue'),
         "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
+        "apply-select":  httpVueLoader('/statics/components/material/applySelect.vue'),
         "admin-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
         "apply-user-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
         "verify-user-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
@@ -133,6 +138,7 @@ module.exports = {
                 approve_image:'',
                 verify_user_id:this.admin['department']['depa_leader_id'],
                 remark:'',
+                apply_id:undefined,
             };
 
             this.receiveUserId = undefined;
@@ -262,6 +268,36 @@ module.exports = {
         },
         verifyUserChange(value){
             this.formData.verify_user_id = value;
+        },
+        applyChange(value,data){
+            if(data){
+                console.log(data);
+                this.formData.purpose = data.maap_purpose;
+                this.formData.number = data.maap_number;
+                if(this.$refs['applyUserSelect']){
+                    this.$refs['applyUserSelect'].setValue(data.admin_id);
+                }
+
+                if(this.$refs['materialSelect']){
+                    this.$refs['materialSelect'].setValue(data.maap_material_id);
+                }
+
+                if(data.file_list.length > 0){
+                    this.fileList = [];
+                    for(let item of data.file_list){
+                        this.fileList.push({
+                            url:item.file_path,
+                            name:item.file_name,
+                            ext:item.file_ext,
+                            uid:'-1',
+                            status: 'done',
+                        });
+                    }
+
+                }
+            }
+
+            this.formData.apply_id = value;
         }
     },
     created () {
