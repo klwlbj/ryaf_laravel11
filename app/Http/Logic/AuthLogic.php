@@ -15,6 +15,7 @@ class AuthLogic extends BaseLogic
     {
         $token = md5(time().'_'.$data['admin_id']);
         Cache::set($token,$data,60*60*24);
+        Cache::set('admin_' . $data['admin_id'] . '_token',$token,60*60*24);
         return $token;
     }
 

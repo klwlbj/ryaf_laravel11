@@ -33,6 +33,28 @@ class AdminController
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
+    public function logout(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+
+        ],[
+
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = AdminLogic::getInstance()->logout($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
     public function resetPassword(Request $request)
     {
         $params = $request->all();

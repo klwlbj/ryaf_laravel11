@@ -6,6 +6,7 @@ use App\Models\Admin;
 use App\Models\Approval;
 use App\Models\ApprovalProcess;
 use App\Models\ApprovalProcessModel;
+use App\Models\ApprovalRelation;
 use App\Models\File;
 use App\Models\Material;
 use App\Models\MaterialApply;
@@ -17,6 +18,13 @@ use Illuminate\Support\Facades\DB;
 
 class MaterialApplyLogic extends BaseLogic
 {
+    public static $materialPriceArr = [
+        '2' => 240,
+        '3' => 240,
+        '65' => 240,
+        '64' => 240,
+    ];
+
     public function getList($params)
     {
         $page = $params['page'] ?? 1;
@@ -86,8 +94,8 @@ class MaterialApplyLogic extends BaseLogic
             ->get()->groupBy('maap_apply_id')->toArray();
 
         foreach ($list as $key => &$value) {
-            $value['is_update'] = in_array($value['maap_status'],[0,5]);
-            $value['is_cancel'] = in_array($value['maap_status'],[1]);
+            $value['is_update'] = (in_array($value['maap_status'],[0,5]) && $value['maap_admin_id'] == AuthLogic::$userId);
+            $value['is_cancel'] = (in_array($value['maap_status'],[1]) && $value['maap_admin_id'] == AuthLogic::$userId);
             if (isset($detailArr[$value['maap_id']])) {
                 $value['detail'] = $detailArr[$value['maap_id']];
             } else {
@@ -95,6 +103,7 @@ class MaterialApplyLogic extends BaseLogic
             }
 
             $value['appr_name'] = $approvalDataArr[$value['maap_id']]['appr_name'] ?? '';
+            $value['appr_id'] = $approvalDataArr[$value['maap_id']]['appr_id'] ?? '';
             $value['appr_reason'] = $approvalDataArr[$value['maap_id']]['appr_reason'] ?? '';
         }
 
@@ -153,17 +162,31 @@ class MaterialApplyLogic extends BaseLogic
 
     public function getRelationList($params)
     {
-        $query = MaterialApply::query()
-            ->leftJoin('approval','appr_relation_id','=',DB::raw("maap_id and appr_type=1"))
-            ->whereIn('appr_status',[2])
-            ->where(['appr_admin_id' => AuthLogic::$userId])
-            ->select([
-                'appr_name as name',
-                'appr_id as id',
-                'maap_crt_time as date'
-            ]);
+        $query = $this->getRelationQuery($params);
 
-        return $query->orderBy('appr_id','desc')->limit(100)->get()->toArray();
+        return $query->groupBy(['appr_id'])->select([
+            'appr_name as name',
+            'appr_id as id',
+            'appr_sn as sn',
+            'material_apply.maap_crt_time as date'
+        ])->orderBy('appr_id','desc')->limit(100)->get()->toArray();
+    }
+
+    public function getRelationQuery($params)
+    {
+        $query = MaterialApply::query()
+            ->leftJoin('approval','appr_relation_id','=',DB::raw("material_apply.maap_id and appr_type=1"))
+            ->leftJoin('material_apply_detail','material_apply_detail.maap_apply_id','=','material_apply.maap_id')
+            ->whereIn('appr_status',[2])
+            ->where(['appr_admin_id' => AuthLogic::$userId]);
+
+        #如果存在物品id
+        if(!empty($params['material_ids'])){
+            $ids = explode(',',$params['material_ids']);
+            $query->whereIn('maap_material_id',$ids);
+        }
+
+        return $query;
     }
 
     public function getApprovalInfo($id)
@@ -185,7 +208,7 @@ class MaterialApplyLogic extends BaseLogic
 
         $data['file_list'] = File::query()
             ->where(['file_type' => 'material_apply','file_relation_id' => $id])
-            ->select(['file_relation_id','file_name','file_path'])->get()->toArray();
+            ->select(['file_relation_id','file_name','file_path','file_ext'])->get()->toArray();
 
         return $data;
     }
@@ -228,27 +251,27 @@ class MaterialApplyLogic extends BaseLogic
                 ->where(['appr_approval_id' => $data['approval']['appr_id']])
                 ->select(['approval_process.*','admin_name'])
                 ->orderBy('appr_index','asc')->get()->toArray();
-        }else{
-            $data['approval_process'] = [];
-        }
-
-        #关联审批单
-        if(!empty($data['approval']) && !empty($data['approval']['appr_relation_approval_id'])){
-            $data['relation_approval'] = Approval::query()
-                ->where(['appr_id' => $data['approval']['appr_relation_approval_id']])
-                ->first()->toArray();
-
             #判断是否可审批
             $approvalAdminId = ApprovalProcess::query()
                 ->where(['appr_approval_id' => $data['approval']['appr_id']])
                 ->value('appr_admin_id') ?: null;
         }else{
-            $data['relation_approval'] = [];
+            $data['approval_process'] = [];
             $approvalAdminId = null;
         }
 
-        $data['is_approval'] = $approvalAdminId == AuthLogic::$userId;
+        #关联审批单
+        $relationIds = ApprovalRelation::query()->where(['apre_approval_id' => $data['approval']['appr_id']])->select(['apre_relation_id'])->pluck('apre_relation_id')->toArray();
+        if(!empty($data['approval']) && !empty($relationIds)){
+            $data['relation_approval'] = Approval::query()
+                ->whereIn('appr_id',$relationIds)
+                ->get()->toArray();
+        }else{
+            $data['relation_approval'] = [];
+        }
 
+        $data['is_approval'] = $approvalAdminId == AuthLogic::$userId;
+        $data['relation_id'] = $relationIds;
         return $data;
     }
 
@@ -260,7 +283,8 @@ class MaterialApplyLogic extends BaseLogic
 
         $materialIds = array_column($detail,'id');
         #判断申领物品详情是否符合
-        $materialArr = Material::query()->whereIn('mate_id',$materialIds)->select(['mate_id','mate_number','mate_name'])->get()->keyBy('mate_id')->toArray();
+        $materialArr = Material::query()->whereIn('mate_id',$materialIds)
+            ->select(['mate_id','mate_category_id','mate_number','mate_name'])->get()->keyBy('mate_id')->toArray();
 
         #查询已锁库存数量
         $lockMaterialNumberArr = MaterialApplyDetail::query()
@@ -289,6 +313,15 @@ class MaterialApplyLogic extends BaseLogic
                 ];
             }
 
+            if($materialInfo['mate_category_id'] != $params['category_id']){
+                return [
+                    'total_price' => 0,
+                    'process_list' => 0,
+                    'error_msg' => '物品：' . $value['name'] . '类型不为所选类型',
+                    'error' => true,
+                ];
+            }
+
             if(!isset($value['number']) || empty($value['number'])){
                 return [
                     'total_price' => 0,
@@ -310,22 +343,20 @@ class MaterialApplyLogic extends BaseLogic
             }
 
             #计算金额
-            $totalPriceArr = MaterialDetail::query()
-                ->leftJoin('material_flow','mafl_id','=','made_in_id')
-                ->where(['made_material_id' => $value['id'],'made_status' => 1])
-                ->orderBy('made_datetime','asc')
-                ->orderBy('made_id','asc')
-                ->offset($lockCount)->limit($value['number'])
-                ->select(['mafl_price_tax'])->pluck('mafl_price_tax')->toArray();
-
-            $totalPrice = array_sum($totalPriceArr);
+            $totalPrice = $this->getTotalPrice($value['id'],$lockCount,$value['number']);
             $value['total_price'] = $totalPrice;
             $applyTotalPrice = bcadd($applyTotalPrice,$totalPrice,2);
         }
 
         unset($value);
 
-        $processList = ApprovalProcessModel::getProcessList(['total_price' => $applyTotalPrice,'purpose' => $params['purpose']]);
+        $materialNameArr = array_column($detail,'name');
+
+        $processList = ApprovalProcessModel::getProcessList([
+            'total_price' => $applyTotalPrice,
+            'purpose' => $params['purpose'],
+            'material_name' => $materialNameArr,
+        ]);
 
         $adminIds = array_column($processList,'admin_id');
 
@@ -357,6 +388,23 @@ class MaterialApplyLogic extends BaseLogic
         ];
     }
 
+    public function getTotalPrice($materialId,$lockCount,$number)
+    {
+        if(isset(self::$materialPriceArr[$materialId])){
+            return bcmul(self::$materialPriceArr[$materialId],$number,2);
+        }
+
+        $totalPriceArr = MaterialDetail::query()
+            ->leftJoin('material_flow','mafl_id','=','made_in_id')
+            ->where(['made_material_id' => $materialId,'made_status' => 1])
+            ->orderBy('made_datetime','asc')
+            ->orderBy('made_id','asc')
+            ->offset($lockCount)->limit($number)
+            ->select(['mafl_price_tax'])->pluck('mafl_price_tax')->toArray();
+
+        return array_sum($totalPriceArr);
+    }
+
     public function add($params)
     {
         $detail = ToolsLogic::jsonDecode($params['detail']);
@@ -366,12 +414,10 @@ class MaterialApplyLogic extends BaseLogic
             ResponseLogic::setMsg('申报详情格式有误');
             return false;
         }
+        $materialIds = array_column($detail,'id');
 
         #查询是否存在历史申领单
-        if(MaterialApply::query()
-            ->leftJoin('approval','appr_relation_id','=',DB::raw("maap_id and appr_type=1"))
-            ->whereIn('appr_status',[2])
-            ->where(['appr_admin_id' => AuthLogic::$userId])->exists()){
+        if($this->getRelationQuery(['material_ids' => implode(',',$materialIds)])->exists()){
             if(empty($params['relation_id'])){
                 ResponseLogic::setMsg('存在历史申购单,则需要选择关联申购单');
                 return false;
@@ -379,9 +425,9 @@ class MaterialApplyLogic extends BaseLogic
         }
 //        print_r($detail);die;
 
-        $materialIds = array_column($detail,'id');
+
         #判断申领物品详情是否符合
-        $materialArr = Material::query()->whereIn('mate_id',$materialIds)->select(['mate_id','mate_number','mate_name'])->get()->keyBy('mate_id')->toArray();
+        $materialArr = Material::query()->whereIn('mate_id',$materialIds)->select(['mate_id','mate_category_id','mate_number','mate_name'])->get()->keyBy('mate_id')->toArray();
 
         #查询已锁库存数量
         $lockMaterialNumberArr = MaterialApplyDetail::query()
@@ -403,6 +449,12 @@ class MaterialApplyLogic extends BaseLogic
                 return false;
             }
 
+
+            if($materialInfo['mate_category_id'] != $params['category_id']){
+                ResponseLogic::setMsg('物品：' . $value['name'] . '类型不为所选类型');
+                return false;
+            }
+
             if(!isset($value['number']) || empty($value['number'])){
                 ResponseLogic::setMsg('物品：' . $value['name'] . '需要填写数量');
                 return false;
@@ -416,20 +468,20 @@ class MaterialApplyLogic extends BaseLogic
             }
 
             #计算金额
-            $totalPriceArr = MaterialDetail::query()
-                ->leftJoin('material_flow','mafl_id','=','made_in_id')
-                ->where(['made_material_id' => $value['id'],'made_status' => 1])
-                ->orderBy('made_datetime','asc')
-                ->orderBy('made_id','asc')
-                ->offset($lockCount)->limit($value['number'])
-                ->select(['mafl_price_tax'])->pluck('mafl_price_tax')->toArray();
-            $totalPrice = array_sum($totalPriceArr);
+            $totalPrice = $this->getTotalPrice($value['id'],$lockCount,$value['number']);
+            $value['total_price'] = $totalPrice;
             $applyTotalPrice = bcadd($applyTotalPrice,$totalPrice,2);
         }
 
         unset($value);
 
-        $processList = ApprovalProcessModel::getProcessList(['total_price' => $applyTotalPrice,'purpose' => $params['purpose']]);
+        $materialNameArr = array_column($detail,'name');
+
+        $processList = ApprovalProcessModel::getProcessList([
+            'total_price' => $applyTotalPrice,
+            'purpose' => $params['purpose'],
+            'material_name' => $materialNameArr,
+        ]);
 
         if(empty($processList)){
             ResponseLogic::setMsg('审批流程不存在');
@@ -438,6 +490,7 @@ class MaterialApplyLogic extends BaseLogic
 
         #申领主表数据
         $applyInsertData = [
+            'maap_category_id' => $params['category_id'],
             'maap_admin_id' => AuthLogic::$userId,
             'maap_status' => 1,
             'maap_total_price' => $applyTotalPrice,
@@ -494,13 +547,14 @@ class MaterialApplyLogic extends BaseLogic
 
         #审批主表数据
         $approvalInsertData = [
+            'appr_sn' => Approval::getSn(),
             'appr_name' => $params['name'],
             'appr_reason' => $params['reason'],
             'appr_admin_id' => AuthLogic::$userId,
             'appr_relation_id' => $applyId,
             'appr_type' => 1,
             'appr_status' => 1,
-            'appr_relation_approval_id' => $params['relation_id'] ?? 0
+//            'appr_relation_approval_id' => $params['relation_id'] ?? 0
         ];
 
         $approvalId = Approval::query()->insertGetId($approvalInsertData);
@@ -509,6 +563,24 @@ class MaterialApplyLogic extends BaseLogic
             DB::rollBack();
             ResponseLogic::setMsg('插入审批表失败');
             return false;
+        }
+
+        #关联审批单
+        if(!empty($params['relation_id'])){
+            $relationInsert = [];
+            $relationIds = explode(',',$params['relation_id']);
+            foreach ($relationIds as $key => $value){
+                $relationInsert[] = [
+                    'apre_approval_id' => $approvalId,
+                    'apre_relation_id' => $value
+                ];
+            }
+
+            if(ApprovalRelation::query()->insert($relationInsert) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('插入关联审批信息失败');
+                return false;
+            }
         }
 
         $approvalProcessInsertData = [];
@@ -555,11 +627,9 @@ class MaterialApplyLogic extends BaseLogic
             return false;
         }
 
+        $materialIds = array_column($detail,'id');
         #查询是否存在历史申领单
-        if(MaterialApply::query()
-            ->leftJoin('approval','appr_relation_id','=',DB::raw("maap_id and appr_type=1"))
-            ->whereIn('appr_status',[2])
-            ->where(['appr_admin_id' => AuthLogic::$userId])->exists()){
+        if($this->getRelationQuery(['material_ids' => implode(',',$materialIds)])->exists()){
             if(empty($params['relation_id'])){
                 ResponseLogic::setMsg('存在历史申购单,则需要选择关联申购单');
                 return false;
@@ -567,9 +637,9 @@ class MaterialApplyLogic extends BaseLogic
         }
 //        print_r($detail);die;
 
-        $materialIds = array_column($detail,'id');
+
         #判断申领物品详情是否符合
-        $materialArr = Material::query()->whereIn('mate_id',$materialIds)->select(['mate_id','mate_number','mate_name'])->get()->keyBy('mate_id')->toArray();
+        $materialArr = Material::query()->whereIn('mate_id',$materialIds)->select(['mate_id','mate_category_id','mate_number','mate_name'])->get()->keyBy('mate_id')->toArray();
 
         #查询已锁库存数量
         $lockMaterialNumberArr = MaterialApplyDetail::query()
@@ -591,6 +661,11 @@ class MaterialApplyLogic extends BaseLogic
                 return false;
             }
 
+            if($materialInfo['mate_category_id'] != $params['category_id']){
+                ResponseLogic::setMsg('物品：' . $value['name'] . '类型不为所选类型');
+                return false;
+            }
+
             if(!isset($value['number']) || empty($value['number'])){
                 ResponseLogic::setMsg('物品：' . $value['name'] . '需要填写数量');
                 return false;
@@ -604,19 +679,20 @@ class MaterialApplyLogic extends BaseLogic
             }
 
             #计算金额
-            $totalPrice = MaterialDetail::query()
-                ->leftJoin('material_flow','mafl_id','=','made_in_id')
-                ->where(['made_material_id' => $value['id'],'made_status' => 1])
-                ->orderBy('made_datetime','asc')
-                ->orderBy('made_id','asc')
-                ->offset($lockCount)->limit($value['number'])->sum('mafl_price_tax') ?: 0;
+            $totalPrice = $this->getTotalPrice($value['id'],$lockCount,$value['number']);
             $value['total_price'] = $totalPrice;
             $applyTotalPrice = bcadd($applyTotalPrice,$totalPrice,2);
         }
 
         unset($value);
 
-        $processList = ApprovalProcessModel::getProcessList(['total_price' => $applyTotalPrice,'purpose' => $params['purpose']]);
+        $materialNameArr = array_column($detail,'name');
+
+        $processList = ApprovalProcessModel::getProcessList([
+            'total_price' => $applyTotalPrice,
+            'purpose' => $params['purpose'],
+            'material_name' => $materialNameArr,
+        ]);
 
         if(empty($processList)){
             ResponseLogic::setMsg('审批流程不存在');
@@ -625,6 +701,7 @@ class MaterialApplyLogic extends BaseLogic
 
         #申领主表数据
         $applyUpdateData = [
+            'maap_category_id' => $params['category_id'],
             'maap_admin_id' => AuthLogic::$userId,
             'maap_status' => 1,
             'maap_total_price' => $applyTotalPrice,
@@ -686,13 +763,14 @@ class MaterialApplyLogic extends BaseLogic
 
             #审批主表数据
             $approvalInsertData = [
+                'appr_sn' => Approval::getSn(),
                 'appr_name' => $params['name'],
                 'appr_reason' => $params['reason'],
                 'appr_admin_id' => AuthLogic::$userId,
                 'appr_relation_id' => $params['id'],
                 'appr_type' => 1,
                 'appr_status' => 1,
-                'appr_relation_approval_id' => $params['relation_id'] ?? 0
+//                'appr_relation_approval_id' => $params['relation_id'] ?? 0
             ];
 
             $approvalId = Approval::query()->insertGetId($approvalInsertData);
@@ -701,6 +779,31 @@ class MaterialApplyLogic extends BaseLogic
                 DB::rollBack();
                 ResponseLogic::setMsg('插入审批表失败');
                 return false;
+            }
+
+            #删除关联审批单数据
+            if(ApprovalRelation::query()->where(['apre_approval_id' => $approvalId])->delete() === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('删除关联审批信息失败');
+                return false;
+            }
+
+            #关联审批单
+            if(!empty($params['relation_id'])){
+                $relationInsert = [];
+                $relationIds = explode(',',$params['relation_id']);
+                foreach ($relationIds as $key => $value){
+                    $relationInsert[] = [
+                        'apre_approval_id' => $approvalId,
+                        'apre_relation_id' => $value
+                    ];
+                }
+
+                if(ApprovalRelation::query()->insert($relationInsert) === false){
+                    DB::rollBack();
+                    ResponseLogic::setMsg('插入关联审批信息失败');
+                    return false;
+                }
             }
 
             $approvalProcessInsertData = [];

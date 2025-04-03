@@ -19,6 +19,18 @@
                         <receive-select @change="receiveChange"></receive-select>
                     </a-form-item>
 
+                    <a-form-item label="状态">
+                        <a-select v-model="listQuery.status" show-search placeholder="请选择状态" :max-tag-count="1"
+                                  style="width: 200px;" allow-clear>
+                            <a-select-option :value="1">
+                                未完成
+                            </a-select-option>
+                            <a-select-option :value="2">
+                                已完成
+                            </a-select-option>
+                        </a-select>
+                    </a-form-item>
+
                     <a-form-item>
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
@@ -102,7 +114,7 @@
             data: {
                 listQuery: {
                     keyword: "",
-                    status:undefined,
+                    status:1,
                     start_date:null,
                     end_date:null,
                     receive_user_id:undefined
@@ -247,6 +259,7 @@
                 },
                 consumeAddSubmit(){
                     this.flowId = null;
+                    this.flowListId = null;
                     this.consumeAddFormVisible = false;
                     this.getPageList();
                 }

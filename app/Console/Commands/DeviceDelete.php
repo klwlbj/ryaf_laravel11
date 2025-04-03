@@ -37,24 +37,54 @@ class DeviceDelete extends Command
         ini_set( 'max_execution_time', 72000 );
         ini_set( 'memory_limit', '2048M' );
 
-        $fileName = public_path() . "/deviceDelete1.xlsx";
-        $spreadsheet = IOFactory::load($fileName);
-        $imeis = [];
-        $sheetData = $spreadsheet->getSheet(0)->toArray(null, true, true, true);
+//        $fileName = public_path() . "/deviceDelete1.xlsx";
+//        $spreadsheet = IOFactory::load($fileName);
+//        $imeis = [];
+//        $sheetData = $spreadsheet->getSheet(0)->toArray(null, true, true, true);
+//
+//
+//        foreach ($sheetData as $key => $value) {
+//            $value = array_values($value);
+//            $imeis[] = $value[0];
+////            if($data){
+////                SmokeDetector::query()->where(['smde_imei' => $value[0]])->delete();
+////                ToolsLogic::writeLog('删除数据库imei:' . $value[0],'deviceDelete');
+////            }else{
+////                ToolsLogic::writeLog('数据库imei不存在:' . $value[0],'deviceDelete');
+////            }
+//        }
 
-
-        foreach ($sheetData as $key => $value) {
-            $value = array_values($value);
-            $imeis[] = $value[0];
-//            if($data){
-//                SmokeDetector::query()->where(['smde_imei' => $value[0]])->delete();
-//                ToolsLogic::writeLog('删除数据库imei:' . $value[0],'deviceDelete');
-//            }else{
-//                ToolsLogic::writeLog('数据库imei不存在:' . $value[0],'deviceDelete');
-//            }
-        }
-
-
+        $imeis = [
+            '865371075308162',
+            '865371076034130',
+            '865371076213114',
+            '865371075916311',
+            '865371076017291',
+            '865371075904028',
+            '865371075888668',
+            '865371076031987',
+            '865371075536176',
+            '865371075976356',
+            '865371075904283',
+            '865371075915214',
+            '865371076017291',
+            '865371075916311',
+            '865371075904028',
+            '865371076034130',
+            '865371075443553',
+            '865371078221615',
+            '865371075308162',
+            '865371076034130',
+            '865371076213114',
+            '865371075916311',
+            '865371076017291',
+            '865371075904028',
+            '865371075888668',
+            '865371076031987',
+            '865371075536176',
+            '865371075976356',
+            '865371075904283',
+        ];
         $yunIds = SmokeDetector::query()->whereIn('smde_imei',$imeis)
             ->where('smde_yunchuang_id','>',0)
             ->select(['smde_yunchuang_id','smde_imei'])->get()->toArray();
@@ -72,17 +102,17 @@ class DeviceDelete extends Command
 //        $aep_product_id = "17084269"; $aep_master_key = "c9636dcae10841aa859d5511589483b6"; $oneNetProductId = 'E2dMYR85jh'; //平安穗粤-海曼618-4G
 
         //删除AEP
-//        $this->deleteAep($imeis,$aep_product_id,$appKey, $appSecret, $aep_master_key);
+        $this->deleteAep($imeis,$aep_product_id,$appKey, $appSecret, $aep_master_key);
 
         //删除oneNet
-//        $this->deleteOneNet($imeis,$oneNetProductId,$oneNetUserId,$oneNetAccessKey);
+        $this->deleteOneNet($imeis,$oneNetProductId,$oneNetUserId,$oneNetAccessKey);
 
         //删除区平台
-//        $this->deleteYunChuang($yunIds);
+        $this->deleteYunChuang($yunIds);
 
         //删除数据库
-//        $res = SmokeDetector::query()->whereIn('smde_imei',$imeis)->delete();
-//        print_r($res);die;
+        $res = SmokeDetector::query()->whereIn('smde_imei',$imeis)->delete();
+        print_r($res);die;
         die;
     }
 

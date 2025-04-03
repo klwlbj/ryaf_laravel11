@@ -9,14 +9,18 @@
                 <a-textarea v-model="formData.reason" :auto-size="{ minRows: 3, maxRows: 6 }"/>
             </a-form-model-item>
 
-            <a-form-model-item label="申领明细">
+            <a-form-model-item label="分类" prop="category_id">
+                <category-select ref="categorySelect" :default-data="categoryId" @change="categoryChange"></category-select>
+            </a-form-model-item>
+
+            <a-form-model-item v-if="formData.category_id" label="申领明细">
                 <a-table  :columns="columns" :data-source="formData.detail" :loading="loading"  :row-key="(record, index) => { return index }" :pagination="false">
                     <div slot="id" slot-scope="text, record">
                         <material-select :width="300" :category-id="formData.category_id" :default-data="record.id" @change="(value) => {materialChange(value,record)}"></material-select>
                     </div>
 
                     <div slot="number" slot-scope="text, record">
-                        <a-input-number id="inputNumber" v-model="record.number" @change="getPreInfo"/>
+                        <a-input-number id="inputNumber" v-model="record.number" @blur="getPreInfo"/>
                     </div>
 
                 </a-table>
@@ -55,7 +59,7 @@
             </a-form-model-item>
 
             <a-form-model-item label="关联申购单" prop="relation_id">
-                <apply-relation-select :default-data="relationId" @change="applyRelationChange"></apply-relation-select>
+                <apply-relation-select :material-ids="materialIds" :default-data="relationId" @change="applyRelationChange"></apply-relation-select>
             </a-form-model-item>
 
             <a-form-model-item label="审批流程预览" prop="process">
@@ -90,6 +94,7 @@ module.exports = {
     components: {
         "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
         "apply-relation-select":  httpVueLoader('/statics/components/material/applyRelationSelect.vue'),
+        "category-select":  httpVueLoader('/statics/components/material/categorySelect.vue'),
     },
     props: {
         id: {
@@ -132,7 +137,10 @@ module.exports = {
             loading :false,
             materialId:null,
             fileList:[],
-            relationId:null,
+            relationId:[],
+            relationSelectId:[],
+            materialIds:null,
+            categoryId:null,
             preInfo:{
                 'total_price' : 0,
                 'process_list' : [],
@@ -145,12 +153,16 @@ module.exports = {
                 detail:[
                     {id:undefined,number:0,remain:0,name:null},
                 ],
-                relation_id:undefined,
+                category_id:undefined,
                 name:'',
                 reason:'',
                 purpose:1,
                 remark:'',
             };
+
+            if(this.$refs['categorySelect']){
+                this.$refs['categorySelect'].clearData();
+            }
 
         },
         submitData(){
@@ -164,7 +176,7 @@ module.exports = {
                     ext:item.ext,
                 });
             }
-
+            this.loading = true;
             this.$refs.dataForm.validate((valid) => {
                 if (valid) {
                     let params = {
@@ -173,7 +185,8 @@ module.exports = {
                         name:that.formData.name,
                         reason:that.formData.reason,
                         purpose:that.formData.purpose,
-                        relation_id:that.formData.relation_id
+                        relation_id:that.relationSelectId.join(','),
+                        category_id:this.formData.category_id,
                     }
                     if(this.id){
                         params.id = this.id;
@@ -277,8 +290,25 @@ module.exports = {
             }];
             return false;
         },
+        updateMaterialIds(){
+            let arr = [];
+            for(let item of this.formData.detail){
+                if(item.id){
+                    arr.push(item.id);
+                }
+            }
+
+            this.materialIds = arr.join(',');
+        },
         materialChange(id,record){
             if(!id){
+                record.id = undefined
+                record.remain = 0;
+                record.unit = '';
+                record.name = '';
+                this.$forceUpdate();
+                this.updateMaterialIds();
+                this.getPreInfo();
                 return false;
             }
             record.id = id;
@@ -306,18 +336,24 @@ module.exports = {
                 record.unit = res.data.mate_unit;
                 record.name = res.data.mate_name;
                 this.$forceUpdate();
+                this.updateMaterialIds();
                 this.getPreInfo();
             }).catch(error => {
                 this.$message.error('请求失败');
             });
         },
         applyRelationChange(value){
-            this.formData.relation_id = value;
+            console.log(value);
+            this.relationSelectId = value;
+        },
+        categoryChange(value){
+            this.formData.category_id = value;
         },
         getPreInfo(){
             let params = {
                 detail:JSON.stringify(this.formData.detail),
                 purpose:this.formData.purpose,
+                category_id:this.formData.category_id,
             }
             this.loading = true;
             axios({
@@ -370,10 +406,14 @@ module.exports = {
                 }
                 this.formData = {
                     detail: [],
+                    category_id:res.data.maap_category_id,
                     name:res.data.approval.appr_name,
                     reason:res.data.approval.appr_reason,
                     purpose:res.data.maap_purpose,
                 }
+
+                this.categoryId = res.data.maap_category_id;
+                this.relationId = res.data.relation_id;
 
                 for (let item of res.data.detail){
                     this.formData.detail.push({

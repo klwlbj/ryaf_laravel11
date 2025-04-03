@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 class MaterialLogic extends BaseLogic
 {
     #只有辅料权限的
-    public static $onlyAccessory = [10039];
+    public static $onlyAccessory = [];
 
     public function getList($params)
     {
@@ -584,6 +584,8 @@ class MaterialLogic extends BaseLogic
 
     public function reportExport($params)
     {
+        ini_set( 'max_execution_time', 72000 );
+        ini_set( 'memory_limit', '2048M');
         $startStr = date('Y.m.d',strtotime($params['start_date']));
         $endStr = date('Y.m.d',strtotime($params['end_date']));
 

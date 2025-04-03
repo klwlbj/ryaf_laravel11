@@ -35,11 +35,16 @@
                 </div>
             </a-form-model-item>
 
+            <a-form-model-item label="备注" prop="file">
+                {{formData.remark}}
+            </a-form-model-item>
+
             <a-form-model-item label="关联申购单" prop="relation_id">
-                <div v-if="formData.relation_approval">
-                    <div><span>申请名称：</span><span>{{formData.relation_approval.appr_name}}</span></div>
-                    <div><span>申请事由：</span><span>{{formData.relation_approval.appr_reason}}</span></div>
-                    <div><span>申请时间：</span><span>{{formData.relation_approval.appr_crt_time}}</span></div>
+                <div  v-if="formData.relation_approval.length > 0" v-for="(item,index) in formData.relation_approval" :key="index">
+                    <div style="font-weight: bold">审批单：{{item.appr_sn}}</div>
+                    <div><span>申请名称：</span><span>{{item.appr_name}}</span></div>
+                    <div><span>申请事由：</span><span>{{item.appr_reason}}</span></div>
+                    <div><span>申请时间：</span><span>{{item.appr_crt_time}}</span></div>
                 </div>
             </a-form-model-item>
 
@@ -146,14 +151,13 @@ module.exports = {
     methods: {
         initForm(){
             this.formData= {
-                detail:[
-                    {id:undefined,number:0,remain:0,name:null},
-                ],
-                relation_id:undefined,
+                detail: [],
                 name:'',
                 reason:'',
-                purpose:1,
-                remark:'',
+                purpose:undefined,
+                file_list:[],
+                relation_approval:{},
+                process:{},
             };
 
         },
@@ -185,6 +189,7 @@ module.exports = {
                 this.formData = {
                     detail: [],
                     name:res.data.appr_name,
+                    remark:res.data.appr_remark,
                     reason:res.data.appr_reason,
                     purpose:res.data.relation_data.maap_purpose,
                     file_list:res.data.relation_data.file_list,

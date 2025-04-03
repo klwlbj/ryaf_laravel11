@@ -48,4 +48,14 @@ class ResponseLogic
         ];
         return response()->json($result, 200);
     }
+
+    public static function apiOtherLogin(): JsonResponse
+    {
+        $result = [
+            'code' => 402,
+            'message' => '账号已被其他地方登录',
+            'data' => [],
+        ];
+        return response()->json($result, 200);
+    }
 }

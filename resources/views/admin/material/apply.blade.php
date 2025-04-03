@@ -99,7 +99,7 @@
                      title="详情"
                      width="1000px" :footer="null">
                 <apply-detail
-                    style="max-height: 600px;overflow: auto"
+                    style="max-height: 70vh;overflow: auto"
                     ref="applyDetail"
                     :id="detailId"
                     @close="detailVisible = false;"
@@ -111,7 +111,7 @@
                      :title="dialogStatus"
                      width="1000px" :footer="null">
                 <apply-add
-                    style="max-height: 600px;overflow: auto"
+                    style="max-height: 70vh;overflow: auto"
                             ref="applyAdd"
                              :id="id"
                              @update="update"

@@ -6,6 +6,7 @@ use App\Models\Admin;
 use App\Models\AdminPermissionRelation;
 use App\Models\ApprovalProcess;
 use App\Models\Department;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class AdminLogic extends BaseLogic
@@ -24,6 +25,20 @@ class AdminLogic extends BaseLogic
         }
 
         $token = AuthLogic::getToken($data);
+
+        setcookie(
+            'X-Token',         // Cookie 名称（必需）
+            $token,   // Cookie 值（默认空字符串）
+            [
+                'expires' => (time() + 86400),     // 过期时间（Unix 时间戳，0 表示会话 Cookie）
+                'path' => "/",    // 生效路径（默认当前目录）
+                'domain' => '',  // 生效域名（默认当前域名）
+                'secure' => true, // 仅通过 HTTPS 传输（默认 false）
+                'httponly' => true,// 禁止 JavaScript 访问（默认 false）
+                'samesite' => 'Strict'
+            ]
+        );
+
         $menu = AdminPermissionRelation::getMenu($data['admin_id']);
         $permission = AdminPermissionRelation::getPermissionArr($data['admin_id']);
 
@@ -35,6 +50,26 @@ class AdminLogic extends BaseLogic
             ->first();
 
         return ['token' => $token, 'menu' => $menu,'permission' => $permission,'admin' => $data];
+    }
+
+    public function logout($params)
+    {
+        setcookie(
+            'X-Token',         // Cookie 名称（必需）
+            '',   // Cookie 值（默认空字符串）
+            [
+                'expires' => (time() - 86400),     // 过期时间（Unix 时间戳，0 表示会话 Cookie）
+                'path' => "/",    // 生效路径（默认当前目录）
+                'domain' => '',  // 生效域名（默认当前域名）
+                'secure' => true, // 仅通过 HTTPS 传输（默认 false）
+                'httponly' => true,// 禁止 JavaScript 访问（默认 false）
+                'samesite' => 'Strict'
+            ]
+        );
+
+        Cache::delete('admin_' .AuthLogic::$userId . '_token');
+
+        return [];
     }
 
     public function resetPassword($params)
@@ -105,13 +140,18 @@ class AdminLogic extends BaseLogic
     public function getAllList($params)
     {
         $query = Admin::query()
-            ->where(['admin_enabled' => 1])->where('admin_department_id','>',0);
+            ->where(['admin_enabled' => 1]);
 
         if(isset($params['keyword']) && $params['keyword']){
             $query->where('admin_name','like','%'.$params['keyword'].'%');
         }
 
+        if(empty($params['all'])){
+            $query->where('admin_department_id','>',0);
+        }
+
         return $query
+            ->select(['admin_id','admin_name','admin_mobile'])
             ->get()->toArray();
     }
 

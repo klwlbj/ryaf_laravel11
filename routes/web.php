@@ -124,5 +124,6 @@ Route::middleware(['login'])->group(function () {
         Route::view('waitApprovalList/view', 'admin.approval.waitApprovalList');
         Route::view('hasApprovalList/view', 'admin.approval.hasApprovalList');
         Route::view('carbonCopyList/view', 'admin.approval.carbonCopyList');
+        Route::view('materialApplyPrint', 'admin.approval.materialApplyPrint');
     });
 });

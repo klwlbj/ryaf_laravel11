@@ -45,7 +45,8 @@ class PushHeartBeat extends Command
             ->where('smde_fake','=',0)
             ->whereIn('smde_type',['烟感','温感'])
 //            ->where('smde_node_ids', 'like', "%,5,%")
-            ->whereRaw("DATE_FORMAT(smde_last_heart_beat, '%Y-%m-%d %H:%i') = DATE_FORMAT((NOW() - INTERVAL 1 MINUTE), '%Y-%m-%d %H:%i')")
+//            ->whereRaw("DATE_FORMAT(smde_last_heart_beat, '%Y-%m-%d %H:%i') = DATE_FORMAT((NOW() - INTERVAL 1 MINUTE), '%Y-%m-%d %H:%i')")
+            ->whereRaw("DATE_FORMAT(smde_last_heart_beat, '%Y-%m-%d %H:%i') >= '2025-04-03 07:04' and DATE_FORMAT(smde_last_heart_beat, '%Y-%m-%d %H:%i') <= '2025-04-03 07:15'")
             ->select([
                 'smde_yunchuang_id',
                 'smde_imei',
@@ -111,7 +112,7 @@ class PushHeartBeat extends Command
             return true;
         }
 
-        if($count > 10){
+        if($count > 100){
             return false;
         }
 

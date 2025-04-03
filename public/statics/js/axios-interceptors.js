@@ -1,8 +1,8 @@
 axios.interceptors.request.use(
     function (config) {
-        if (getCookie('X-Token')) {
+        if (localStorage.getItem('X-Token')) {
             // 判断是否存在 token, 如果存在的话, 则每个 http header 都加上 token
-            config.headers['X-Token'] = getCookie('X-Token');
+            config.headers['X-Token'] = localStorage.getItem('X-Token');
         }
         // 在发送请求之前进行操作
         return config;
@@ -19,6 +19,12 @@ axios.interceptors.response.use(
     function (response) {
         // console.log(response);
         if(response['data']['code'] && response['data']['code'] == 401){
+            window.location.href = '/login';
+            return false;
+        }
+
+        if(response['data']['code'] && response['data']['code'] == 402){
+            alert(response['data']['message']);
             window.location.href = '/login';
             return false;
         }

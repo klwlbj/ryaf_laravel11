@@ -11,13 +11,13 @@
                             <a-select-option :value="0">
                                 已撤回
                             </a-select-option>
-                            <a-select-option :value="2">
+                            <a-select-option :value="1">
                                 审批中
                             </a-select-option>
-                            <a-select-option :value="3">
+                            <a-select-option :value="2">
                                 已通过
                             </a-select-option>
-                            <a-select-option :value="4">
+                            <a-select-option :value="3">
                                 已拒绝
                             </a-select-option>
                         </a-select>
@@ -49,6 +49,11 @@
                         <div>
                             <a @click="onDetail(record)">
                                 详情
+                            </a>
+                        </div>
+                        <div>
+                            <a v-if="record.appr_status==2" @click="onPrint(record)">
+                                打印页面
                             </a>
                         </div>
                         <div>
@@ -124,6 +129,10 @@
                         title: 'Id',
                         dataIndex: 'appr_id',
                         width: 80
+                    },
+                    {
+                        title: '审批编号',
+                        dataIndex: 'appr_sn',
                     },
                     {
                         title: '审批类型',
@@ -249,6 +258,9 @@
                         this.$message.error('请求失败');
                     });
                 },
+                onPrint(row){
+                    window.open('/approval/materialApplyPrint?id='+row.appr_id);
+                }
             },
 
         })

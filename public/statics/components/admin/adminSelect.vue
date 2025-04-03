@@ -22,6 +22,11 @@ module.exports = {
                 return undefined
             },
         },
+        all: {
+            default:function(){
+                return 0
+            },
+        },
     },
     data () {
         return {
@@ -37,6 +42,7 @@ module.exports = {
                 url: '/api/admin/getAllList',
                 // 传递参数
                 data: {
+                    all:this.all
                 },
                 responseType: 'json',
                 headers:{

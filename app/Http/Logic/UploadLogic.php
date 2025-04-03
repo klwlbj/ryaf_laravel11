@@ -65,10 +65,10 @@ class UploadLogic extends BaseLogic
         $path = $path . '/' . date('Y-m-d');
         $originalName = md5($originalName);
         $fileName = $path . '/' . $originalName . '.' . $fileExtension;
-        while (file_exists(storage_path('app/public/' . $fileName))) {
-            $fileName = $path . '/' . $originalName . "({$index})" . '.' . $fileExtension;
-            $index++;
-        }
+//        while (file_exists(storage_path('app/public/' . $fileName))) {
+//            $fileName = $path . '/' . $originalName . "({$index})" . '.' . $fileExtension;
+//            $index++;
+//        }
 
         return $fileName;
     }

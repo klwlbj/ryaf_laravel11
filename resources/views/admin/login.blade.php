@@ -15,6 +15,7 @@
 <script src="{{asset('statics/js/antd.min.js')}}"></script>
 <script src="{{asset('statics/js/axios.min.js')}}"></script>
 <script src="{{asset('statics/js/cookie.js')}}"></script>
+
 <style>
     .login-form {
         max-width: 400px;
@@ -56,6 +57,18 @@
                     </a-input>
                 </a-form-item>
                 <a-form-item>
+                    <a-input
+                        v-model="form.code"
+                        type="password"
+                        placeholder="验证码"
+                        @keyup.enter="handleSubmit"
+                        style="width:150px"
+                    >
+                        <a-icon slot="prefix" type="lock" style="color: rgba(0,0,0,.25)"/>
+                    </a-input>
+                    <img style="margin-left: 10px" :src="captchaImage" @click="refreshCaptcha" alt="验证码" style="cursor: pointer;">
+                </a-form-item>
+                <a-form-item>
                     <a-button @click="handleSubmit" :loading="loading" type="primary" class="login-button">
                         登录
                     </a-button>
@@ -76,18 +89,73 @@
         data: {
             form: {
                 username: '',
-                password: ''
+                password: '',
+                code:'',
             },
+            captchaInput: '',
+            captchaText: '',
+            captchaImage: '',
             loading:false
         },
         created () {
-
+            this.refreshCaptcha();
         },
         components: {
 
         },
         methods: {
+            generateCaptcha() {
+                const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+                let captcha = '';
+                for (let i = 0; i < 4; i++) {
+                    captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return captcha;
+            },
+
+            // 创建验证码图片
+            createCaptchaImage(text) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                canvas.width = 100;
+                canvas.height = 40;
+
+                // 绘制背景
+                ctx.fillStyle = '#f3f3f3';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // 绘制文字
+                ctx.font = '24px Arial';
+                ctx.fillStyle = '#333';
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'center';
+                ctx.fillText(text, canvas.width/2, canvas.height/2);
+
+                // 添加干扰线
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                    ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                    ctx.strokeStyle = '#999';
+                    ctx.stroke();
+                }
+
+                return canvas.toDataURL();
+            },
+
+            // 刷新验证码
+            refreshCaptcha() {
+                this.captchaText = this.generateCaptcha();
+                this.captchaImage = this.createCaptchaImage(this.captchaText);
+                this.error = '';
+            },
             handleSubmit(){
+                if (this.form.code.toLowerCase() !== this.captchaText.toLowerCase()) {
+                    this.$message.error('验证码有误');
+                    this.refreshCaptcha();
+                    return false;
+                }
                 this.loading = true
                 axios({
                     // 默认请求方式为get
@@ -106,7 +174,8 @@
                         this.$message.error(res.message);
                         return false;
                     }
-                    setCookie('X-Token',res.data.token,1);
+                    // setCookie('X-Token',res.data.token,1);
+                    localStorage.setItem("X-Token",res.data.token);
                     localStorage.setItem("menu",JSON.stringify(res.data.menu));
                     localStorage.setItem("permission",JSON.stringify(res.data.permission));
                     localStorage.setItem("admin",JSON.stringify(res.data.admin));

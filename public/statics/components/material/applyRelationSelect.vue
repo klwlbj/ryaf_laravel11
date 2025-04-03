@@ -1,8 +1,11 @@
 <template>
-    <a-select v-model="id" show-search placeholder="请选择关联申领单" :max-tag-count="1"
-              :mode="mode" style="width: 200px;" allow-clear @change="handleChange" option-filter-prop="label">
+    <a-select v-model="id"  class="relationSelect" show-search placeholder="请选择关联申领单" :max-tag-count="3"
+              :mode="mode" style="width: 300px;" allow-clear @change="handleChange" option-filter-prop="label">
         <a-select-option v-for="(item, key) in list" :key="key" :value="item.id" :label="item.name">
-            {{ item.name }} - {{item.date}}
+            {{ item.name }}
+            <div>
+                {{item.sn}}
+            </div>
         </a-select-option>
     </a-select>
 </template>
@@ -14,10 +17,15 @@ module.exports = {
     props: {
         mode: {
             default:function(){
-                return 'default'
+                return 'multiple'
             },
         },
         defaultData: {
+            default:function(){
+                return undefined
+            },
+        },
+        materialIds: {
             default:function(){
                 return undefined
             },
@@ -37,6 +45,7 @@ module.exports = {
                 url: '/api/materialApply/getRelationList',
                 // 传递参数
                 data: {
+                    'material_ids' : this.materialIds
                 },
                 responseType: 'json',
                 headers:{
@@ -59,7 +68,7 @@ module.exports = {
         },
         clearData(){
             this.id = undefined;
-        }
+        },
     },
     created () {
         if(this.mode === 'default'){
@@ -68,6 +77,7 @@ module.exports = {
             this.id = [];
         }
         this.getList();
+
         if(this.defaultData){
             this.id = this.defaultData;
             this.$emit('change',this.defaultData);
@@ -80,6 +90,13 @@ module.exports = {
             }
 
             this.id = newData;
+        },
+        materialIds (newData,oldData) {
+            if(newData === oldData){
+                return false
+            }
+
+            this.getList();
         }
     },
     computed: {
@@ -89,6 +106,8 @@ module.exports = {
 }
 </script>
 <style scoped>
-
+.relationSelect > div > div > ul > li{
+    height: unset;
+}
 </style>
 

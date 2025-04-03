@@ -28,7 +28,7 @@ class Department extends BaseModel
             }
 
             $array = self::getNameArr($list, $value);
-            array_shift($array);
+//            array_shift($array);
             self::$departmentArr[$value['depa_id']] = implode('->', $array);
         }
     }

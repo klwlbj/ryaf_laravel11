@@ -578,6 +578,22 @@ class MaterialFlowLogic extends BaseLogic
                 return false;
             }
 
+            #如果存在申购单
+            $materialApplyDetail = MaterialApplyDetail::query()->where(['maap_flow_id' => $params['id']])->select(['maap_id','maap_apply_id'])->first();
+            if($materialApplyDetail){
+                if(MaterialApplyDetail::query()->where(['maap_id' => $materialApplyDetail->maap_id])->update(['maap_status' => 1]) === false){
+                    DB::rollBack();
+                    ResponseLogic::setMsg('修改申购表详情失败');
+                    return false;
+                }
+
+                if(MaterialApply::query()->where(['maap_id' => $materialApplyDetail->maap_apply_id])->update(['maap_status' => 3]) === false){
+                    DB::rollBack();
+                    ResponseLogic::setMsg('修改申购表失败');
+                    return false;
+                }
+            }
+
             DB::commit();
         }
 

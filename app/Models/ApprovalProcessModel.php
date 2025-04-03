@@ -65,7 +65,7 @@ class ApprovalProcessModel extends BaseModel
             }
 
         }
-//        print_r($list);die;
+//        die;
         return $list;
     }
 
@@ -76,6 +76,7 @@ class ApprovalProcessModel extends BaseModel
      */
     public static function checkCondition($conditionList, $conditionParams)
     {
+
         foreach ($conditionList as $key => $value){
             switch ($value['type']){
                 case "operation":
@@ -87,7 +88,15 @@ class ApprovalProcessModel extends BaseModel
                         break;
                     }
 
+                    if($value['symbol'] == '>' && $conditionParams[$value['key']] > $value['value']){
+                        break;
+                    }
+
                     if($value['symbol'] == '=' && $conditionParams[$value['key']] == $value['value']){
+                        break;
+                    }
+
+                    if($value['symbol'] == 'intersection' && !empty(array_intersect($conditionParams[$value['key']],$value['value']))){
                         break;
                     }
                     return false;

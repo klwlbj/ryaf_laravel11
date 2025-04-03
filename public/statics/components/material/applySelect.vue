@@ -66,6 +66,7 @@ module.exports = {
         },
         clearData(){
             this.id = undefined;
+            this.getList();
         }
     },
     created () {

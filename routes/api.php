@@ -71,6 +71,7 @@ Route::prefix('yunChuang')->group(function () {
 Route::any('address/getStandardAddress', [AddressController::class, 'getStandardAddress']);
 
 Route::middleware(['login'])->group(function () {
+    Route::post('/logout', [AdminController::class, 'logout']);
     //管理员
     Route::prefix('admin')->group(function () {
         Route::post('/getList', [AdminController::class, 'getList']);
@@ -286,6 +287,7 @@ Route::middleware(['login'])->group(function () {
     Route::prefix('approval')->group(function () {
         Route::post('/getList', [ApprovalController::class, 'getList']);
         Route::post('/getInfo', [ApprovalController::class, 'getInfo']);
+        Route::post('/updateInfo', [ApprovalController::class, 'updateInfo']);
         Route::post('/agree', [ApprovalController::class, 'agree']);
         Route::post('/reject', [ApprovalController::class, 'reject']);
         Route::post('/cancel', [ApprovalController::class, 'cancel']);

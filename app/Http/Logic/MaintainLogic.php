@@ -489,7 +489,7 @@ class MaintainLogic extends BaseLogic
                 })->orWhere(function (Builder $checkQuery2) use ($day){
                     #监察条件2  交付日期内规定日期到达后  心跳包没有上报
                     $checkQuery2
-                        ->whereRaw("(smde_last_heart_beat < (NOW() - INTERVAL 2 DAY) or COALESCE(smde_last_heart_beat,'') = '')")
+                        ->whereRaw("(smde_last_heart_beat < (NOW() - INTERVAL 3 DAY) or COALESCE(smde_last_heart_beat,'') = '')")
                         ->where(function (Builder $checkQuery22) use ($day){
                             $checkQuery22
 //                                ->orWhereRaw("COALESCE(smde_last_heart_beat,'') = ''")

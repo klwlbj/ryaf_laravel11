@@ -5,6 +5,7 @@ namespace App\Http\Logic;
 use App\Models\MaterialFlow;
 use App\Models\MaterialFlowConsume;
 use App\Models\MaterialSpecificationRelation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class MaterialFlowConsumeLogic extends BaseLogic
@@ -15,10 +16,15 @@ class MaterialFlowConsumeLogic extends BaseLogic
         $pageSize = $params['page_size'] ?? 10;
         $point = ($page - 1) * $pageSize;
 
+        $subQuery =  MaterialFlowConsume::query()
+            ->select(['mafl_out_id',DB::raw("sum(mafl_number) as total")])
+            ->groupBy(['mafl_out_id']);
+
         $query = MaterialFlow::query()
             ->leftJoin('material','material_flow.mafl_material_id','=','material.mate_id')
             ->leftJoin('admin as receive_user','material_flow.mafl_receive_user_id','=','receive_user.admin_id')
             ->leftJoin('admin as apply_user','material_flow.mafl_apply_user_id','=','apply_user.admin_id')
+            ->leftJoinSub($subQuery,'sub','sub.mafl_out_id','=','material_flow.mafl_id')
             ->where(['material_flow.mafl_type' => 2]);
         ;
 
@@ -40,11 +46,23 @@ class MaterialFlowConsumeLogic extends BaseLogic
             $query->where('material_flow.mafl_receive_user_id','=',$params['receive_user_id']);
         }
 
+        if(!empty($params['status']) && $params['status'] == 1){
+            $query->where(function (Builder $q){
+                $q->orWhere(DB::raw("COALESCE(sub.total,0)"),'<',DB::raw('material_flow.mafl_number'))
+                    ->orWhereNull('sub.total');
+            });
+        }
+
+        if(!empty($params['status']) && $params['status'] == 2){
+            $query->where('sub.total','=',DB::raw("material_flow.mafl_number"));
+        }
+
         $total = $query->count();
 
         $query->select([
             'material_flow.*',
             'material.mate_name as mafl_material_name',
+            'sub.total',
 //                'node_account.noac_name as mafl_created_user',
             'receive_user.admin_name as mafl_receive_user',
             'apply_user.admin_name as mafl_apply_user',

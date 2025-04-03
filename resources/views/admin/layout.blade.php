@@ -6,15 +6,16 @@
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <link rel="icon" href="{{asset('statics/image/icon.jpg')}}" type="image/x-icon"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+{{--    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">--}}
     <link rel="stylesheet" type="text/css"  href="{{asset('statics/css/antd.min.css')}}">
+{{--    <link rel="preload" href="{{asset('statics/js/antd.min.js')}}" as="script">--}}
     @section('link')
     @show
 </head>
 <script src="{{asset('statics/js/moment.js')}}"></script>
 <script src="{{asset('statics/js/moment-zh-cn.js')}}"></script>
 <script src="{{asset('statics/js/vue.js')}}"></script>
-<script src="{{asset('statics/js/antd.min.js')}}"></script>
+<script src="{{asset('statics/js/antd.min.js?v=1.7.2')}}"></script>
 <script src="{{asset('statics/js/httpVueLoader.js')}}"></script>
 <script src="{{asset('statics/js/axios.min.js')}}"></script>
 <script src="{{asset('statics/js/cookie.js')}}"></script>
@@ -33,7 +34,7 @@
 <div style=" display: flex;flex-direction: column;height: 100vh; ">
     <div id='header' class="header">
         <div style="height: 50px;background-color: #053434;color: white;display: flex;align-items:center;justify-content:space-between;padding: 0 5px;">
-            <span style="font-size: 22px;">如约安防信息化系统后台VER 1.0</span>
+            <span style="font-size: 22px;">如约安防信息化系统后台VER 1.3</span>
             <span id="time" style="font-size: 22px;font-weight: bold"></span>
             <span style="font-size: 16px;font-weight: bold;margin-right: 20px">
 
@@ -53,7 +54,7 @@
                                 </a-badge>
                             </a-menu-item>
                             <a-menu-item>
-                                <a style="text-underline: none;" href="javascript:void(0);" onclick="logout()">退出</a>
+                                <a style="text-underline: none;" href="javascript:void(0);" @click="logout">退出</a>
                             </a-menu-item>
                       </a-menu>
                     </template>
@@ -103,14 +104,6 @@
         return (permission[key] !== 0);
     }
     moment.locale('zh-cn');
-    function logout(){
-        deleteCookie('X-Token');
-        localStorage.removeItem("menu");
-        localStorage.removeItem("permission");
-        localStorage.removeItem("admin");
-        window.location.href='/login';
-    }
-
 </script>
 
 
@@ -174,6 +167,36 @@
 
         },
         methods: {
+            logout(){
+                this.loading = true;
+                axios({
+                    // 默认请求方式为get
+                    method: 'post',
+                    url: '/api/logout',
+                    // 传递参数
+                    data: {},
+                    responseType: 'json',
+                    headers:{
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }).then(response => {
+                    this.loading = false;
+                    let res = response.data;
+                    if(res.code !== 0){
+                        this.$message.error(res.message);
+                        return false;
+                    }
+                    // deleteCookie('X-Token');
+                    localStorage.removeItem("X-Token");
+                    localStorage.removeItem("menu");
+                    localStorage.removeItem("permission");
+                    localStorage.removeItem("admin");
+                    this.$message.success('退出成功');
+                    window.location.href='/login';
+                }).catch(error => {
+                    this.$message.error('请求失败');
+                });
+            },
             onRestPassword(){
                 this.visible = true;
             },

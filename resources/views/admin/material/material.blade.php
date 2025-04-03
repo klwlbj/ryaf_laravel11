@@ -69,7 +69,7 @@
                         <a-button icon="search" @click="handleFilter">查询</a-button>
                     </a-form-item>
                     <a-form-item>
-                        <a-button v-if="$checkPermission('/api/material/getList')" :loading="exportLoading" icon="download" @click="exportList">导出</a-button>
+                        <a-button v-if="$checkPermission('/api/material/reportExport')" :loading="exportLoading" icon="download" @click="exportList">导出</a-button>
                     </a-form-item>
 
                     <a-form-item>

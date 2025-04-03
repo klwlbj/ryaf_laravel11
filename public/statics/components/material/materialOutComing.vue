@@ -9,7 +9,7 @@
                 <warehouse-select ref="warehouseSelect" :default-data="warehouseId" @change="warehouseChange"></warehouse-select>
             </a-form-model-item>
 
-            <a-form-model-item label="申购单" prop="apply_id">
+            <a-form-model-item label="申领单" prop="apply_id">
                 <apply-select  ref="applySelect" @change="applyChange"></apply-select>
             </a-form-model-item>
 
@@ -146,12 +146,24 @@ module.exports = {
             this.verifyUserId = this.admin['department']['depa_leader_id'];
             this.fileList = [];
 
+            if(this.$refs['materialSelect']){
+                this.$refs['materialSelect'].clearData();
+            }
+
             if(this.$refs['applyUserSelect']){
                 this.$refs['applyUserSelect'].clearData();
             }
 
             if(this.$refs['adminSelect']){
                 this.$refs['adminSelect'].clearData();
+            }
+
+            // if(this.$refs['warehouseSelect']){
+            //     this.$refs['warehouseSelect'].setValue(this.formData.warehouse_id);
+            // }
+
+            if(this.$refs['applySelect']){
+                this.$refs['applySelect'].clearData();
             }
 
         },
@@ -190,6 +202,7 @@ module.exports = {
                         that.initForm();
                         that.$emit('submit');
                     }).catch(error => {
+                        console.log(error);
                         this.$message.error('请求失败');
                     });
                 }else{
@@ -325,7 +338,7 @@ module.exports = {
             if(newData === oldData){
                 return false
             }
-
+            this.formData.material_id = newData;
             this.materialId = newData;
         }
     },

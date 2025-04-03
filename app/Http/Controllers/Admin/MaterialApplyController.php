@@ -103,9 +103,11 @@ class MaterialApplyController
         $params = $request->all();
 
         $validate = Validator::make($params, [
+            'category_id' => 'required',
             'detail' => 'required',
             'purpose' => 'required',
         ],[
+            'category_id.required' => '申购详情不得为空',
             'detail.required' => '申购详情不得为空',
             'purpose.required' => '销售用途不得为空',
         ]);
@@ -127,13 +129,15 @@ class MaterialApplyController
         $params = $request->all();
 
         $validate = Validator::make($params, [
+            'category_id' => 'required',
             'name' => 'required',
             'reason' => 'required',
             'detail' => 'required',
             'purpose' => 'required',
             'file_list' => 'required',
         ],[
-            'name.required' => '申领名称不得为空',
+            'category_id.required' => '申购类型不得为空',
+            'name.required' => '申领类型不得为空',
             'reason.required' => '申领事由不得为空',
             'detail.required' => '申购详情不得为空',
             'purpose.required' => '销售用途不得为空',
@@ -158,6 +162,7 @@ class MaterialApplyController
 
         $validate = Validator::make($params, [
             'id' => 'required',
+            'category_id' => 'required',
             'name' => 'required',
             'reason' => 'required',
             'detail' => 'required',
@@ -165,6 +170,7 @@ class MaterialApplyController
             'file_list' => 'required',
         ],[
             'id.required' => '申领名称不得为空',
+            'category_id.required' => '申购类型不得为空',
             'name.required' => '申领名称不得为空',
             'reason.required' => '申领事由不得为空',
             'detail.required' => '申购详情不得为空',

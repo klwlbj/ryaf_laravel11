@@ -3,7 +3,9 @@
 use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
-
+ini_set( "expose_php", "Off" );
+header('X-Frame-Options: SAMEORIGIN');
+header( "Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https://*.is.autonavi.com https://*.amap.com https://cache.amap.com https://webapi.amap.com https://a.amap.com https://webapi.amap.com https://restapi.amap.com https://vdata.amap.com https://cdn.jsdelivr.net;" );
 // Determine if the application is in maintenance mode...
 if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
     require $maintenance;

@@ -97,7 +97,7 @@ module.exports = {
             }
 
             this.id = newData;
-            this.$emit('change',newData);
+            // this.$emit('change',newData);
         },
         categoryId (newData,oldData) {
             if(newData === oldData){

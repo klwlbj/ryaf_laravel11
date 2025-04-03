@@ -11,13 +11,13 @@
                             <a-select-option :value="0">
                                 已撤回
                             </a-select-option>
-                            <a-select-option :value="2">
+                            <a-select-option :value="1">
                                 审批中
                             </a-select-option>
-                            <a-select-option :value="3">
+                            <a-select-option :value="2">
                                 已通过
                             </a-select-option>
-                            <a-select-option :value="4">
+                            <a-select-option :value="3">
                                 已拒绝
                             </a-select-option>
                         </a-select>
@@ -49,6 +49,16 @@
                         <div>
                             <a @click="onDetail(record)">
                                 详情
+                            </a>
+                        </div>
+                        <div>
+                            <a v-if="record.appr_status==1" @click="onRemark(record)">
+                                填写备注
+                            </a>
+                        </div>
+                        <div>
+                            <a v-if="record.appr_status==2" @click="onPrint(record)">
+                                打印页面
                             </a>
                         </div>
                         <div>
@@ -84,12 +94,26 @@
                      @cancel="approvalId=null">
                 <material-apply-detail
                     v-if="approvalType == 1"
-                    style="max-height: 600px;overflow: auto"
+                    style="max-height: 70vh;overflow: auto"
                     ref="materialApplyDetail"
                     :id="approvalId"
                     @close="detailVisible = false;approvalId=null"
                 >
                 </material-apply-detail>
+            </a-modal>
+
+            <a-modal :mask-closable="false" v-model="remarkVisible"
+                     title="填写备注"
+                     width="800px" :footer="null"
+                     @cancel="updateRemarkId=null">
+                <update-remark
+                    style="max-height: 600px;overflow: auto"
+                    ref="updateRemark"
+                    :id="updateRemarkId"
+                    @submit="submitRemark"
+                    @close="remarkVisible = false;updateRemarkId=null"
+                >
+                </update-remark>
             </a-modal>
         </a-card>
     </div>
@@ -123,6 +147,10 @@
                         title: 'Id',
                         dataIndex: 'appr_id',
                         width: 80
+                    },
+                    {
+                        title: '审批编号',
+                        dataIndex: 'appr_sn',
                     },
                     {
                         title: '审批类型',
@@ -163,8 +191,10 @@
                 ],
                 dialogFormVisible:false,
                 detailVisible:false,
+                remarkVisible:false,
                 id:null,
                 approvalId:null,
+                updateRemarkId:null,
                 approvalType:null
             },
             created () {
@@ -173,6 +203,7 @@
             },
             components: {
                 "material-apply-detail":  httpVueLoader('/statics/components/approval/materialApplyDetail.vue'),
+                "update-remark":  httpVueLoader('/statics/components/approval/updateRemark.vue'),
             },
             methods: {
                 moment,
@@ -242,6 +273,18 @@
                         this.$message.error('请求失败');
                     });
                 },
+                onPrint(row){
+                    window.open('/approval/materialApplyPrint?id='+row.appr_id);
+                },
+                onRemark(row){
+                    this.updateRemarkId = row.appr_id;
+                    this.remarkVisible = true;
+                },
+                submitRemark(){
+                    this.remarkVisible = false;
+                    this.updateRemarkId = null;
+                    this.getPageList();
+                }
             },
 
         })

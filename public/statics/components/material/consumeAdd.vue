@@ -10,7 +10,7 @@
             </a-form-model-item>
 
             <a-form-model-item required label="消耗人" prop="admin_id">
-                <admin-select ref="adminSelect" @change="adminChange"></admin-select>
+                <admin-select ref="adminSelect" :all="1" @change="adminChange"></admin-select>
             </a-form-model-item>
 
 

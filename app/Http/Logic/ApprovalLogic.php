@@ -4,6 +4,7 @@ namespace App\Http\Logic;
 
 use App\Models\Approval;
 use App\Models\ApprovalProcess;
+use App\Models\ApprovalRelation;
 use Illuminate\Support\Facades\DB;
 
 
@@ -94,7 +95,15 @@ class ApprovalLogic extends BaseLogic
 
     public function getInfo($params)
     {
-        $approvalData = Approval::query()->where(['appr_id' => $params['id']])->first();
+        $approvalData = Approval::query()
+            ->leftJoin('admin','admin_id','=','appr_admin_id')
+            ->leftJoin('department','depa_id','=','admin_department_id')
+            ->where(['appr_id' => $params['id']])
+            ->select([
+                'approval.*',
+                'admin_name',
+                'depa_name'
+            ])->first();
         if(!$approvalData){
             ResponseLogic::setMsg('数据不存在');
             return false;
@@ -106,10 +115,13 @@ class ApprovalLogic extends BaseLogic
             ->select(['approval_process.*','admin_name'])
             ->orderBy('appr_index','asc')->get()->toArray();
 
-        if(!empty($approvalData['appr_relation_approval_id'])){
+        #关联审批单
+        $relationIds = ApprovalRelation::query()->where(['apre_approval_id' => $approvalData['appr_id']])->select(['apre_relation_id'])->pluck('apre_relation_id')->toArray();
+
+        if(!empty($relationIds)){
             $approvalData['relation_approval'] = Approval::query()
-                ->where(['appr_id' => $approvalData['appr_relation_approval_id']])
-                ->first()->toArray();
+                ->whereIn('appr_id',$relationIds)
+                ->get()->toArray();
         }else{
             $approvalData['relation_approval'] = [];
         }
@@ -137,6 +149,27 @@ class ApprovalLogic extends BaseLogic
 
         return $approvalData;
 
+    }
+
+    public function updateInfo($params)
+    {
+        $approvalData = Approval::query()->where(['appr_id' => $params['id']])->first();
+        if(!$approvalData){
+            ResponseLogic::setMsg('数据不存在');
+            return false;
+        }
+
+        $update = [];
+
+        if(!empty($params['remark'])){
+            $update['appr_remark'] = $params['remark'];
+        }
+
+        if(!empty($update)){
+            Approval::query()->where(['appr_id' => $params['id']])->update($update);
+        }
+
+        return [];
     }
 
     public function agree($params)

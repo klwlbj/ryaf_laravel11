@@ -146,7 +146,7 @@ class HandleFakeHeartBeat extends Command
             return true;
         }
 
-        if($count > 10){
+        if($count > 100){
             return false;
         }
 
