@@ -15,6 +15,8 @@
 <script src="{{asset('statics/js/antd.min.js')}}"></script>
 <script src="{{asset('statics/js/axios.min.js')}}"></script>
 <script src="{{asset('statics/js/cookie.js')}}"></script>
+<script src="{{asset('statics/js/cache.js')}}"></script>
+<script src="{{asset('statics/js/yidun/captcha.js')}}"></script>
 
 <style>
     .login-form {
@@ -41,7 +43,7 @@
                     <a-input
                         v-model="form.mobile"
                         placeholder="账号"
-                        @keyup.enter="handleSubmit"
+                        @keyup.enter="captchaCheck"
                     >
                         <a-icon slot="prefix" type="user" style="color: rgba(0,0,0,.25)"/>
                     </a-input>
@@ -51,25 +53,13 @@
                         v-model="form.password"
                         type="password"
                         placeholder="密码"
-                        @keyup.enter="handleSubmit"
+                        @keyup.enter="captchaCheck"
                     >
                         <a-icon slot="prefix" type="lock" style="color: rgba(0,0,0,.25)"/>
                     </a-input>
                 </a-form-item>
                 <a-form-item>
-                    <a-input
-                        v-model="form.code"
-                        type="password"
-                        placeholder="验证码"
-                        @keyup.enter="handleSubmit"
-                        style="width:150px"
-                    >
-                        <a-icon slot="prefix" type="lock" style="color: rgba(0,0,0,.25)"/>
-                    </a-input>
-                    <img style="margin-left: 10px" :src="captchaImage" @click="refreshCaptcha" alt="验证码" style="cursor: pointer;">
-                </a-form-item>
-                <a-form-item>
-                    <a-button @click="handleSubmit" :loading="loading" type="primary" class="login-button">
+                    <a-button @click="captchaCheck" :loading="loading" type="primary" class="login-button">
                         登录
                     </a-button>
                 </a-form-item>
@@ -95,67 +85,52 @@
             captchaInput: '',
             captchaText: '',
             captchaImage: '',
-            loading:false
+            loading:false,
+            captchaIns: '',
+            errCount:0,
+            errLimit:5,
+            errTimeLimit : 1800000,
         },
         created () {
-            this.refreshCaptcha();
+            let that = this;
+            initCaptcha('',(instance)=>{
+                that.captchaIns = instance;
+            },()=>{
+                that.handleSubmit();
+            },() => {
+                that.errCount = getCache('captcha_err_count');
+
+                if(!that.errCount){
+                    that.errCount = 1;
+                }else{
+                    that.errCount++;
+                }
+
+                if(that.errCount >= that.errLimit){
+                    that.captchaIns.close();
+                    that.$message.error('失败次数过多，请稍后再试');
+                    return false;
+                }
+
+                setCache('captcha_err_count',that.errCount,that.errTimeLimit);
+            });
+        },
+        mounted(){
+
         },
         components: {
 
         },
         methods: {
-            generateCaptcha() {
-                const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-                let captcha = '';
-                for (let i = 0; i < 4; i++) {
-                    captcha += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return captcha;
-            },
-
-            // 创建验证码图片
-            createCaptchaImage(text) {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-
-                canvas.width = 100;
-                canvas.height = 40;
-
-                // 绘制背景
-                ctx.fillStyle = '#f3f3f3';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // 绘制文字
-                ctx.font = '24px Arial';
-                ctx.fillStyle = '#333';
-                ctx.textBaseline = 'middle';
-                ctx.textAlign = 'center';
-                ctx.fillText(text, canvas.width/2, canvas.height/2);
-
-                // 添加干扰线
-                for (let i = 0; i < 3; i++) {
-                    ctx.beginPath();
-                    ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
-                    ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
-                    ctx.strokeStyle = '#999';
-                    ctx.stroke();
-                }
-
-                return canvas.toDataURL();
-            },
-
-            // 刷新验证码
-            refreshCaptcha() {
-                this.captchaText = this.generateCaptcha();
-                this.captchaImage = this.createCaptchaImage(this.captchaText);
-                this.error = '';
-            },
-            handleSubmit(){
-                if (this.form.code.toLowerCase() !== this.captchaText.toLowerCase()) {
-                    this.$message.error('验证码有误');
-                    this.refreshCaptcha();
+            captchaCheck(){
+                this.errCount = getCache('captcha_err_count');
+                if(this.errCount >=this.errLimit){
+                    this.$message.error('失败次数过多，请稍后再试');
                     return false;
                 }
+                this.captchaIns && this.captchaIns.verify();
+            },
+            handleSubmit(){
                 this.loading = true
                 axios({
                     // 默认请求方式为get
@@ -171,6 +146,7 @@
                     this.loading = false
                     let res = response.data;
                     if(res.code != 0){
+                        this.captchaIns.refresh()
                         this.$message.error(res.message);
                         return false;
                     }
@@ -181,6 +157,7 @@
                     localStorage.setItem("admin",JSON.stringify(res.data.admin));
                     window.location.href = '/'
                 }).catch(error => {
+                    this.captchaIns.refresh()
                     this.$message.error('请求失败');
                 });
             }

@@ -9,6 +9,10 @@
                 <warehouse-select ref="warehouseSelect" :default-data="warehouseId" @change="warehouseChange"></warehouse-select>
             </a-form-model-item>
 
+            <a-form-model-item label="编号" prop="sn">
+                <a-input style="width: 200px" v-model="formData.sn"/>
+            </a-form-model-item>
+
             <a-form-model-item label="入库数量" prop="number">
                 <a-input-number v-model="formData.number" :min="0"/>
             </a-form-model-item>
@@ -119,6 +123,7 @@ module.exports = {
             this.formData= {
                 material_id:'',
                 warehouse_id:2,
+                sn:'',
                 number:0,
                 production_date:moment().format("YYYY-MM-DD"),
                 expire_date:moment().add(10, 'years').format("YYYY-MM-DD"),
@@ -131,6 +136,10 @@ module.exports = {
             };
 
             this.verifyUserId = this.admin['department']['depa_leader_id'];
+
+            if(this.$refs['materialSelect']){
+                this.$refs['materialSelect'].clearData();
+            }
         },
         submitData(){
             let that = this;
@@ -208,7 +217,7 @@ module.exports = {
             if(newData === oldData){
                 return false
             }
-
+            this.formData.material_id = newData;
             this.materialId = newData;
         }
     },

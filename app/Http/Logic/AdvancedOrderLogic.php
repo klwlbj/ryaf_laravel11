@@ -125,6 +125,10 @@ class AdvancedOrderLogic extends ExcelGenerator
             $query->whereIn('ador_node_id', $nodeIds);
         }
 
+        if(isset($params['status']) && !empty($params['status'])) {
+            $query->where('ador_status', $params['status']);
+        }
+
         if (!empty($params['start_date'])) {
             $query->where('ador_pay_date', '>=', $params['start_date']);
         }
@@ -267,7 +271,7 @@ class AdvancedOrderLogic extends ExcelGenerator
 //        print_r($receivableData);die;
 
         #如果预收金额大于订单金额
-        if($advancedData['ador_remain_funds'] >= $needPay){
+        if($advancedData['ador_remain_funds'] > $needPay){
             $update = [
                 'ador_remain_funds' => $advancedData['ador_remain_funds'] - $needPay,
             ];

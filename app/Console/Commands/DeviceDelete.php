@@ -37,54 +37,24 @@ class DeviceDelete extends Command
         ini_set( 'max_execution_time', 72000 );
         ini_set( 'memory_limit', '2048M' );
 
-//        $fileName = public_path() . "/deviceDelete1.xlsx";
-//        $spreadsheet = IOFactory::load($fileName);
-//        $imeis = [];
-//        $sheetData = $spreadsheet->getSheet(0)->toArray(null, true, true, true);
+        $fileName = public_path() . "/deviceDelete1.xlsx";
+        $spreadsheet = IOFactory::load($fileName);
+        $imeis = [];
+        $sheetData = $spreadsheet->getSheet(0)->toArray(null, true, true, true);
 //
-//
-//        foreach ($sheetData as $key => $value) {
-//            $value = array_values($value);
-//            $imeis[] = $value[0];
-////            if($data){
-////                SmokeDetector::query()->where(['smde_imei' => $value[0]])->delete();
-////                ToolsLogic::writeLog('删除数据库imei:' . $value[0],'deviceDelete');
-////            }else{
-////                ToolsLogic::writeLog('数据库imei不存在:' . $value[0],'deviceDelete');
-////            }
-//        }
 
-        $imeis = [
-            '865371075308162',
-            '865371076034130',
-            '865371076213114',
-            '865371075916311',
-            '865371076017291',
-            '865371075904028',
-            '865371075888668',
-            '865371076031987',
-            '865371075536176',
-            '865371075976356',
-            '865371075904283',
-            '865371075915214',
-            '865371076017291',
-            '865371075916311',
-            '865371075904028',
-            '865371076034130',
-            '865371075443553',
-            '865371078221615',
-            '865371075308162',
-            '865371076034130',
-            '865371076213114',
-            '865371075916311',
-            '865371076017291',
-            '865371075904028',
-            '865371075888668',
-            '865371076031987',
-            '865371075536176',
-            '865371075976356',
-            '865371075904283',
-        ];
+        foreach ($sheetData as $key => $value) {
+            $value = array_values($value);
+            $imeis[] = str_replace("IMEI=", "", $value[0]);
+//            if($data){
+//                SmokeDetector::query()->where(['smde_imei' => $value[0]])->delete();
+//                ToolsLogic::writeLog('删除数据库imei:' . $value[0],'deviceDelete');
+//            }else{
+//                ToolsLogic::writeLog('数据库imei不存在:' . $value[0],'deviceDelete');
+//            }
+        }
+
+//        print_r($imeis);die;
         $yunIds = SmokeDetector::query()->whereIn('smde_imei',$imeis)
             ->where('smde_yunchuang_id','>',0)
             ->select(['smde_yunchuang_id','smde_imei'])->get()->toArray();

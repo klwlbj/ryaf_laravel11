@@ -32,6 +32,28 @@ class MaterialFlowController
         return ResponseLogic::apiResult(0,'ok',$res);
     }
 
+    public function getSnList(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+
+        ],[
+
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialFlowLogic::getInstance()->getSnList($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
     public function inComing(Request $request)
     {
         $params = $request->all();

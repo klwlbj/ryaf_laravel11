@@ -2,6 +2,7 @@
 
 namespace App\Http\Logic;
 
+use App\Models\ApprovalProcess;
 use App\Models\File;
 use App\Models\Material;
 use App\Models\MaterialApply;
@@ -52,6 +53,10 @@ class MaterialFlowLogic extends BaseLogic
             $query->where('material_flow.mafl_datetime','<=',$params['end_date'] . ' 23:59:59');
         }
 
+        if(!empty($params['sn'])){
+            $query->where('material_flow.mafl_sn','=',$params['sn']);
+        }
+
         $total = $query->count();
 
         $query->select([
@@ -84,7 +89,7 @@ class MaterialFlowLogic extends BaseLogic
 
         $fileList = File::query()
             ->whereIn('file_relation_id', $ids)->where(['file_type' => 'material_flow'])
-            ->select(['file_relation_id','file_name','file_path'])->get()->groupBy('file_relation_id')->toArray();
+            ->select(['file_relation_id','file_name','file_path','file_ext'])->get()->groupBy('file_relation_id')->toArray();
 
         $specificationArr = MaterialSpecificationRelation::query()
             ->leftJoin('material_specification','material_specification.masp_id','=','material_specification_relation.masp_specification_id')
@@ -118,6 +123,11 @@ class MaterialFlowLogic extends BaseLogic
         ];
     }
 
+    public function getSnList($params)
+    {
+        return MaterialFlow::query()->whereNotNull('mafl_sn')->select(['mafl_sn'])->pluck('mafl_sn')->toArray();
+    }
+
     public function inComing($params)
     {
         ToolsLogic::writeLog('入库操作','material_flow',$params);
@@ -149,6 +159,10 @@ class MaterialFlowLogic extends BaseLogic
             'mafl_status' => 1,
             'mafl_operator_id' => AuthLogic::$userId
         ];
+
+        if(isset($params['sn']) && !empty($params['sn'])){
+            $incomingData['mafl_sn'] = $params['sn'];
+        }
 
         #查看是否有该仓库
         $inventoryId = MaterialInventory::query()
@@ -357,11 +371,22 @@ class MaterialFlowLogic extends BaseLogic
                     return false;
                 }
             }
+
+            #如果申购单流程不存在最终确认人 则默认自动确认
+//            if(!ApprovalProcess::query()->where(['appr_approval_id' => $params['apply_id'],'appr_admin_id' => $params['verify_user_id']])->exists()){
+//                if(MaterialFlow::query()->where(['mafl_id' => $flowId])->update(['mafl_status' => 2]) === false){
+//                    DB::rollBack();
+//                    ResponseLogic::setMsg('更新确认状态失败');
+//                    return false;
+//                }
+//            }
         }
 
         DB::commit();
 
         Material::delCacheById($params['material_id']);
+        #自动记录消耗
+        MaterialFlowConsumeLogic::getInstance()->autoConsumeFlow($flowId);
 
         return [];
     }
@@ -581,7 +606,7 @@ class MaterialFlowLogic extends BaseLogic
             #如果存在申购单
             $materialApplyDetail = MaterialApplyDetail::query()->where(['maap_flow_id' => $params['id']])->select(['maap_id','maap_apply_id'])->first();
             if($materialApplyDetail){
-                if(MaterialApplyDetail::query()->where(['maap_id' => $materialApplyDetail->maap_id])->update(['maap_status' => 1]) === false){
+                if(MaterialApplyDetail::query()->where(['maap_id' => $materialApplyDetail->maap_id])->update(['maap_status' => 1,'maap_flow_id' => null]) === false){
                     DB::rollBack();
                     ResponseLogic::setMsg('修改申购表详情失败');
                     return false;

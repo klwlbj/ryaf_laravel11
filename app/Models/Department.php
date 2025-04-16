@@ -76,4 +76,25 @@ class Department extends BaseModel
         }
         return $arr;
     }
+
+    public static function getDepartmentParentArr($departmentId)
+    {
+        $list = self::query()->get()->toArray();
+        $arr = [$departmentId];
+        return self::getParent($list,$departmentId,$arr);
+    }
+
+    public static function getParent($departmentList,$departmentId,$arr = [])
+    {
+        foreach ($departmentList as $key => $value){
+            if($value['depa_id'] == $departmentId){
+                if($value['depa_parent_id'] == 0){
+                    return $arr;
+                }
+                $arr[] = $value['depa_parent_id'];
+                $arr = self::getParent($departmentList,$value['depa_parent_id'],$arr);
+            }
+        }
+        return $arr;
+    }
 }

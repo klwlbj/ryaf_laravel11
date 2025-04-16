@@ -33,7 +33,7 @@
                 <a-input-number v-model="formData.installation_count"/>
             </a-form-model-item>
 
-            <a-form-model-item v-if="!this.id" label="预付金额" prop="funds_received">
+            <a-form-model-item v-if="formData.status == 1" label="预付金额" prop="funds_received">
                 <a-input-number v-model="formData.funds_received"  :step="0.01"/>
             </a-form-model-item>
 
@@ -230,6 +230,7 @@ module.exports = {
                     node_id: res.data.ador_node_id,
                     installation_date: res.data.ador_installation_date,
                     pay_date:res.data.ador_pay_date,
+                    status:res.data.ador_status,
                     user_name:res.data.ador_user_name,
                     user_phone:res.data.ador_user_phone,
                     address:res.data.ador_address,

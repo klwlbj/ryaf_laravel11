@@ -12,7 +12,7 @@
                         <a-range-picker
                             :placeholder="['开始时间', '结束时间']"
                             @change="dateChange"
-                            :default-value="[defaultDate,defaultDate]"></a-range-picker>
+                            :default-value="[listQuery.start_date,listQuery.end_date]"></a-range-picker>
                     </a-form-item>
 
                     <a-form-item label="领用人">
@@ -115,8 +115,8 @@
                 listQuery: {
                     keyword: "",
                     status:1,
-                    start_date:null,
-                    end_date:null,
+                    start_date:moment('2025-04-01').format("YYYY-MM-DD"),
+                    end_date:moment().format("YYYY-MM-DD"),
                     receive_user_id:undefined
                 },
                 defaultDate:undefined,
@@ -203,6 +203,7 @@
                 "receive-select":  httpVueLoader('/statics/components/admin/adminSelect.vue'),
             },
             methods: {
+                moment,
                 paginationChange (current, pageSize) {
                     this.listQuery.page = current;
                     this.pagination.current = current;

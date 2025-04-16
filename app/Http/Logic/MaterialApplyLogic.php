@@ -12,9 +12,11 @@ use App\Models\Material;
 use App\Models\MaterialApply;
 use App\Models\MaterialApplyDetail;
 use App\Models\MaterialDetail;
+use App\Models\MaterialFlow;
 use App\Models\MaterialPurchase;
 use App\Models\MaterialPurchaseDetail;
 use Illuminate\Support\Facades\DB;
+use function Laravel\Prompts\select;
 
 class MaterialApplyLogic extends BaseLogic
 {
@@ -31,10 +33,16 @@ class MaterialApplyLogic extends BaseLogic
         $pageSize = $params['page_size'] ?? 10;
         $point = ($page - 1) * $pageSize;
 
+        $departmentId = Admin::query()->where(['admin_id' => AuthLogic::$userId])->value('admin_department_id') ?: 0;
+
         $query = MaterialApply::query()
             ->leftJoin('admin','admin.admin_id','=','material_apply.maap_admin_id');
 
-        $query->where(['maap_admin_id' => AuthLogic::$userId]);
+        if(in_array($departmentId,[19,20])){
+            $query->where('admin.admin_department_id','=',$departmentId);
+        }
+
+//        $query->where(['maap_admin_id' => AuthLogic::$userId]);
 
         if (isset($params['start_date']) && $params['start_date']) {
             $query->where('maap_crt_time', '>=', $params['start_date']);
@@ -96,6 +104,8 @@ class MaterialApplyLogic extends BaseLogic
         foreach ($list as $key => &$value) {
             $value['is_update'] = (in_array($value['maap_status'],[0,5]) && $value['maap_admin_id'] == AuthLogic::$userId);
             $value['is_cancel'] = (in_array($value['maap_status'],[1]) && $value['maap_admin_id'] == AuthLogic::$userId);
+//            $value['is_handle'] = (in_array($value['maap_status'],[2,3]) && AuthLogic::$userId == 10010);
+            $value['is_handle'] = false;
             if (isset($detailArr[$value['maap_id']])) {
                 $value['detail'] = $detailArr[$value['maap_id']];
             } else {
@@ -895,6 +905,98 @@ class MaterialApplyLogic extends BaseLogic
             ResponseLogic::setMsg('更新申领单状态失败！');
             return false;
         }
+        return [];
+    }
+
+    public function handle($params)
+    {
+        $detail = ToolsLogic::jsonDecode($params['detail']);
+
+        if(empty($detail)){
+            ResponseLogic::setMsg('详情数据有误！');
+            return false;
+        }
+
+        $applyData = MaterialApply::query()->where(['maap_id' => $params['id']])->first();
+        if(!$applyData){
+            ResponseLogic::setMsg('审批单不存在！');
+            return false;
+        }
+
+        $applyData = $applyData->toArray();
+
+        if(!in_array($applyData['maap_status'],[2,3])){
+            ResponseLogic::setMsg('审批单不为待出库！');
+            return false;
+        }
+
+        $applyDetailArr = MaterialApplyDetail::query()
+            ->whereIn('maap_id',array_column($detail,'id'))
+            ->where('maap_apply_id','=',$params['id'])
+            ->where('maap_status','=',1)
+            ->select(['maap_id'])->pluck('maap_id')->toArray();
+
+        $flowDataArr = MaterialFlow::query()
+            ->whereIn('mafl_id',array_column($detail,'flow_id'))
+            ->select(['mafl_id'])->pluck('mafl_id')->toArray();
+
+
+        $existFlowArr = MaterialApplyDetail::query()
+            ->whereIn('maap_flow_id',array_column($detail,'flow_id'))
+            ->select(['maap_flow_id'])->pluck('maap_flow_id')->toArray();
+
+        $updateData = [];
+
+        foreach ($detail as $key => $value){
+            if(!in_array($value['id'],$applyDetailArr)){
+                ResponseLogic::setMsg('申领明细不存在！');
+                return false;
+            }
+
+            if(empty($value['flow_id'])){
+                continue;
+            }
+
+            if(!in_array($value['flow_id'],$flowDataArr)){
+                ResponseLogic::setMsg('出库数据不存在！');
+                return false;
+            }
+
+            if(in_array($value['flow_id'],$existFlowArr)){
+                ResponseLogic::setMsg('存在已办理出库！');
+                return false;
+            }
+
+            $updateData[] = $value;
+        }
+
+        DB::beginTransaction();
+
+        foreach ($updateData as $key => $value){
+            if(MaterialApplyDetail::query()->where(['maap_id' => $value['id']])->update(['maap_flow_id' => $value['flow_id'],'maap_status' => 2]) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('更新申购单详情表失败');
+                return false;
+            }
+        }
+
+        #判断是否已完成申购单  如果完成把主申购单变成完成  如果未完成则变成出库中
+        if(!MaterialApplyDetail::query()->where(['maap_apply_id' => $params['id'],'maap_status' => 1])->exists()){
+            if(MaterialApply::query()->where(['maap_id' => $params['id']])->update(['maap_status' => 4]) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('更新申购单状态失败');
+                return false;
+            }
+        }else{
+            if(MaterialApply::query()->where(['maap_id' => $params['id']])->update(['maap_status' => 3]) === false){
+                DB::rollBack();
+                ResponseLogic::setMsg('更新申购单状态失败');
+                return false;
+            }
+        }
+
+        DB::commit();
+
         return [];
     }
 }

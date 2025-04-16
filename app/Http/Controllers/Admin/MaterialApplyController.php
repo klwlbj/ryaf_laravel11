@@ -205,7 +205,31 @@ class MaterialApplyController
             return ResponseLogic::apiErrorResult($validate->errors()->first());
         }
 
-        $res = MaterialPurchaseLogic::getInstance()->delete($params);
+        $res = MaterialApplyLogic::getInstance()->delete($params);
+        if($res === false){
+            return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
+        }
+        return ResponseLogic::apiResult(0,'ok',$res);
+    }
+
+    public function handle(Request $request)
+    {
+        $params = $request->all();
+
+        $validate = Validator::make($params, [
+            'id' => 'required',
+            'detail' => 'required',
+        ],[
+            'id.required' => 'id不得为空',
+            'detail.required' => 'detail不得为空',
+        ]);
+
+        if($validate->fails())
+        {
+            return ResponseLogic::apiErrorResult($validate->errors()->first());
+        }
+
+        $res = MaterialApplyLogic::getInstance()->handle($params);
         if($res === false){
             return ResponseLogic::apiErrorResult(ResponseLogic::getMsg());
         }

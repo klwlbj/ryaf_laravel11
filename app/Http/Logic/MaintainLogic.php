@@ -15,6 +15,38 @@ use Illuminate\Support\Facades\DB;
 
 class MaintainLogic extends BaseLogic
 {
+    protected $presentArr = [
+        '868550067005616'
+        ,'865118074414065'
+        ,'868550067249115'
+        ,'868550067006218'
+        ,'868550067561261'
+        ,'868550067211131'
+        ,'868550067471180'
+        ,'868550067684501'
+        ,'868550060028649'
+        ,'868550067622089'
+        ,'868550067294079'
+        ,'868550067145347'
+        ,'865118072747318'
+        ,'865118072741451'
+        ,'868550068510242'
+        ,'868550067055397'
+        ,'868550067139597'
+        ,'868550065352432'
+        ,'868550067092473'
+        ,'868550067519210'
+        ,'868550067099056'
+        ,'868550067559034'
+        ,'865257066310491'
+        ,'868550065506599'
+        ,'868550067559422'
+        ,'868550067293956'
+        ,'868550067156682'
+        ,'868550067861422'
+        ,'868550067098033'
+        ,'868550065503885'
+    ];
     public function placeList($params)
     {
         $page = $params['page'] ?? 1;
@@ -27,9 +59,13 @@ class MaintainLogic extends BaseLogic
                 ->leftJoin('smoke_detector','smoke_detector.smde_place_id','=','place.plac_id')
                 ->leftJoin('user','user.user_id','=','place.plac_user_id')
                 ->leftJoin('admin','admin.admin_id','=','order.order_deliverer_id')
-                ->where(['order_status' => '交付完成','smde_present' => 0]);
+                ->where(['order_status' => '交付完成'])
+                ->whereNotIn('smde_imei',$this->presentArr)
+        ;
 
-        $deviceQuery = SmokeDetector::query()->where(['smde_present' => 0]);
+//        $deviceQuery = SmokeDetector::query()->where(['smde_present' => 0]);
+        $deviceQuery = SmokeDetector::query()->whereNotIn('smde_imei',$this->presentArr);
+
 
         if(!empty($params['node_id'])){
             $childIds = Node::getNodeChild($params['node_id']);
@@ -390,7 +426,8 @@ class MaintainLogic extends BaseLogic
             ->where('smde_place_id','>',0)
             ->where('smde_order_id','>',0)
             ->where('order_status','=','交付完成')
-            ->where(['smde_present' => 0])
+            ->whereNotIn('smde_imei',$this->presentArr)
+//            ->where(['smde_present' => 0])
         ;
 
         if(!empty($params['imei'])){
@@ -502,7 +539,8 @@ class MaintainLogic extends BaseLogic
             ->where('smde_place_id','>',0)
             ->where('smde_order_id','>',0)
             ->where('order_status','=','交付完成')
-            ->where(['smde_present' => 0])
+            ->whereNotIn('smde_imei',$this->presentArr)
+//            ->where(['smde_present' => 0])
         ;
 
         if(!empty($params['start_date'])){

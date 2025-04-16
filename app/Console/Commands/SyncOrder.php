@@ -31,6 +31,7 @@ class SyncOrder extends Command
     {
         $date = date('Y-m-d', strtotime('-1 day'));
 
+
         $res = ReceivableAccountLogic::getInstance()->syncOrder([
             'start_date' => $date,
             'end_date' => $date,

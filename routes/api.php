@@ -140,6 +140,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/setPrice', [MaterialFlowController::class, 'setPrice']);
         Route::post('/inComingUpdate', [MaterialFlowController::class, 'inComingUpdate']);
         Route::post('/cancel', [MaterialFlowController::class, 'cancel']);
+        Route::post('/getSnList', [MaterialFlowController::class, 'getSnList']);
     });
 
     Route::prefix('materialFlowConsume')->group(function () {
@@ -157,6 +158,7 @@ Route::middleware(['login'])->group(function () {
         Route::post('/add', [MaterialApplyController::class, 'add']);
         Route::post('/update', [MaterialApplyController::class, 'update']);
         Route::post('/getInfo', [MaterialApplyController::class, 'getInfo']);
+        Route::post('/handle', [MaterialApplyController::class, 'handle']);
     });
 
     Route::prefix('materialPurchase')->group(function () {

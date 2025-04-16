@@ -64,6 +64,11 @@
                             </a>
                         </div>
                         <div>
+                            <a v-if="record.is_handle" @click="onHandle(record)">
+                                办理
+                            </a>
+                        </div>
+                        <div>
                             <a v-if="record.is_update" @click="onUpdate(record)">
                                 修改
                             </a>
@@ -105,6 +110,19 @@
                     @close="detailVisible = false;"
                 >
                 </apply-detail>
+            </a-modal>
+
+            <a-modal :mask-closable="false" v-model="handleVisible"
+                     title="办理"
+                     width="1000px" :footer="null">
+                <apply-handle
+                    style="max-height: 70vh;overflow: auto"
+                    ref="applyHandle"
+                    :id="handleId"
+                    @submit="afterHandle"
+                    @close="handleVisible = false;"
+                >
+                </apply-handle>
             </a-modal>
 
             <a-modal :mask-closable="false" v-model="dialogFormVisible"
@@ -192,8 +210,10 @@
                 ],
                 dialogFormVisible:false,
                 detailVisible:false,
+                handleVisible:false,
                 id:null,
-                detailId:null
+                detailId:null,
+                handleId:null,
             },
             created () {
                 this.listQuery.page_size = this.pagination.pageSize;
@@ -202,6 +222,7 @@
             components: {
                 "apply-add":  httpVueLoader('/statics/components/material/applyAdd.vue'),
                 "apply-detail":  httpVueLoader('/statics/components/material/applyDetail.vue'),
+                "apply-handle":  httpVueLoader('/statics/components/material/applyHandle.vue'),
                 "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
             },
             methods: {
@@ -294,6 +315,15 @@
                 },
                 materialChange(value){
                     this.listQuery.material_id = value
+                },
+                onHandle(row){
+                    this.handleId = row.maap_id;
+                    this.handleVisible = true;
+                },
+                afterHandle(){
+                    this.handleId = null;
+                    this.handleVisible = false;
+                    this.getPageList();
                 }
             },
 

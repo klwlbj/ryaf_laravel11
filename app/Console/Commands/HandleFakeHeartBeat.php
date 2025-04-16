@@ -36,7 +36,7 @@ class HandleFakeHeartBeat extends Command
         DB::setDefaultConnection('mysql2');
 
         #如果处理中超过100个  直接返回
-        if(SimulateTask::query()->where(['sita_status' => 1])->count() >= 70){
+        if(SimulateTask::query()->where(['sita_status' => 1])->count() >= 200){
             return true;
         }
 
@@ -46,7 +46,7 @@ class HandleFakeHeartBeat extends Command
             ->where(function (Builder $q){
                 $q->orWhereRaw("DATE_FORMAT(sita_fake_heart_beat, '%Y-%m-%d %H:%i') = DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i')")
                     ->orWhere('sita_fake_heart_beat','<',date('Y-m-d H:i:s'));
-            })->limit(25)->get()->toArray();
+            })->limit(100)->get()->toArray();
 
 //        echo count($list);
 

@@ -2,6 +2,8 @@
 
 namespace App\Http\Logic;
 
+use App\Models\Admin;
+use App\Models\Department;
 use App\Models\MaterialFlow;
 use App\Models\MaterialFlowConsume;
 use App\Models\MaterialSpecificationRelation;
@@ -28,10 +30,16 @@ class MaterialFlowConsumeLogic extends BaseLogic
             ->where(['material_flow.mafl_type' => 2]);
         ;
 
+        $departmentId = Admin::query()->where(['admin_id' => AuthLogic::$userId])->value('admin_department_id') ?: 0;
+
         $query->where('mafl_datetime','>=','2025-03-17 00:00:00');
 
         if(isset($params['material_id']) && $params['material_id']){
             $query->where(['material_flow.mafl_material_id' => $params['material_id']]);
+        }
+
+        if(in_array($departmentId,[19,20])){
+            $query->where('apply_user.admin_department_id','=',$departmentId);
         }
 
         if(!empty($params['start_date'])){
@@ -69,7 +77,7 @@ class MaterialFlowConsumeLogic extends BaseLogic
         ]);
 
         $list = $query
-            ->orderBy('material_flow.mafl_datetime','asc')
+            ->orderBy('material_flow.mafl_datetime','desc')
             ->offset($point)->limit($pageSize)->get()->toArray();
 
         $materialId = array_values(array_unique(array_column($list, 'mafl_material_id')));
@@ -161,7 +169,8 @@ class MaterialFlowConsumeLogic extends BaseLogic
                 'mafl_id',
                 'mafl_number',
                 'mafl_date',
-                'admin_name'
+                'admin_name',
+                'mafl_remark',
             ])
             ->offset($point)->limit($pageSize)->get()->toArray();
 
@@ -176,5 +185,50 @@ class MaterialFlowConsumeLogic extends BaseLogic
         }
 
         return [];
+    }
+
+    public function autoConsumeFlow($flowId)
+    {
+        $flowData = MaterialFlow::query()
+            ->leftJoin('admin','admin_id','=','mafl_apply_user_id')
+            ->select([
+                'material_flow.*',
+                'admin.admin_department_id'
+            ])
+            ->where(['mafl_id' => $flowId])->first();
+
+        if(!$flowData){
+            ResponseLogic::setMsg('数据不存在！');
+            return false;
+        }
+
+        $flowData = $flowData->toArray();
+        if($flowData['mafl_type'] != 2){
+            ResponseLogic::setMsg('不为出库记录！');
+            return false;
+        }
+
+        $departmentArr = Department::getDepartmentParentArr($flowData['admin_department_id']);
+
+        if(!in_array(4,$departmentArr)){
+            return true;
+        }
+
+        #如果属于市场销售部 则自动添加消耗
+        $insertData = [
+            'mafl_out_id' => $flowId,
+            'mafl_number' => $flowData['mafl_number'],
+            'mafl_date' => $flowData['mafl_datetime'],
+            'mafl_admin_id' => $flowData['mafl_apply_user_id'],
+            'mafl_remark' => '市场销售部自动消耗',
+            'mafl_operator_id' => AuthLogic::$userId,
+        ];
+
+        if(MaterialFlowConsume::query()->insert($insertData) === false){
+            ResponseLogic::setMsg('插入消耗记录失败');
+            return false;
+        }
+
+        return false;
     }
 }

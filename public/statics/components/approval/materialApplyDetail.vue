@@ -22,6 +22,10 @@
                 </a-table>
             </a-form-model-item>
 
+            <a-form-model-item label="申领总金额" prop="total_price">
+                {{formData.total_price}}￥
+            </a-form-model-item>
+
             <a-form-model-item label="申领用途" prop="purpose">
                 <a-tag v-if="formData.purpose == 1" color="#87d068">销售性质</a-tag>
                 <a-tag v-else color="#87d068">非销售性质</a-tag>
@@ -41,10 +45,10 @@
 
             <a-form-model-item label="关联申购单" prop="relation_id">
                 <div  v-if="formData.relation_approval.length > 0" v-for="(item,index) in formData.relation_approval" :key="index">
-                    <div style="font-weight: bold">审批单：{{item.appr_sn}}</div>
-                    <div><span>申请名称：</span><span>{{item.appr_name}}</span></div>
-                    <div><span>申请事由：</span><span>{{item.appr_reason}}</span></div>
-                    <div><span>申请时间：</span><span>{{item.appr_crt_time}}</span></div>
+                    <div style="font-weight: bold;cursor: pointer;" @click="onRelationApproval(item)">审批单：{{item.appr_sn}}</div>
+<!--                    <div><span>申请名称：</span><span>{{item.appr_name}}</span></div>-->
+<!--                    <div><span>申请事由：</span><span>{{item.appr_reason}}</span></div>-->
+<!--                    <div><span>申请时间：</span><span>{{item.appr_crt_time}}</span></div>-->
                 </div>
             </a-form-model-item>
 
@@ -71,8 +75,6 @@
                                 </div>
                             </div>
 
-
-
                         </a-timeline-item>
                     </a-timeline>
                 </div>
@@ -93,6 +95,20 @@
             </a-form-model-item>
 
         </a-form-model>
+
+        <a-modal :mask-closable="false" v-model="detailVisible"
+                 title="详情"
+                 width="1000px" :footer="null"
+                 @cancel="approvalId=null">
+            <material-apply-detail
+                v-if="approvalType == 1"
+                style="max-height: 600px;overflow: auto"
+                ref="materialApplyDetail"
+                :id="approvalId"
+                @close="detailVisible = false;approvalId=null"
+            >
+            </material-apply-detail>
+        </a-modal>
     </div>
 </template>
 
@@ -100,7 +116,7 @@
 module.exports = {
     name: 'applyDetail',
     components: {
-
+        "material-apply-detail":  httpVueLoader('/statics/components/approval/materialApplyDetail.vue'),
     },
     props: {
         id: {
@@ -146,6 +162,9 @@ module.exports = {
             relationId:null,
             remark:'',
             isApproval:false,
+            detailVisible:false,
+            approvalId:null,
+            approvalType:null,
         }
     },
     methods: {
@@ -160,6 +179,11 @@ module.exports = {
                 process:{},
             };
 
+        },
+        onRelationApproval(row){
+            this.approvalId = row.appr_id;
+            this.approvalType = row.appr_type;
+            this.detailVisible = true;
         },
         getDetail(id){
             if(!id){
@@ -193,6 +217,7 @@ module.exports = {
                     reason:res.data.appr_reason,
                     purpose:res.data.relation_data.maap_purpose,
                     file_list:res.data.relation_data.file_list,
+                    total_price:res.data.relation_data.maap_total_price,
                     relation_approval:res.data.relation_approval,
                     process:res.data.process,
                     // isApproval:res.data.is_approval

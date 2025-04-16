@@ -234,7 +234,11 @@ class ReceivableAccountLogic extends BaseLogic
         $orderData['order_node_arr'] = Node::getNodeParent($orderData['reac_node_id']);
         $orderData['reac_singal_account_receivable'] = bcdiv($orderData['reac_account_receivable'],$orderData['reac_installation_count'] - $orderData['reac_given_count'],2);
 
-        $orderData['reac_singal_device_funds'] = bcdiv($orderData['reac_device_funds'],$orderData['reac_installation_count'] - $orderData['reac_given_count'],2);
+        if($orderData['reac_installation_count'] - $orderData['reac_given_count'] == 0){
+            $orderData['reac_singal_device_funds'] = 0;
+        }else{
+            $orderData['reac_singal_device_funds'] = bcdiv($orderData['reac_device_funds'],$orderData['reac_installation_count'] - $orderData['reac_given_count'],2);
+        }
 
         return $orderData;
     }
@@ -695,7 +699,7 @@ class ReceivableAccountLogic extends BaseLogic
                 $userMobile = $value[6];
                 $address = explode("\n", $value[7]);
                 $installationCount = $value[8] ?: 0;
-                $givenCount = is_numeric($value[9]) ? $value[8] : 0;
+                $givenCount = is_numeric($value[9]) ? $value[9] : 0;
                 $remark = $value[10] ?? '';
                 $accountReceivable = $value[11] ?? 0;
                 $fundsReceived = $value[12] ?? 0;
@@ -1079,8 +1083,8 @@ class ReceivableAccountLogic extends BaseLogic
             return false;
         }
 
-        ini_set( 'max_execution_time', 7200 );
-        ini_set( 'memory_limit', '512M' );
+        ini_set( 'max_execution_time', 72000 );
+        ini_set( 'memory_limit', '1024M' );
 
         $params['end_date'] = $params['end_date'] . ' 23:59:59';
 

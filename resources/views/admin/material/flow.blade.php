@@ -25,6 +25,9 @@
                             @change="dateChange"
                             :default-value="[defaultDate,defaultDate]"></a-range-picker>
                     </a-form-item>
+                    <a-form-item label="编号">
+                        <flow-sn-select @change="snChange"></flow-sn-select>
+                    </a-form-item>
 
                     <a-form-item label="确认状态">
                         <a-select v-model="listQuery.status" show-search placeholder="请选择" :max-tag-count="1"
@@ -82,7 +85,7 @@
 
                     <div slot="file_list" slot-scope="text, record">
                         <div v-for="item in record.file_list">
-                            <a :href="item.file_path">
+                            <a :href="item.file_path" :download="item.file_name">
                                 @{{item.file_name}}
                             </a>
                         </div>
@@ -205,6 +208,7 @@
                     status:undefined,
                     start_date:null,
                     end_date:null,
+                    sn:'',
                 },
                 defaultDate:undefined,
                 listSource: [],
@@ -333,6 +337,7 @@
                 "material-add":  httpVueLoader('/statics/components/material/materialAdd.vue'),
                 "category-select":  httpVueLoader('/statics/components/material/categorySelect.vue'),
                 "material-select":  httpVueLoader('/statics/components/material/materialSelect.vue'),
+                "flow-sn-select":  httpVueLoader('/statics/components/material/flowSnSelect.vue'),
                 "material-in-coming":  httpVueLoader('/statics/components/material/materialInComing.vue'),
                 "material-out-coming":  httpVueLoader('/statics/components/material/materialOutComing.vue'),
                 "set-flow-price":  httpVueLoader('/statics/components/material/setFlowPrice.vue'),
@@ -476,6 +481,9 @@
                     this.listQuery.end_date = arr[1];
                     this.handleFilter();
                 },
+                snChange(value){
+                    this.listQuery.sn = value;
+                }
             },
 
         })

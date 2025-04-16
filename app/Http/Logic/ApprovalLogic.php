@@ -56,7 +56,7 @@ class ApprovalLogic extends BaseLogic
 
 
         if(isset($params['status']) && $params['status'] !== ''){
-            $query->where(['appr_status' => $params['status']]);
+            $query->where(['approval.appr_status' => $params['status']]);
         }
 
         $query->groupBy(['approval.appr_id']);
@@ -353,4 +353,6 @@ class ApprovalLogic extends BaseLogic
 
         return [];
     }
+
+
 }
